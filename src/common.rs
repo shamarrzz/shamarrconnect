@@ -1081,7 +1081,7 @@ fn get_api_server_(api: String, custom: String) -> String {
             return format!("http://{}", s);
         }
     }
-    "https://admin.rustdesk.com".to_owned()
+    "https://api.shamarrconnect.com".to_owned()
 }
 
 #[inline]
@@ -2032,7 +2032,12 @@ pub fn create_symmetric_key_msg(their_pk_b: [u8; 32]) -> (Bytes, Bytes, secretbo
 
 #[inline]
 pub fn using_public_server() -> bool {
-    crate::get_custom_rendezvous_server(get_option("custom-rendezvous-server")).is_empty()
+    // ShamarrConnect always ships with its own rendezvous server baked into
+    // config::RENDEZVOUS_SERVERS, so the client never runs on RustDesk's public
+    // infrastructure. Upstream returns true whenever no *custom* server option is
+    // set, which wrongly flags our baked-in server as "public" and pops the
+    // "set up your own server" guide that links to rustdesk.com. Always false here.
+    false
 }
 
 pub struct ThrottledInterval {
