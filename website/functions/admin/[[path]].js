@@ -4,6 +4,7 @@
 //    against the team's public keys) — defense-in-depth so /admin stays locked
 //    even if the Zero Trust app is misconfigured or deleted.
 const TEAM = "https://your-team.cloudflareaccess.com";
+const ALLOWED_EMAILS = ["hello@shamarrconnect.com"];
 
 const SEC = {
   "X-Frame-Options": "DENY",
@@ -25,31 +26,32 @@ function b64urlToBytes(s) {
 async function verifyAccessJWT(token) {
   try {
     const [h, p, sig] = token.split(".");
-    if (!h || !p || !sig) return false;
+    if (!h || !p || !sig) return null;
     const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h)));
     const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p)));
     const now = Math.floor(Date.now() / 1000);
-    if (payload.iss !== TEAM) return false;
-    if (!payload.exp || payload.exp < now) return false;
+    if (payload.iss !== TEAM) return null;
+    if (!payload.exp || payload.exp < now) return null;
     const res = await fetch(`${TEAM}/cdn-cgi/access/certs`, {
       cf: { cacheTtl: 3600, cacheEverything: true },
     });
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const { keys } = await res.json();
     const jwk = (keys || []).find((k) => k.kid === header.kid);
-    if (!jwk) return false;
+    if (!jwk) return null;
     const key = await crypto.subtle.importKey(
       "jwk", jwk,
       { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
       false, ["verify"]
     );
-    return await crypto.subtle.verify(
+    const valid = await crypto.subtle.verify(
       "RSASSA-PKCS1-v1_5", key,
       b64urlToBytes(sig),
       new TextEncoder().encode(`${h}.${p}`)
     );
+    return valid ? payload.email : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -61,10 +63,18 @@ export async function onRequest({ request, env }) {
 
   const cookie = (request.headers.get("Cookie") || "").match(/CF_Authorization=([^;\s]+)/);
   const token = request.headers.get("Cf-Access-Jwt-Assertion") || (cookie && cookie[1]);
-  if (!token || !(await verifyAccessJWT(token))) {
+  const email = token ? await verifyAccessJWT(token) : null;
+  if (!email) {
     return new Response(
       "<!DOCTYPE html><title>Locked</title><h1>403 — admin is locked</h1>" +
-      "<p>Sign in via Cloudflare Access first (e.g. open <a href=\"/preview/\">/preview/</a>), then reload this page.</p>",
+      "<p>Sign in via Cloudflare Access first, then reload this page.</p>",
+      { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
+    );
+  }
+  if (!ALLOWED_EMAILS.includes(email)) {
+    return new Response(
+      "<!DOCTYPE html><title>Forbidden</title><h1>403 — not authorised</h1>" +
+      `<p>${email} does not have access to this area.</p>`,
       { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
     );
   }
