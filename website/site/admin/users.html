@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Users & Devices — ShamarrConnect Admin</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="shortcut icon" href="/favicon.ico">
+<style>
+  :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF;--ok:#16A34A;--err:#DC2626}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55;min-height:100vh}
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px}
+  .brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center}
+  .pill{font-size:12px;font-weight:700;color:#1E3FA8;background:#EAF0FF;border-radius:100px;padding:6px 13px}
+  .pill.ok{color:#166534;background:#DCFCE7}
+  .pill.err{color:#991B1B;background:#FEE2E2}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 24px}
+  h1{font-size:26px;letter-spacing:-.02em;margin-bottom:6px}
+  .sub{color:var(--muted);margin-bottom:28px;font-size:15px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:20px}
+  .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .card-head h2{font-size:16px}
+  .tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px;width:fit-content;margin-bottom:24px}
+  .tab{padding:8px 20px;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:.15s}
+  .tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 12px 10px;border-bottom:1px solid var(--line)}
+  td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px}
+  .badge.admin{color:#1E3FA8;background:#EAF0FF}
+  .badge.user{color:var(--muted);background:var(--bg)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:5px}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:.15s;text-decoration:none}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn.primary:hover{background:#1E3FA8}
+  .btn.danger{color:var(--err);border-color:#FECACA}
+  .btn.danger:hover{background:#FEE2E2;border-color:var(--err)}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  input,select{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit;outline:none;transition:.15s}
+  input:focus,select:focus{border-color:var(--brand)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  @media(max-width:600px){.form-row{grid-template-columns:1fr}}
+  .form-row label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  .check-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:14px}
+  .check-row input{width:auto}
+  .msg{font-size:13px;padding:10px 14px;border-radius:9px;margin-bottom:14px}
+  .msg.ok{background:#DCFCE7;color:#166534}
+  .msg.err{background:#FEE2E2;color:#991B1B}
+  .empty{text-align:center;padding:32px;color:var(--muted);font-size:14px}
+  /* login */
+  #login-view{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px)}
+  .login-box{background:#fff;border:1px solid var(--line);border-radius:20px;padding:40px;width:100%;max-width:380px}
+  .login-box h2{font-size:22px;margin-bottom:6px}
+  .login-box p{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .login-box label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  .login-box input{margin-bottom:14px}
+  #main-view{display:none}
+  .nav-back{font-size:13px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:5px;margin-bottom:20px}
+  .nav-back:hover{color:var(--brand)}
+  .ts{font-size:12px;color:var(--muted);white-space:nowrap}
+  .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand">
+    <span class="mark"><svg width="20" height="20" viewBox="0 0 100 100"><path d="M50 26 C 32 30, 34 47, 50 50 C 66 53, 68 70, 50 74" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="50" cy="26" r="5.5" fill="#fff"/><circle cx="50" cy="74" r="5.5" fill="#fff"/></svg></span>
+    ShamarrConnect <span style="color:var(--muted);font-weight:600">Admin</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="user-pill" class="pill" style="display:none"></span>
+    <button id="logout-btn" class="btn sm danger" style="display:none" onclick="logout()">Sign out API</button>
+  </div>
+</div>
+
+<!-- Login view -->
+<div id="login-view">
+  <div class="login-box">
+    <h2>API sign-in</h2>
+    <p>Sign in with your ShamarrConnect admin account to manage users and devices.</p>
+    <div id="login-msg"></div>
+    <label>Email</label>
+    <input id="l-email" type="email" placeholder="admin@example.com" autocomplete="username">
+    <label>Password</label>
+    <input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- Main view -->
+<div id="main-view">
+  <div class="wrap">
+    <a class="nav-back" href="/admin/">← Back to production control</a>
+    <h1>Users &amp; Devices</h1>
+    <p class="sub">Manage accounts and connected devices via the sc-cloud API.</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('users',this)">Users</button>
+      <button class="tab" onclick="switchTab('devices',this)">Active devices</button>
+    </div>
+
+    <!-- Users tab -->
+    <div id="tab-users">
+      <div class="card">
+        <div class="card-head">
+          <h2>All users</h2>
+          <button class="btn primary sm" onclick="showAddForm()">+ Add user</button>
+        </div>
+        <div id="add-form" style="display:none;margin-bottom:20px;padding:20px;background:var(--bg);border-radius:12px;border:1px solid var(--line)">
+          <div id="add-msg"></div>
+          <div class="form-row">
+            <div><label>Email</label><input id="a-email" type="email" placeholder="user@example.com"></div>
+            <div><label>Display name</label><input id="a-name" type="text" placeholder="Jane Smith"></div>
+          </div>
+          <div class="form-row">
+            <div><label>Password</label><input id="a-pass" type="password" placeholder="min 8 chars"></div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+              <div class="check-row"><input type="checkbox" id="a-admin"><label for="a-admin" style="margin:0;font-size:14px;color:var(--ink)">Admin account</label></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn primary" onclick="createUser()">Create user</button>
+            <button class="btn" onclick="hideAddForm()">Cancel</button>
+          </div>
+        </div>
+        <div id="users-table"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- Devices tab -->
+    <div id="tab-devices" style="display:none">
+      <div class="card">
+        <div class="card-head">
+          <h2>Active device tokens</h2>
+          <button class="btn sm" onclick="loadDevices()">↻ Refresh</button>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Device tokens are independent of passwords. Revoking forces the device to log in again.</p>
+        <div id="devices-table"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://api.shamarrconnect.com';
+let token = localStorage.getItem('sc_token') || '';
+
+function h(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function ts(s){ return s ? s.replace('T',' ').substring(0,16) : '—' }
+
+async function apiFetch(path, opts={}){
+  const r = await fetch(API+path, {
+    ...opts,
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) }
+  });
+  return r;
+}
+
+async function checkToken(){
+  if(!token){ showLogin(); return; }
+  const r = await apiFetch('/api/currentUser');
+  if(r.ok){
+    const u = await r.json();
+    if(!u.is_admin){ showMsg('login-msg','You need an admin account.','err'); token=''; localStorage.removeItem('sc_token'); showLogin(); return; }
+    document.getElementById('user-pill').textContent = u.email;
+    document.getElementById('user-pill').style.display='';
+    document.getElementById('logout-btn').style.display='';
+    showMain();
+  } else {
+    token=''; localStorage.removeItem('sc_token'); showLogin();
+  }
+}
+
+function showLogin(){ document.getElementById('login-view').style.display='flex'; document.getElementById('main-view').style.display='none'; }
+function showMain(){ document.getElementById('login-view').style.display='none'; document.getElementById('main-view').style.display=''; loadUsers(); }
+
+async function doLogin(){
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  if(!email||!pass){ showMsg('login-msg','Enter email and password.','err'); return; }
+  showMsg('login-msg','Signing in…','ok');
+  const r = await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:email,password:pass})});
+  const d = await r.json();
+  if(!r.ok){ showMsg('login-msg', d.error||'Login failed.','err'); return; }
+  if(!d.user?.is_admin){ showMsg('login-msg','Admin account required.','err'); return; }
+  token = d.access_token;
+  localStorage.setItem('sc_token', token);
+  document.getElementById('user-pill').textContent = d.user.email;
+  document.getElementById('user-pill').style.display='';
+  document.getElementById('logout-btn').style.display='';
+  showMain();
+}
+
+function logout(){ token=''; localStorage.removeItem('sc_token'); showLogin(); document.getElementById('user-pill').style.display='none'; document.getElementById('logout-btn').style.display='none'; }
+
+function showMsg(id, text, type){ const el=document.getElementById(id); el.className='msg '+type; el.textContent=text; el.style.display=''; }
+function hideMsg(id){ document.getElementById(id).style.display='none'; }
+
+function switchTab(name, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-users').style.display  = name==='users'   ? '' : 'none';
+  document.getElementById('tab-devices').style.display= name==='devices' ? '' : 'none';
+  if(name==='devices') loadDevices();
+}
+
+function showAddForm(){ document.getElementById('add-form').style.display=''; hideMsg('add-msg'); }
+function hideAddForm(){ document.getElementById('add-form').style.display='none'; }
+
+async function loadUsers(){
+  const r = await apiFetch('/api/admin/users');
+  if(!r.ok){ document.getElementById('users-table').innerHTML='<div class="empty">Failed to load users.</div>'; return; }
+  const {users} = await r.json();
+  if(!users.length){ document.getElementById('users-table').innerHTML='<div class="empty">No users yet.</div>'; return; }
+  document.getElementById('users-table').innerHTML = `
+  <table>
+    <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+    ${users.map(u=>`
+      <tr>
+        <td>${h(u.email)}</td>
+        <td>${h(u.display_name||'—')}</td>
+        <td><span class="badge ${u.is_admin?'admin':'user'}">${u.is_admin?'Admin':'User'}</span></td>
+        <td class="ts">${ts(u.created_at)}</td>
+        <td><button class="btn sm danger" onclick="deleteUser('${h(u.id)}','${h(u.email)}')">Remove</button></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function createUser(){
+  const email = document.getElementById('a-email').value.trim();
+  const name  = document.getElementById('a-name').value.trim();
+  const pass  = document.getElementById('a-pass').value;
+  const admin = document.getElementById('a-admin').checked;
+  if(!email||!pass){ showMsg('add-msg','Email and password required.','err'); return; }
+  showMsg('add-msg','Creating…','ok');
+  const r = await apiFetch('/api/admin/users',{method:'POST',body:JSON.stringify({email,display_name:name,password:pass,is_admin:admin})});
+  const d = await r.json();
+  if(!r.ok){ showMsg('add-msg',d.error||'Failed.','err'); return; }
+  hideAddForm();
+  document.getElementById('a-email').value='';
+  document.getElementById('a-name').value='';
+  document.getElementById('a-pass').value='';
+  document.getElementById('a-admin').checked=false;
+  loadUsers();
+}
+
+async function deleteUser(id, email){
+  if(!confirm(`Remove user ${email}? This also deletes their address book and device tokens.`)) return;
+  const r = await apiFetch('/api/admin/users/'+id,{method:'DELETE'});
+  if(!r.ok){ alert('Failed to delete user.'); return; }
+  loadUsers();
+}
+
+async function loadDevices(){
+  const r = await apiFetch('/api/admin/devices');
+  if(!r.ok){ document.getElementById('devices-table').innerHTML='<div class="empty">Failed to load devices.</div>'; return; }
+  const {devices} = await r.json();
+  if(!devices.length){ document.getElementById('devices-table').innerHTML='<div class="empty">No active devices.</div>'; return; }
+  document.getElementById('devices-table').innerHTML = `
+  <table>
+    <thead><tr><th>User</th><th>Device</th><th>OS</th><th>Last seen</th><th>Registered</th><th></th></tr></thead>
+    <tbody>
+    ${devices.map(d=>`
+      <tr>
+        <td class="mono">${h(d.user_email)}</td>
+        <td>${h(d.device_name||d.device_id||'—')}</td>
+        <td>${h(d.device_os||'—')}</td>
+        <td class="ts">${ts(d.last_seen)}</td>
+        <td class="ts">${ts(d.created_at)}</td>
+        <td><button class="btn sm danger" onclick="revokeDevice('${h(d.id)}')">Revoke</button></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function revokeDevice(id){
+  if(!confirm('Revoke this device token? The device will need to log in again.')) return;
+  const r = await apiFetch('/api/admin/devices/'+id,{method:'DELETE'});
+  if(!r.ok){ alert('Failed to revoke.'); return; }
+  loadDevices();
+}
+
+checkToken();
+</script>
+</body>
+</html>

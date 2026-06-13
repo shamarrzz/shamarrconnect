@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShamarrConnect - Coming Soon</title>
+<meta name="description" content="Private, self-hosted remote desktop. Launching soon.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<style>
+  :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);
+    min-height:100vh;display:grid;place-items:center;text-align:center;
+    background:radial-gradient(1000px 500px at 50% -10%, #F1F0FF 0%, transparent 60%),linear-gradient(180deg,#F6F9FF,#FFFFFF)}
+  .box{padding:40px 28px;max-width:560px}
+  .mark{width:130px;height:130px;margin:0 auto 22px;display:grid;place-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#EAF0FF;color:#1E3FA8;
+    font-weight:600;font-size:13px;padding:7px 15px;border-radius:100px;margin-bottom:24px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#16A34A}
+  h1{font-size:44px;line-height:1.1;letter-spacing:-.03em;font-weight:800;margin-bottom:16px}
+  h1 .g{color:var(--brand)}
+  p{font-size:18px;color:var(--muted);max-width:440px;margin:0 auto 32px}
+  .foot{margin-top:40px;font-size:13px;color:var(--muted)}
+  @media(max-width:560px){h1{font-size:34px}}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="mark">
+      <svg width="130" height="130" viewBox="0 0 100 100">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B7BF0"/><stop offset="1" stop-color="#1E3FA8"/></linearGradient></defs>
+        <g>
+          <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="5s" repeatCount="indefinite"/>
+          <circle cx="50" cy="22" r="6" fill="url(#g)"><animate attributeName="r" values="5;7.5;5" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/></circle>
+          <circle cx="50" cy="78" r="6" fill="url(#g)"><animate attributeName="r" values="7.5;5;7.5" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/></circle>
+          <path d="M50 78 C 72 74, 70 54, 50 50 C 30 46, 28 26, 50 22" pathLength="100" stroke="url(#g)" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="100"><animate attributeName="stroke-dashoffset" values="100;-100" dur="2.8s" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" repeatCount="indefinite"/></path>
+          <path d="M50 78 C 72 74, 70 54, 50 50 C 30 46, 28 26, 50 22" pathLength="100" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="10 110"><animate attributeName="stroke-dashoffset" values="100;-20" dur="2.8s" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" repeatCount="indefinite"/></path>
+        </g>
+      </svg>
+    </div>
+    <span class="eyebrow"><span class="dot"></span> Launching soon</span>
+    <h1>Something private<br>is <span class="g">coming</span>.</h1>
+    <p>ShamarrConnect is a fast, end-to-end encrypted remote desktop you run on your own server. We're putting the finishing touches on it.</p>
+    <div class="foot">Copyright 2026 ShamarrConnect</div>
+  </div>
+</body>
+</html>

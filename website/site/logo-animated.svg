@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B7BF0"/>
+      <stop offset="1" stop-color="#1E3FA8"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="5s" repeatCount="indefinite"/>
+    <circle cx="50" cy="22" r="6" fill="url(#g)">
+      <animate attributeName="r" values="5;7.5;5" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/>
+    </circle>
+    <circle cx="50" cy="78" r="6" fill="url(#g)">
+      <animate attributeName="r" values="7.5;5;7.5" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/>
+    </circle>
+    <path d="M50 78 C 72 74, 70 54, 50 50 C 30 46, 28 26, 50 22" pathLength="100" stroke="url(#g)" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="100">
+      <animate attributeName="stroke-dashoffset" values="100;-100" dur="2.8s" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" repeatCount="indefinite"/>
+    </path>
+    <path d="M50 78 C 72 74, 70 54, 50 50 C 30 46, 28 26, 50 22" pathLength="100" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="10 110">
+      <animate attributeName="stroke-dashoffset" values="100;-20" dur="2.8s" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" repeatCount="indefinite"/>
+    </path>
+  </g>
+</svg>
