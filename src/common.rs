@@ -2096,6 +2096,17 @@ pub fn load_custom_client() {
     // rustdesk.com help cards and the "set up your own server" tip.
     *config::APP_NAME.write().unwrap() = "ShamarrConnect".to_owned();
 
+    // Bake in server config so the client never falls back to RustDesk's
+    // public rendezvous server (rs-ny.rustdesk.com). OVERWRITE_SETTINGS takes
+    // priority over user-saved config and cannot be cleared by the user.
+    {
+        let mut overwrite = config::OVERWRITE_SETTINGS.write().unwrap();
+        overwrite.insert("custom-rendezvous-server".to_owned(), "connect.shamarrconnect.com".to_owned());
+        overwrite.insert("relay-server".to_owned(), "connect.shamarrconnect.com".to_owned());
+        overwrite.insert("api-server".to_owned(), "https://api.shamarrconnect.com".to_owned());
+        overwrite.insert("key".to_owned(), "JfyPD2rFXBvBipAn8bfICvPocBqects1mLC2qiHIu0c=".to_owned());
+    }
+
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
