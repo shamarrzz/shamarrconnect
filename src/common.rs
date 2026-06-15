@@ -2096,9 +2096,13 @@ pub fn load_custom_client() {
     // rustdesk.com help cards and the "set up your own server" tip.
     *config::APP_NAME.write().unwrap() = "ShamarrConnect".to_owned();
 
-    // Bake in server config so the client never falls back to RustDesk's
-    // public rendezvous server (rs-ny.rustdesk.com). OVERWRITE_SETTINGS takes
-    // priority over user-saved config and cannot be cleared by the user.
+    // Bake in server config so the client never falls back to RustDesk's public
+    // rendezvous server (rs-ny.rustdesk.com). We set three layers in priority order:
+    // 1. EXE_RENDEZVOUS_SERVER / PROD_RENDEZVOUS_SERVER — highest priority, checked
+    //    before OVERWRITE_SETTINGS and before any user config.
+    // 2. OVERWRITE_SETTINGS — overrides user-saved config, cannot be cleared by user.
+    *config::EXE_RENDEZVOUS_SERVER.write().unwrap() = "connect.shamarrconnect.com".to_owned();
+    *config::PROD_RENDEZVOUS_SERVER.write().unwrap() = "connect.shamarrconnect.com".to_owned();
     {
         let mut overwrite = config::OVERWRITE_SETTINGS.write().unwrap();
         overwrite.insert("custom-rendezvous-server".to_owned(), "connect.shamarrconnect.com".to_owned());
