@@ -2087,6 +2087,15 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    // ShamarrConnect: brand this build as a custom client without relying on
+    // RustDesk's signed custom.txt blob (that is gated by RustDesk's private
+    // key and sold with their commercial license). We compile from source under
+    // AGPL-3.0, so we set the app name directly. This flips is_custom_client()
+    // to true, which drives the Windows install path / registry / shortcuts /
+    // firewall rules, the window + About title, and suppresses the upstream
+    // rustdesk.com help cards and the "set up your own server" tip.
+    *config::APP_NAME.write().unwrap() = "ShamarrConnect".to_owned();
+
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
