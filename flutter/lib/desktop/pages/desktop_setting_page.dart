@@ -253,15 +253,25 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   Widget _buildBlock({required List<Widget> children}) {
     // check both mouseMoveTime and videoConnCount
     return Obx(() {
-      final videoConnBlock =
-          _canBeBlocked.value && stateGlobal.videoConnCount > 0;
+      final body = Row(children: children);
+      // ShamarrConnect: this block exists to stop a *remote* controller from
+      // changing settings on the machine they are controlling. It must only
+      // engage while this machine is actually being controlled (an inbound
+      // video session). With no inbound session there is no remote actor, so
+      // never absorb pointer events — otherwise the local owner is locked out
+      // of their own Settings (canBeBlocked() is true by default, which armed
+      // the upstream guard even with nobody connected).
+      if (stateGlobal.videoConnCount.value <= 0) {
+        return body;
+      }
+      final videoConnBlock = _canBeBlocked.value;
       return Stack(children: [
         buildRemoteBlock(
           block: _block,
           mask: false,
           use: canBeBlocked,
           child: preventMouseKeyBuilder(
-            child: Row(children: children),
+            child: body,
             block: videoConnBlock,
           ),
         ),
