@@ -201,6 +201,72 @@ class UserModel {
     return getLoginResponseFromAuthBody(body);
   }
 
+  /// Generate a device enrollment code for the currently-logged-in account.
+  /// Returns the 6-character code string, or null on failure.
+  Future<String?> enrollGenerate() async {
+    try {
+      final url = await bind.mainGetApiServer();
+      final token = bind.mainGetLocalOption(key: 'access_token');
+      if (token.isEmpty) return null;
+      final resp = await http.post(
+        Uri.parse('$url/api/enroll/generate'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      if (resp.statusCode == 200) {
+        final body = jsonDecode(decode_http_response(resp));
+        return body['code'] as String?;
+      }
+      debugPrint('enrollGenerate: HTTP ${resp.statusCode}');
+    } catch (e) {
+      debugPrint('enrollGenerate failed: $e');
+    }
+    return null;
+  }
+
+  /// Claim a device enrollment code — joins an existing account without a password.
+  /// throw [RequestException]
+  Future<LoginResponse> enrollClaim({
+    required String code,
+    required String id,
+    required String uuid,
+    String deviceName = '',
+    String os = '',
+  }) async {
+    final url = await bind.mainGetApiServer();
+    final resp = await http.post(
+      Uri.parse('$url/api/enroll/claim'),
+      body: jsonEncode({
+        'code': code,
+        'id': id,
+        'uuid': uuid,
+        'device_name': deviceName,
+        'os': os,
+      }),
+    );
+
+    final Map<String, dynamic> body;
+    try {
+      body = jsonDecode(decode_http_response(resp));
+    } catch (e) {
+      debugPrint('enrollClaim: jsonDecode failed: $e');
+      if (resp.statusCode != 200) {
+        BotToast.showText(
+            contentColor: Colors.red, text: 'HTTP ${resp.statusCode}');
+      }
+      rethrow;
+    }
+    if (resp.statusCode != 200) {
+      throw RequestException(resp.statusCode, body['error'] ?? '');
+    }
+    if (body['error'] != null) {
+      throw RequestException(0, body['error']);
+    }
+    return getLoginResponseFromAuthBody(body);
+  }
+
   /// throw [RequestException]
   Future<LoginResponse> register({
     required String email,

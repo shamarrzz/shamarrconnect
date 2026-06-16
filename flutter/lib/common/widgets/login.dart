@@ -433,14 +433,17 @@ Future<bool?> loginDialog() async {
       TextEditingController(text: UserModel.getLocalUserInfo()?['name'] ?? '');
   var password = TextEditingController();
   var confirmPassword = TextEditingController();
+  var joinCode = TextEditingController();
   final userFocusNode = FocusNode()..requestFocus();
   Timer(Duration(milliseconds: 100), () => userFocusNode..requestFocus());
 
   String? usernameMsg;
   String? passwordMsg;
   String? confirmPasswordMsg;
+  String? joinCodeMsg;
   var isInProgress = false;
-  var isRegisterMode = false;
+  var dialogMode = 'login'; // 'login' | 'register' | 'join'
+  var justRegistered = false;
   final RxString curOP = ''.obs;
   // Track hover state for the close icon
   bool isCloseHovered = false;
@@ -466,6 +469,12 @@ Future<bool?> loginDialog() async {
     confirmPassword.addListener(() {
       if (confirmPasswordMsg != null) {
         setState(() => confirmPasswordMsg = null);
+      }
+    });
+
+    joinCode.addListener(() {
+      if (joinCodeMsg != null) {
+        setState(() => joinCodeMsg = null);
       }
     });
 
@@ -584,6 +593,7 @@ Future<bool?> loginDialog() async {
           id: await bind.mainGetMyId(),
           uuid: await bind.mainGetUuid(),
         );
+        justRegistered = true;
         await handleLoginResponse(resp, true, close);
       } on RequestException catch (err) {
         passwordMsg = translate(err.cause);
@@ -592,6 +602,43 @@ Future<bool?> loginDialog() async {
       }
       curOP.value = '';
       setState(() => isInProgress = false);
+    }
+
+    onJoin() async {
+      final code = joinCode.text.trim().toUpperCase();
+      if (code.isEmpty) {
+        setState(() => joinCodeMsg = translate('Code is required'));
+        return;
+      }
+      curOP.value = 'rustdesk';
+      setState(() => isInProgress = true);
+      try {
+        final resp = await gFFI.userModel.enrollClaim(
+          code: code,
+          id: await bind.mainGetMyId(),
+          uuid: await bind.mainGetUuid(),
+        );
+        await handleLoginResponse(resp, true, close);
+      } on RequestException catch (err) {
+        joinCodeMsg = translate(err.cause);
+      } catch (err) {
+        joinCodeMsg = 'Unknown Error: $err';
+      }
+      curOP.value = '';
+      setState(() => isInProgress = false);
+    }
+
+    void switchMode(String mode) {
+      setState(() {
+        dialogMode = mode;
+        usernameMsg = null;
+        passwordMsg = null;
+        confirmPasswordMsg = null;
+        joinCodeMsg = null;
+        password.clear();
+        confirmPassword.clear();
+        joinCode.clear();
+      });
     }
 
     thirdAuthWidget() => Obx(() {
@@ -642,7 +689,11 @@ Future<bool?> loginDialog() async {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          isRegisterMode ? translate('Create account') : translate('Login'),
+          {
+            'register': translate('Create account'),
+            'join': translate('Join with code'),
+          }[dialogMode] ??
+              translate('Login'),
         ).marginOnly(top: MyTheme.dialogPadding),
         MouseRegion(
           onEnter: (_) => setState(() => isCloseHovered = true),
@@ -715,14 +766,55 @@ Future<bool?> loginDialog() async {
                   ),
                 ])),
             TextButton(
-              onPressed: () => setState(() {
-                isRegisterMode = false;
-                usernameMsg = null;
-                passwordMsg = null;
-                confirmPasswordMsg = null;
-                password.clear();
-                confirmPassword.clear();
-              }),
+              onPressed: () => switchMode('login'),
+              child: Text(
+                translate('Back to login'),
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        );
+
+    joinContent() => Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 8.0),
+            Text(
+              translate('Enter the 6-character code shown on a device already signed in to this account:'),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            DialogTextField(
+              title: translate('Device code'),
+              controller: joinCode,
+              focusNode: userFocusNode,
+              prefixIcon: Icon(Icons.vpn_key_outlined),
+              errorText: joinCodeMsg,
+            ),
+            if (isInProgress) const LinearProgressIndicator(),
+            const SizedBox(height: 12.0),
+            FittedBox(
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                  Container(
+                    height: 38,
+                    width: 200,
+                    child: Obx(() => ElevatedButton(
+                          child: Text(
+                            translate('Join'),
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          onPressed: curOP.value.isEmpty ||
+                                  curOP.value == 'rustdesk'
+                              ? onJoin
+                              : null,
+                        )),
+                  ),
+                ])),
+            TextButton(
+              onPressed: () => switchMode('login'),
               child: Text(
                 translate('Back to login'),
                 style: TextStyle(fontSize: 13),
@@ -735,49 +827,113 @@ Future<bool?> loginDialog() async {
       title: title,
       titlePadding: titlePadding,
       contentBoxConstraints: BoxConstraints(minWidth: 400),
-      content: isRegisterMode
-          ? registerContent()
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  height: 8.0,
+      content: dialogMode == 'join'
+          ? joinContent()
+          : dialogMode == 'register'
+              ? registerContent()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 8.0,
+                    ),
+                    LoginWidgetUserPass(
+                      username: username,
+                      pass: password,
+                      usernameMsg: usernameMsg,
+                      passMsg: passwordMsg,
+                      isInProgress: isInProgress,
+                      curOP: curOP,
+                      onLogin: onLogin,
+                      userFocusNode: userFocusNode,
+                    ),
+                    TextButton(
+                      onPressed: () => switchMode('register'),
+                      child: Text(
+                        translate('Create account'),
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => switchMode('join'),
+                      child: Text(
+                        translate('Join with a device code'),
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    thirdAuthWidget(),
+                  ],
                 ),
-                LoginWidgetUserPass(
-                  username: username,
-                  pass: password,
-                  usernameMsg: usernameMsg,
-                  passMsg: passwordMsg,
-                  isInProgress: isInProgress,
-                  curOP: curOP,
-                  onLogin: onLogin,
-                  userFocusNode: userFocusNode,
-                ),
-                TextButton(
-                  onPressed: () => setState(() {
-                    isRegisterMode = true;
-                    usernameMsg = null;
-                    passwordMsg = null;
-                    password.clear();
-                  }),
-                  child: Text(
-                    translate('Create account'),
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ),
-                thirdAuthWidget(),
-              ],
-            ),
       onCancel: onDialogCancel,
-      onSubmit: isRegisterMode ? onRegister : onLogin,
+      onSubmit: dialogMode == 'register'
+          ? onRegister
+          : dialogMode == 'join'
+              ? onJoin
+              : onLogin,
     );
   });
 
-  if (res != null) {
+  if (res == true) {
     await UserModel.updateOtherModels();
+    if (justRegistered) {
+      final code = await gFFI.userModel.enrollGenerate();
+      if (code != null && code.isNotEmpty) {
+        await showEnrollmentCodeDialog(code);
+      }
+    }
   }
 
   return res;
+}
+
+Future<void> showEnrollmentCodeDialog(String code) async {
+  await gFFI.dialogManager.show<void>((setState, close, context) {
+    return CustomAlertDialog(
+      title: Text(translate('Add another device')),
+      contentBoxConstraints: BoxConstraints(minWidth: 340, maxWidth: 400),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            translate('Use this code on your other device:'),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            translate('Login → "Join with a device code"'),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context).dividerColor, width: 1.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: SelectableText(
+              code,
+              style: const TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 8,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            translate('Expires in 24 hours · One-time use'),
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+      actions: [
+        dialogButton(translate('OK'), onPressed: close),
+      ],
+      onCancel: close,
+    );
+  });
 }
 
 Future<bool?> verificationCodeDialog(

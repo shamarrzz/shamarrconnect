@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/animated_rotation_widget.dart';
 import 'package:flutter_hbb/common/widgets/custom_password.dart';
+import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
@@ -137,14 +138,20 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           children: [
             Column(
               children: [
-                SingleChildScrollView(
-                  controller: _leftPaneScrollController,
-                  child: Column(
-                    key: _childKey,
-                    children: children,
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _leftPaneScrollController,
+                    child: Column(
+                      key: _childKey,
+                      children: children,
+                    ),
                   ),
                 ),
-                Expanded(child: Container())
+                // ShamarrConnect: always-visible account footer so login (and
+                // therefore persistent session) is a first-class action on the
+                // home screen, independent of the Settings tab.
+                if (!isIncomingOnly && !isOutgoingOnly)
+                  buildAccountFooter(context),
               ],
             ),
             if (isOutgoingOnly)
@@ -178,6 +185,127 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         ),
       ),
     );
+  }
+
+  // ShamarrConnect: persistent-login account chip + Settings gear pinned to the
+  // bottom of the left pane. Logged out -> "Login" (opens loginDialog, which
+  // stores the access token via remember-me); logged in -> account name + Sign
+  // out. The trailing gear is an always-visible Settings entry point.
+  Widget buildAccountFooter(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.titleLarge?.color;
+    return Obx(() {
+      final userModel = gFFI.userModel;
+      final isLogin = userModel.isLogin;
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.2)),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: isLogin
+                  ? Row(
+                      children: [
+                        Icon(Icons.account_circle,
+                            size: 20, color: MyTheme.accent),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            userModel.displayNameOrUserName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 14, color: textColor),
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          tooltip: translate('Logout'),
+                          icon: Icon(Icons.expand_more,
+                              size: 18, color: textColor?.withOpacity(0.6)),
+                          itemBuilder: (context) => [
+                            PopupMenuItem<String>(
+                              value: 'add_device',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.devices_other,
+                                      size: 18, color: textColor),
+                                  const SizedBox(width: 8),
+                                  Text(translate('Add another device')),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'logout',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.logout,
+                                      size: 18, color: textColor),
+                                  const SizedBox(width: 8),
+                                  Text(translate('Logout')),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (v) async {
+                            if (v == 'add_device') {
+                              final code =
+                                  await gFFI.userModel.enrollGenerate();
+                              if (code != null && code.isNotEmpty) {
+                                await showEnrollmentCodeDialog(code);
+                              }
+                            } else if (v == 'logout') {
+                              gFFI.userModel.logOut();
+                            }
+                          },
+                        ),
+                      ],
+                    )
+                  : InkWell(
+                      onTap: () => loginDialog(),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.login,
+                                size: 20, color: MyTheme.accent),
+                            const SizedBox(width: 8),
+                            Text(
+                              translate('Login'),
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: textColor,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+            // ShamarrConnect: always-visible Settings entry. The stock full
+            // client only exposes Settings via the small "..." icon by the ID
+            // (opens a Settings tab up top, easy to miss), so we surface an
+            // obvious gear here that opens the same Settings tab.
+            Tooltip(
+              message: translate('Settings'),
+              child: InkWell(
+                onTap: DesktopTabPage.onAddSetting,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.settings,
+                      size: 20, color: textColor?.withOpacity(0.6)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   buildRightPane(BuildContext context) {
