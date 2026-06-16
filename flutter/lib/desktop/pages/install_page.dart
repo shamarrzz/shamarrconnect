@@ -66,6 +66,7 @@ class _InstallPageBodyState extends State<_InstallPageBody>
   final RxBool startmenu = true.obs;
   final RxBool desktopicon = true.obs;
   final RxBool printer = true.obs;
+  final RxBool launchAfterInstall = true.obs;
   final RxBool showProgress = false.obs;
   final RxBool btnEnabled = true.obs;
 
@@ -165,7 +166,9 @@ class _InstallPageBodyState extends State<_InstallPageBody>
                   .marginOnly(bottom: 7),
               Option(desktopicon, label: 'Create desktop icon')
                   .marginOnly(bottom: 7),
-              Option(printer, label: 'Install {$appName} Printer'),
+              Option(printer, label: 'Install {$appName} Printer')
+                  .marginOnly(bottom: 7),
+              Option(launchAfterInstall, label: 'Launch ShamarrConnect after install'),
               Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -258,6 +261,7 @@ class _InstallPageBodyState extends State<_InstallPageBody>
       if (startmenu.value) args += ' startmenu';
       if (desktopicon.value) args += ' desktopicon';
       if (printer.value) args += ' printer';
+      if (launchAfterInstall.value) args += ' launch';
       bind.installInstallMe(options: args, path: controller.text);
     }
 

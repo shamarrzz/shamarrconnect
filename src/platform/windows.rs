@@ -1728,7 +1728,16 @@ copy /Y \"{tmp_path}\\Uninstall {app_name}.lnk\" \"{path}\\\"
         import_config = get_import_config(&exe),
     );
     run_cmds(cmds, debug, "install")?;
-    run_after_run_cmds(silent);
+    // When called from the install UI, `silent` is false but the user's
+    // "Launch after install" checkbox is communicated via the options string.
+    // If the checkbox is present and unchecked the token is absent, so honour
+    // that.  When called via --silent-install (no UI), keep silent=true.
+    let launch = if silent {
+        false
+    } else {
+        options.split_whitespace().any(|o| o == "launch")
+    };
+    run_after_run_cmds(!launch);
     Ok(())
 }
 
@@ -3707,17 +3716,40 @@ sc start {app_name}
 
 fn run_after_run_cmds(silent: bool) {
     let (_, _, _, exe) = get_install_info();
-    if !silent {
-        log::debug!("Spawn new window");
-        allow_err!(std::process::Command::new("cmd")
-            .args(&["/c", "timeout", "/t", "2", "&", &format!("{exe}")])
+    // Start the tray first so the service is running before the main window
+    // tries to connect to it.
+    if Config::get_option("stop-service") != "Y" {
+        allow_err!(std::process::Command::new(&exe)
+            .arg("--tray")
             .creation_flags(winapi::um::winbase::CREATE_NO_WINDOW)
             .spawn());
+        // Give the tray/service a moment to initialise.
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+    } else {
+        std::thread::sleep(std::time::Duration::from_millis(300));
     }
-    if Config::get_option("stop-service") != "Y" {
-        allow_err!(std::process::Command::new(&exe).arg("--tray").spawn());
+    if !silent {
+        // Use ShellExecuteW so the new process gets a fresh window-station
+        // context on the user's interactive desktop.  A plain
+        // std::process::Command inherits CREATE_NO_WINDOW from the elevated
+        // install bat, which silently starts the app with no visible window.
+        log::debug!("Launching installed app via ShellExecuteW");
+        let wexe = wide_string(&exe);
+        let ok = unsafe {
+            ShellExecuteW(
+                std::ptr::null_mut(),
+                std::ptr::null(),
+                wexe.as_ptr(),
+                std::ptr::null(),
+                std::ptr::null(),
+                SW_SHOWNORMAL,
+            ) as i32
+                > 32
+        };
+        if !ok {
+            log::error!("ShellExecuteW failed to launch {}", exe);
+        }
     }
-    std::thread::sleep(std::time::Duration::from_millis(300));
 }
 
 #[inline]
