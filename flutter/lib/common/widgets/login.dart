@@ -432,12 +432,15 @@ Future<bool?> loginDialog() async {
   var username =
       TextEditingController(text: UserModel.getLocalUserInfo()?['name'] ?? '');
   var password = TextEditingController();
+  var confirmPassword = TextEditingController();
   final userFocusNode = FocusNode()..requestFocus();
   Timer(Duration(milliseconds: 100), () => userFocusNode..requestFocus());
 
   String? usernameMsg;
   String? passwordMsg;
+  String? confirmPasswordMsg;
   var isInProgress = false;
+  var isRegisterMode = false;
   final RxString curOP = ''.obs;
   // Track hover state for the close icon
   bool isCloseHovered = false;
@@ -457,6 +460,12 @@ Future<bool?> loginDialog() async {
     password.addListener(() {
       if (passwordMsg != null) {
         setState(() => passwordMsg = null);
+      }
+    });
+
+    confirmPassword.addListener(() {
+      if (confirmPasswordMsg != null) {
+        setState(() => confirmPasswordMsg = null);
       }
     });
 
@@ -548,6 +557,43 @@ Future<bool?> loginDialog() async {
       setState(() => isInProgress = false);
     }
 
+    onRegister() async {
+      if (username.text.isEmpty) {
+        setState(() => usernameMsg = translate('Username missed'));
+        return;
+      }
+      if (password.text.isEmpty) {
+        setState(() => passwordMsg = translate('Password missed'));
+        return;
+      }
+      if (password.text.length < 8) {
+        setState(() =>
+            passwordMsg = translate('Password must be at least 8 characters'));
+        return;
+      }
+      if (confirmPassword.text != password.text) {
+        setState(() => confirmPasswordMsg = translate('Passwords do not match'));
+        return;
+      }
+      curOP.value = 'rustdesk';
+      setState(() => isInProgress = true);
+      try {
+        final resp = await gFFI.userModel.register(
+          email: username.text,
+          password: password.text,
+          id: await bind.mainGetMyId(),
+          uuid: await bind.mainGetUuid(),
+        );
+        await handleLoginResponse(resp, true, close);
+      } on RequestException catch (err) {
+        passwordMsg = translate(err.cause);
+      } catch (err) {
+        passwordMsg = 'Unknown Error: $err';
+      }
+      curOP.value = '';
+      setState(() => isInProgress = false);
+    }
+
     thirdAuthWidget() => Obx(() {
           return Offstage(
             offstage: loginOptions.isEmpty,
@@ -596,7 +642,7 @@ Future<bool?> loginDialog() async {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          translate('Login'),
+          isRegisterMode ? translate('Create account') : translate('Login'),
         ).marginOnly(top: MyTheme.dialogPadding),
         MouseRegion(
           onEnter: (_) => setState(() => isCloseHovered = true),
@@ -624,31 +670,106 @@ Future<bool?> loginDialog() async {
     );
     final titlePadding = EdgeInsets.fromLTRB(MyTheme.dialogPadding, 0, 0, 0);
 
+    registerContent() => Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 8.0),
+            DialogTextField(
+                title: translate('Email'),
+                controller: username,
+                focusNode: userFocusNode,
+                prefixIcon: DialogTextField.kUsernameIcon,
+                keyboardType: TextInputType.emailAddress,
+                errorText: usernameMsg),
+            PasswordWidget(
+              controller: password,
+              autoFocus: false,
+              reRequestFocus: true,
+              errorText: passwordMsg,
+            ),
+            PasswordWidget(
+              controller: confirmPassword,
+              autoFocus: false,
+              title: translate('Confirm password'),
+              errorText: confirmPasswordMsg,
+            ),
+            if (isInProgress) const LinearProgressIndicator(),
+            const SizedBox(height: 12.0),
+            FittedBox(
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                  Container(
+                    height: 38,
+                    width: 200,
+                    child: Obx(() => ElevatedButton(
+                          child: Text(
+                            translate('Create account'),
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          onPressed: curOP.value.isEmpty ||
+                                  curOP.value == 'rustdesk'
+                              ? onRegister
+                              : null,
+                        )),
+                  ),
+                ])),
+            TextButton(
+              onPressed: () => setState(() {
+                isRegisterMode = false;
+                usernameMsg = null;
+                passwordMsg = null;
+                confirmPasswordMsg = null;
+                password.clear();
+                confirmPassword.clear();
+              }),
+              child: Text(
+                translate('Back to login'),
+                style: TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        );
+
     return CustomAlertDialog(
       title: title,
       titlePadding: titlePadding,
       contentBoxConstraints: BoxConstraints(minWidth: 400),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(
-            height: 8.0,
-          ),
-          LoginWidgetUserPass(
-            username: username,
-            pass: password,
-            usernameMsg: usernameMsg,
-            passMsg: passwordMsg,
-            isInProgress: isInProgress,
-            curOP: curOP,
-            onLogin: onLogin,
-            userFocusNode: userFocusNode,
-          ),
-          thirdAuthWidget(),
-        ],
-      ),
+      content: isRegisterMode
+          ? registerContent()
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  height: 8.0,
+                ),
+                LoginWidgetUserPass(
+                  username: username,
+                  pass: password,
+                  usernameMsg: usernameMsg,
+                  passMsg: passwordMsg,
+                  isInProgress: isInProgress,
+                  curOP: curOP,
+                  onLogin: onLogin,
+                  userFocusNode: userFocusNode,
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    isRegisterMode = true;
+                    usernameMsg = null;
+                    passwordMsg = null;
+                    password.clear();
+                  }),
+                  child: Text(
+                    translate('Create account'),
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+                thirdAuthWidget(),
+              ],
+            ),
       onCancel: onDialogCancel,
-      onSubmit: onLogin,
+      onSubmit: isRegisterMode ? onRegister : onLogin,
     );
   });
 

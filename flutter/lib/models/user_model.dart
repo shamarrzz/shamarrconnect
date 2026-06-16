@@ -201,6 +201,49 @@ class UserModel {
     return getLoginResponseFromAuthBody(body);
   }
 
+  /// throw [RequestException]
+  Future<LoginResponse> register({
+    required String email,
+    required String password,
+    required String id,
+    required String uuid,
+    String deviceName = '',
+    String os = '',
+  }) async {
+    final url = await bind.mainGetApiServer();
+    final resp = await http.post(
+      Uri.parse('$url/api/register'),
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'id': id,
+        'uuid': uuid,
+        'device_name': deviceName,
+        'os': os,
+      }),
+    );
+
+    final Map<String, dynamic> body;
+    try {
+      body = jsonDecode(decode_http_response(resp));
+    } catch (e) {
+      debugPrint("register: jsonDecode resp body failed: ${e.toString()}");
+      if (resp.statusCode != 200 && resp.statusCode != 201) {
+        BotToast.showText(
+            contentColor: Colors.red, text: 'HTTP ${resp.statusCode}');
+      }
+      rethrow;
+    }
+    if (resp.statusCode != 200 && resp.statusCode != 201) {
+      throw RequestException(resp.statusCode, body['error'] ?? '');
+    }
+    if (body['error'] != null) {
+      throw RequestException(0, body['error']);
+    }
+
+    return getLoginResponseFromAuthBody(body);
+  }
+
   LoginResponse getLoginResponseFromAuthBody(Map<String, dynamic> body) {
     final LoginResponse loginResponse;
     try {
