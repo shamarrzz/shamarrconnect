@@ -1974,6 +1974,11 @@ class DummyAb extends BaseAb {
 }
 
 Map<String, dynamic> _jsonDecodeRespMap(String body, int statusCode) {
+  // An empty (or literal "null") 200 body is a valid "no data" response.
+  // jsonDecode("") throws FormatException, so treat it as an empty map.
+  if (statusCode == 200 && (body.isEmpty || body.toLowerCase() == 'null')) {
+    return {};
+  }
   try {
     Map<String, dynamic> json = jsonDecode(body);
     return json;
@@ -1987,6 +1992,11 @@ Map<String, dynamic> _jsonDecodeRespMap(String body, int statusCode) {
 }
 
 List<dynamic> _jsonDecodeRespList(String body, int statusCode) {
+  // An empty (or literal "null") 200 body is a valid "no data" response.
+  // jsonDecode("") throws FormatException, so treat it as an empty list.
+  if (statusCode == 200 && (body.isEmpty || body.toLowerCase() == 'null')) {
+    return [];
+  }
   try {
     List<dynamic> json = jsonDecode(body);
     return json;
