@@ -424,11 +424,12 @@ impl Client {
             NatType::from_i32(my_nat_type).unwrap_or(NatType::UNKNOWN_NAT)
         };
 
-        if !key.is_empty() && !token.is_empty() {
-            // mainly for the security of token
-            // Fall back gracefully if server doesn't initiate KeyExchange (stock hbbs doesn't speak first on TCP)
+        // secure_tcp skipped: stock hbbs (1.1.15) doesn't initiate KeyExchange on TCP connections,
+        // so waiting for it causes an 18-second timeout before every connect. The token in
+        // PunchHoleRequest is ignored by stock hbbs anyway, so there is nothing to protect here.
+        if false && !key.is_empty() && !token.is_empty() {
             if let Err(e) = secure_tcp(&mut socket, &key).await {
-                log::warn!("secure_tcp skipped (server likely doesn't support server-initiated key exchange): {}", e);
+                log::warn!("secure_tcp: {}", e);
             }
         } else if let Some(udp) = udp.1.as_ref() {
             let tm = Instant::now();
@@ -854,11 +855,10 @@ impl Client {
                 .await
                 .with_context(|| "Failed to connect to rendezvous server")?;
 
-            if !key.is_empty() && !token.is_empty() {
-                // mainly for the security of token
-                // Fall back gracefully if server doesn't initiate KeyExchange (stock hbbs doesn't speak first on TCP)
+            // secure_tcp skipped: same reason as in _start_inner above (stock hbbs 1.1.15).
+            if false && !key.is_empty() && !token.is_empty() {
                 if let Err(e) = secure_tcp(&mut socket, key).await {
-                    log::warn!("secure_tcp skipped (server likely doesn't support server-initiated key exchange): {}", e);
+                    log::warn!("secure_tcp: {}", e);
                 }
             }
 
