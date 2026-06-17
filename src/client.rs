@@ -2731,6 +2731,7 @@ impl LoginConfigHandler {
             .into(),
             hwid,
             avatar,
+            api_auth_token: hbb_common::config::LocalConfig::get_option("access_token"),
             ..Default::default()
         };
         match self.conn_type {

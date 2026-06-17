@@ -2241,6 +2241,52 @@ impl Connection {
         false
     }
 
+    async fn verify_same_account_token(&self, incoming_token: &str) -> bool {
+        let local_user_json = hbb_common::config::LocalConfig::get_option("user_info");
+        if local_user_json.is_empty() {
+            return false;
+        }
+        let local_id: String = match serde_json::from_str::<serde_json::Value>(&local_user_json) {
+            Ok(v) => v["id"].as_str().unwrap_or("").to_owned(),
+            Err(_) => return false,
+        };
+        if local_id.is_empty() {
+            return false;
+        }
+        let api_url = crate::get_api_server(
+            Config::get_option("api-server"),
+            Config::get_option("custom-rendezvous-server"),
+        );
+        let url = format!("{}/api/currentUser", api_url);
+        let client = match reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+        {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
+        let resp = match client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", incoming_token))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({"id": "", "uuid": ""}).to_string())
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(_) => return false,
+        };
+        if resp.status() != 200 {
+            return false;
+        }
+        let body: serde_json::Value = match resp.json().await {
+            Ok(v) => v,
+            Err(_) => return false,
+        };
+        let incoming_id = body["id"].as_str().unwrap_or("");
+        incoming_id == local_id
+    }
+
     #[inline]
     pub fn is_permission_enabled_locally(enable_prefix_option: &str) -> bool {
         #[cfg(feature = "flutter")]
@@ -2526,6 +2572,20 @@ impl Connection {
             let is_logon = || crate::platform::is_prelogin() || crate::platform::is_locked();
             #[cfg(any(target_os = "android", target_os = "ios"))]
             let is_logon = || crate::platform::is_prelogin();
+
+            if !lr.api_auth_token.is_empty() {
+                if self.verify_same_account_token(&lr.api_auth_token).await {
+                    log::info!("same-account auto-auth approved for {}", lr.my_id);
+                    self.authorized = true;
+                    #[cfg(target_os = "linux")]
+                    self.linux_headless_handle.wait_desktop_cm_ready().await;
+                    if !self.send_logon_response_and_keep_alive().await {
+                        return false;
+                    }
+                    self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), true);
+                    return true;
+                }
+            }
 
             let allow_logon_screen_password =
                 crate::get_builtin_option(keys::OPTION_ALLOW_LOGON_SCREEN_PASSWORD) == "Y"
