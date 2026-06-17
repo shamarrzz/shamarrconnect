@@ -2246,11 +2246,12 @@ impl Connection {
         if local_user_json.is_empty() {
             return false;
         }
-        let local_id: String = match serde_json::from_str::<serde_json::Value>(&local_user_json) {
-            Ok(v) => v["id"].as_str().unwrap_or("").to_owned(),
+        // user_info is a serialized UserPayload; the "name" field holds the account email
+        let local_name: String = match serde_json::from_str::<serde_json::Value>(&local_user_json) {
+            Ok(v) => v["name"].as_str().unwrap_or("").to_owned(),
             Err(_) => return false,
         };
-        if local_id.is_empty() {
+        if local_name.is_empty() {
             return false;
         }
         let api_url = crate::get_api_server(
@@ -2283,8 +2284,8 @@ impl Connection {
             Ok(v) => v,
             Err(_) => return false,
         };
-        let incoming_id = body["id"].as_str().unwrap_or("");
-        incoming_id == local_id
+        let incoming_name = body["name"].as_str().unwrap_or("");
+        incoming_name == local_name
     }
 
     #[inline]
