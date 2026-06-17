@@ -1536,7 +1536,8 @@ fn get_after_install(
 }
 
 pub fn install_me(options: &str, path: String, silent: bool, debug: bool) -> ResultType<()> {
-    let uninstall_str = get_uninstall(false, false);
+    // clean_appdata=false: portable packer extracts to %LOCALAPPDATA%\<app_name> (case-insensitive match); deleting it here wipes data\ before XCOPY runs.
+    let uninstall_str = get_uninstall(false, false, false);
     let mut path = path.trim_end_matches('\\').to_owned();
     let (subkey, _path, start_menu, exe) = get_default_install_info();
     let mut exe = exe;
@@ -1789,7 +1790,7 @@ fn get_before_uninstall(kill_self: bool) -> String {
 /// The `uninstall_printer` parameter determines whether the command to uninstall the remote printer
 /// is included in the generated uninstall script. If `uninstall_printer` is `false`, the printer
 /// related command is omitted from the script.
-fn get_uninstall(kill_self: bool, uninstall_printer: bool) -> String {
+fn get_uninstall(kill_self: bool, uninstall_printer: bool, clean_appdata: bool) -> String {
     let reg_uninstall_string = get_reg("UninstallString");
     if reg_uninstall_string.to_lowercase().contains("msiexec.exe") {
         return reg_uninstall_string;
@@ -1817,18 +1818,28 @@ fn get_uninstall(kill_self: bool, uninstall_printer: bool) -> String {
     if exist \"{start_menu}\" rd /s /q \"{start_menu}\"
     if exist \"%PUBLIC%\\Desktop\\{app_name}.lnk\" del /f /q \"%PUBLIC%\\Desktop\\{app_name}.lnk\"
     if exist \"%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\{app_name} Tray.lnk\" del /f /q \"%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\{app_name} Tray.lnk\"
-    if exist \"%APPDATA%\\{app_name}\" rd /s /q \"%APPDATA%\\{app_name}\"
-    if exist \"%LOCALAPPDATA%\\{app_name}\" rd /s /q \"%LOCALAPPDATA%\\{app_name}\"
-    if exist \"%APPDATA%\\RustDesk\" rd /s /q \"%APPDATA%\\RustDesk\"
+    {appdata_cleanup}
     ",
         before_uninstall=get_before_uninstall(kill_self),
         uninstall_amyuni_idd=get_uninstall_amyuni_idd(),
         app_name = crate::get_app_name(),
+        appdata_cleanup = if clean_appdata {
+            let app_name = crate::get_app_name();
+            format!(
+                "
+    if exist \"%APPDATA%\\{app_name}\" rd /s /q \"%APPDATA%\\{app_name}\"
+    if exist \"%LOCALAPPDATA%\\{app_name}\" rd /s /q \"%LOCALAPPDATA%\\{app_name}\"
+    if exist \"%APPDATA%\\RustDesk\" rd /s /q \"%APPDATA%\\RustDesk\"
+                "
+            )
+        } else {
+            String::new()
+        },
     )
 }
 
 pub fn uninstall_me(kill_self: bool) -> ResultType<()> {
-    run_cmds(get_uninstall(kill_self, true), true, "uninstall")
+    run_cmds(get_uninstall(kill_self, true, true), true, "uninstall")
 }
 
 fn write_cmds(cmds: String, ext: &str, tip: &str) -> ResultType<std::path::PathBuf> {
