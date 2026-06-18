@@ -2624,7 +2624,6 @@ impl Connection {
                 log::info!("same_account: api_auth_token present (len={}), attempting verify for {}", lr.api_auth_token.len(), lr.my_id);
                 if self.verify_same_account_token(&lr.api_auth_token).await {
                     log::info!("same-account auto-auth approved for {}", lr.my_id);
-                    self.authorized = true;
                     #[cfg(target_os = "linux")]
                     self.linux_headless_handle.wait_desktop_cm_ready().await;
                     if !self.send_logon_response_and_keep_alive().await {
