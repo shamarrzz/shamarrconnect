@@ -52,6 +52,7 @@ use hbb_common::{
 #[cfg(any(target_os = "android", target_os = "ios"))]
 use scrap::android::{call_main_service_key_event, call_main_service_pointer_input};
 use scrap::camera;
+use base64::{engine::general_purpose, Engine};
 use serde_derive::Serialize;
 use serde_json::{json, value::Value};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -2241,9 +2242,25 @@ impl Connection {
         false
     }
 
+    fn decode_jwt_email(token: &str) -> Option<String> {
+        let parts: Vec<&str> = token.split('.').collect();
+        if parts.len() != 3 {
+            return None;
+        }
+        // JWT payload is base64url without padding
+        let payload = general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).ok()?;
+        let v: serde_json::Value = serde_json::from_slice(&payload).ok()?;
+        // Prefer the "email" claim (set by sc-cloud), fall back to "sub"
+        v.get("email")
+            .and_then(|e| e.as_str())
+            .or_else(|| v.get("sub").and_then(|s| s.as_str()))
+            .map(|s| s.to_owned())
+    }
+
     async fn verify_same_account_token(&self, incoming_token: &str) -> bool {
         let local_user_json = hbb_common::config::LocalConfig::get_option("user_info");
         if local_user_json.is_empty() {
+            log::info!("same_account: no user_info on receiver, skipping auto-auth");
             return false;
         }
         // user_info is a serialized UserPayload; the "name" field holds the account email
@@ -2252,13 +2269,34 @@ impl Connection {
             Err(_) => return false,
         };
         if local_name.is_empty() {
+            log::info!("same_account: user_info has empty name");
             return false;
         }
+        if Config::get_option("same_account_auto_auth") == "N" {
+            log::info!("same_account: disabled by same_account_auto_auth=N");
+            return false;
+        }
+        log::info!("same_account: receiver user_info name='{}'", local_name);
+
+        // Fast path: decode the JWT locally (no network, works offline, no timeout)
+        // This extracts the account email from the token claims.
+        if let Some(token_email) = Self::decode_jwt_email(incoming_token) {
+            log::info!("same_account: decoded JWT email/sub='{}'", token_email);
+            if token_email == local_name {
+                log::info!("same_account: local JWT match -> auto-auth success");
+                return true;
+            }
+        } else {
+            log::info!("same_account: failed to decode JWT payload");
+        }
+
+        // Fallback: original cloud verification (for extra safety or if claims differ)
         let api_url = crate::get_api_server(
             Config::get_option("api-server"),
             Config::get_option("custom-rendezvous-server"),
         );
         let url = format!("{}/api/currentUser", api_url);
+        log::info!("same_account: fallback calling {} with token.len={}", url, incoming_token.len());
         let client = match reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()
@@ -2275,16 +2313,24 @@ impl Connection {
             .await
         {
             Ok(r) => r,
-            Err(_) => return false,
+            Err(e) => {
+                log::info!("same_account: /currentUser request error: {}", e);
+                return false;
+            }
         };
+        log::info!("same_account: /currentUser response status={}", resp.status());
         if resp.status() != 200 {
             return false;
         }
         let body: serde_json::Value = match resp.json().await {
             Ok(v) => v,
-            Err(_) => return false,
+            Err(e) => {
+                log::info!("same_account: /currentUser json parse error: {}", e);
+                return false;
+            }
         };
         let incoming_name = body["name"].as_str().unwrap_or("");
+        log::info!("same_account: /currentUser body name='{}', matches local={}", incoming_name, incoming_name == local_name);
         incoming_name == local_name
     }
 
@@ -2575,6 +2621,7 @@ impl Connection {
             let is_logon = || crate::platform::is_prelogin();
 
             if !lr.api_auth_token.is_empty() {
+                log::info!("same_account: api_auth_token present (len={}), attempting verify for {}", lr.api_auth_token.len(), lr.my_id);
                 if self.verify_same_account_token(&lr.api_auth_token).await {
                     log::info!("same-account auto-auth approved for {}", lr.my_id);
                     self.authorized = true;
@@ -2585,6 +2632,8 @@ impl Connection {
                     }
                     self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), true);
                     return true;
+                } else {
+                    log::info!("same_account: verify_same_account_token returned false for {}", lr.my_id);
                 }
             }
 

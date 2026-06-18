@@ -2734,6 +2734,10 @@ impl LoginConfigHandler {
             api_auth_token: hbb_common::config::LocalConfig::get_option("access_token"),
             ..Default::default()
         };
+        log::info!(
+            "same_account: sending LoginRequest api_auth_token.len={}",
+            hbb_common::config::LocalConfig::get_option("access_token").len()
+        );
         match self.conn_type {
             ConnType::FILE_TRANSFER => lr.set_file_transfer(FileTransfer {
                 dir: self.get_remote_dir(),
