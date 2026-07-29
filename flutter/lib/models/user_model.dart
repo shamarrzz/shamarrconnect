@@ -47,7 +47,7 @@ class UserModel {
     });
   }
 
-  void refreshCurrentUser() async {
+  Future<void> refreshCurrentUser() async {
     if (bind.isDisableAccount()) return;
     networkError.value = '';
     final token = bind.mainGetLocalOption(key: 'access_token');
