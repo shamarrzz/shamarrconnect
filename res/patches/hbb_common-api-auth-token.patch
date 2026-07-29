@@ -1,0 +1,10 @@
+diff --git a/protos/message.proto b/protos/message.proto
+index 8b21368..8eb4463 100644
+--- a/protos/message.proto
++++ b/protos/message.proto
+@@ -88,6 +88,7 @@ message LoginRequest {
+   string my_platform = 13;
+   bytes hwid = 14;
+   string avatar = 17;
++  string api_auth_token = 18;
+ }
