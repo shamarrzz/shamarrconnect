@@ -137,7 +137,11 @@ class UserModel {
     displayName.value = user.displayName;
     avatar.value = user.avatar;
     isAdmin.value = user.isAdmin;
-    bind.mainSetLocalOption(key: 'user_info', value: jsonEncode(user));
+    final encoded = jsonEncode(user);
+    // Local (UI process) + shared Config via IPC so the Windows service
+    // (same-account auto-auth) can read the logged-in account.
+    bind.mainSetLocalOption(key: 'user_info', value: encoded);
+    bind.mainSetOption(key: 'user_info', value: encoded);
     if (isWeb) {
       // ugly here, tmp solution
       bind.mainSetLocalOption(key: 'verifier', value: user.verifier ?? '');

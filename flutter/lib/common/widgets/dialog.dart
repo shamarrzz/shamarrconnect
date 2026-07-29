@@ -477,6 +477,9 @@ class Dialog2FaField extends ValidationField {
     this.errorText,
     this.readyCallback,
     this.onChanged,
+    /// When true, auto-submit as soon as 6 digits are entered.
+    /// Default false so the user can review the full code before Verify.
+    this.autoSubmit = false,
   }) : super(key: key);
 
   final TextEditingController controller;
@@ -487,56 +490,216 @@ class Dialog2FaField extends ValidationField {
   final String? errorText;
   final VoidCallback? readyCallback;
   final VoidCallback? onChanged;
+  final bool autoSubmit;
   final errMsg = translate('2FA code must be 6 digits.');
 
   @override
   Widget build(BuildContext context) {
-    return DialogVerificationCodeField(
+    // Six-digit TOTP pin boxes — previous single-field UI often looked like /
+    // behaved as a 1-character input on some platforms.
+    return _SixDigitPinField(
       title: title ?? translate('2FA code'),
       controller: controller,
       errorText: errorText,
       autoFocus: autoFocus,
-      reRequestFocus: reRequestFocus,
-      hintText: hintText,
-      readyCallback: readyCallback,
-      onChanged: _onChanged,
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-      ],
+      readyCallback: autoSubmit ? readyCallback : null,
+      onChanged: onChanged,
     );
   }
 
-  String get text => controller.text;
-  bool get isAllDigits => text.codeUnits.every((e) => e >= 48 && e <= 57);
+  String get text => controller.text.trim();
+  bool get isAllDigits =>
+      text.isNotEmpty && text.codeUnits.every((e) => e >= 48 && e <= 57);
 
   @override
   bool get isReady => text.length == 6 && isAllDigits;
 
   @override
   String? validate() => isReady ? null : errMsg;
+}
 
-  _onChanged(StateSetter setState, SimpleWrapper<String?> errText) {
-    onChanged?.call();
+/// Six separate digit boxes for authenticator / TOTP codes.
+class _SixDigitPinField extends StatefulWidget {
+  const _SixDigitPinField({
+    required this.title,
+    required this.controller,
+    this.errorText,
+    this.autoFocus = true,
+    this.readyCallback,
+    this.onChanged,
+  });
 
-    if (text.length > 6) {
-      setState(() => errText.value = errMsg);
+  final String title;
+  final TextEditingController controller;
+  final String? errorText;
+  final bool autoFocus;
+  final VoidCallback? readyCallback;
+  final VoidCallback? onChanged;
+
+  @override
+  State<_SixDigitPinField> createState() => _SixDigitPinFieldState();
+}
+
+class _SixDigitPinFieldState extends State<_SixDigitPinField> {
+  static const int _len = 6;
+  late final List<TextEditingController> _boxes;
+  late final List<FocusNode> _nodes;
+  String _lastSynced = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _boxes = List.generate(_len, (_) => TextEditingController());
+    _nodes = List.generate(_len, (_) => FocusNode());
+    _syncFromParent(widget.controller.text);
+    widget.controller.addListener(_onParentChanged);
+    if (widget.autoFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _nodes[0].requestFocus();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onParentChanged);
+    for (final c in _boxes) {
+      c.dispose();
+    }
+    for (final n in _nodes) {
+      n.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onParentChanged() {
+    if (widget.controller.text == _lastSynced) return;
+    _syncFromParent(widget.controller.text);
+  }
+
+  void _syncFromParent(String raw) {
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    final clipped = digits.length > _len ? digits.substring(0, _len) : digits;
+    for (var i = 0; i < _len; i++) {
+      final ch = i < clipped.length ? clipped[i] : '';
+      if (_boxes[i].text != ch) {
+        _boxes[i].value = TextEditingValue(
+          text: ch,
+          selection: TextSelection.collapsed(offset: ch.length),
+        );
+      }
+    }
+    _lastSynced = clipped;
+  }
+
+  void _pushToParent() {
+    final combined = _boxes.map((c) => c.text).join();
+    _lastSynced = combined;
+    if (widget.controller.text != combined) {
+      widget.controller.text = combined;
+    }
+    widget.onChanged?.call();
+    if (combined.length == _len &&
+        combined.codeUnits.every((e) => e >= 48 && e <= 57)) {
+      widget.readyCallback?.call();
+    }
+  }
+
+  void _onBoxChanged(int index, String value) {
+    // Paste of full code into one box
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 1) {
+      final clipped = digits.length > _len ? digits.substring(0, _len) : digits;
+      for (var i = 0; i < _len; i++) {
+        _boxes[i].text = i < clipped.length ? clipped[i] : '';
+      }
+      _pushToParent();
+      final focusAt = clipped.length >= _len ? _len - 1 : clipped.length;
+      _nodes[focusAt].requestFocus();
       return;
     }
-
-    if (!isAllDigits) {
-      setState(() => errText.value = errMsg);
+    if (digits.isEmpty) {
+      _boxes[index].text = '';
+      _pushToParent();
       return;
     }
-
-    if (isReady) {
-      readyCallback?.call();
-      return;
+    _boxes[index].text = digits[digits.length - 1];
+    _pushToParent();
+    if (index < _len - 1) {
+      _nodes[index + 1].requestFocus();
+    } else {
+      _nodes[index].unfocus();
     }
+  }
 
-    if (errText.value != null) {
-      setState(() => errText.value = null);
+  KeyEventResult _onKey(int index, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.backspace) {
+      if (_boxes[index].text.isEmpty && index > 0) {
+        _boxes[index - 1].text = '';
+        _nodes[index - 1].requestFocus();
+        _pushToParent();
+        return KeyEventResult.handled;
+      }
     }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final err = widget.errorText;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.title, style: Theme.of(context).textTheme.titleSmall)
+            .marginOnly(bottom: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(_len, (i) {
+            return SizedBox(
+              width: 42,
+              child: Focus(
+                onKeyEvent: (node, event) => _onKey(i, event),
+                child: TextField(
+                  controller: _boxes[i],
+                  focusNode: _nodes[i],
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.number,
+                  // Allow paste of a full 6-digit code into any box.
+                  maxLength: 6,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                  ],
+                  decoration: InputDecoration(
+                    counterText: '',
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (v) => _onBoxChanged(i, v),
+                ),
+              ),
+            );
+          }),
+        ),
+        if (err != null && err.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              err,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
+    ).paddingSymmetric(vertical: 4.0);
   }
 }
 
@@ -569,11 +732,16 @@ class DialogEmailCodeField extends ValidationField {
       errorText: errorText,
       autoFocus: autoFocus,
       reRequestFocus: reRequestFocus,
-      hintText: hintText,
+      hintText: hintText ?? '123456',
       readyCallback: readyCallback,
       helperText: translate('verification_tip'),
       onChanged: _onChanged,
       keyboardType: TextInputType.visiblePassword,
+      textLength: 6,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9A-Za-z]')),
+        LengthLimitingTextInputFormatter(6),
+      ],
     );
   }
 
@@ -688,14 +856,21 @@ class _DialogVerificationCodeField extends State<DialogVerificationCodeField> {
 
   @override
   Widget build(BuildContext context) {
+    final formatters = <TextInputFormatter>[
+      ...?widget.inputFormatters,
+      if (widget.textLength != null)
+        LengthLimitingTextInputFormatter(widget.textLength),
+    ];
     return DialogTextField(
       title: widget.title,
       controller: widget.controller,
       errorText: widget.errorText ?? errorText.value,
       focusNode: _focusNode,
       helperText: widget.helperText,
+      hintText: widget.hintText,
       keyboardType: widget.keyboardType,
-      inputFormatters: widget.inputFormatters,
+      inputFormatters: formatters.isEmpty ? null : formatters,
+      maxLength: widget.textLength,
     );
   }
 }
@@ -2225,6 +2400,7 @@ void change2fa({Function()? callback}) async {
       errorText: errorText,
       onChanged: () => setState(() => errorText = null),
       title: translate('Verification code'),
+      autoSubmit: true,
       readyCallback: () {
         onVerify();
         setState(() {});

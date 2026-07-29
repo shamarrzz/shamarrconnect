@@ -52,7 +52,6 @@ use hbb_common::{
 #[cfg(any(target_os = "android", target_os = "ios"))]
 use scrap::android::{call_main_service_key_event, call_main_service_pointer_input};
 use scrap::camera;
-use base64::{engine::general_purpose, Engine};
 use serde_derive::Serialize;
 use serde_json::{json, value::Value};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -74,7 +73,11 @@ use windows::Win32::Foundation::{CloseHandle, HANDLE};
 use crate::virtual_display_manager;
 pub type Sender = mpsc::UnboundedSender<(Instant, Arc<Message>)>;
 
+/// Short-lived cache of cloud-verified same-account tokens.
+/// Map: peer_id → (token_sha256_hex, expires_at).
 lazy_static::lazy_static! {
+    static ref SAME_ACCOUNT_TOKEN_CACHE: Arc<Mutex<HashMap<String, (String, Instant)>>> =
+        Default::default();
     static ref LOGIN_FAILURES: [Arc::<Mutex<HashMap<String, (i32, i32, i32)>>>; 2] = Default::default();
     static ref SESSIONS: Arc::<Mutex<HashMap<SessionKey, Session>>> = Default::default();
     static ref ALIVE_CONNS: Arc::<Mutex<Vec<i32>>> = Default::default();
@@ -398,6 +401,8 @@ const TEST_DELAY_TIMEOUT: Duration = Duration::from_secs(1);
 const SEC30: Duration = Duration::from_secs(30);
 const H1: Duration = Duration::from_secs(3600);
 const MILLI1: Duration = Duration::from_millis(1);
+/// How long a cloud-verified same-account token is trusted without re-calling the API.
+const SAME_ACCOUNT_CACHE_SECS: u64 = 15 * 60;
 const SEND_TIMEOUT_VIDEO: u64 = 12_000;
 const SEND_TIMEOUT_OTHER: u64 = SEND_TIMEOUT_VIDEO * 10;
 const SESSION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -2242,23 +2247,27 @@ impl Connection {
         false
     }
 
-    fn decode_jwt_email(token: &str) -> Option<String> {
-        let parts: Vec<&str> = token.split('.').collect();
-        if parts.len() != 3 {
-            return None;
-        }
-        // JWT payload is base64url without padding
-        let payload = general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).ok()?;
-        let v: serde_json::Value = serde_json::from_slice(&payload).ok()?;
-        // Prefer the "email" claim (set by sc-cloud), fall back to "sub"
-        v.get("email")
-            .and_then(|e| e.as_str())
-            .or_else(|| v.get("sub").and_then(|s| s.as_str()))
-            .map(|s| s.to_owned())
+    /// SHA-256 fingerprint of the full token (not decoded claims). Used for a
+    /// short-lived cache after a successful cloud verification so reconnects
+    /// stay fast without trusting unsigned JWT payloads.
+    fn token_fingerprint(token: &str) -> String {
+        let mut h = Sha256::new();
+        h.update(token.as_bytes());
+        format!("{:x}", h.finalize())
     }
 
-    async fn verify_same_account_token(&self, incoming_token: &str) -> bool {
-        let local_user_json = hbb_common::config::LocalConfig::get_option("user_info");
+    /// Same-account auto-auth: only accept tokens that sc-cloud validates.
+    /// Unsigned local JWT payload decoding was removed — a forged token with a
+    /// matching email claim could otherwise bypass the password prompt.
+    async fn verify_same_account_token(&self, incoming_token: &str, peer_id: &str) -> bool {
+        // Prefer shared Config (IPC-synced from Flutter UI via mainSetOption) so
+        // the Windows service (SYSTEM) sees the logged-in account.
+        let local_user_json = crate::ui_interface::get_option("user_info".to_owned());
+        let local_user_json = if local_user_json.is_empty() {
+            hbb_common::config::LocalConfig::get_option("user_info")
+        } else {
+            local_user_json
+        };
         if local_user_json.is_empty() {
             log::info!("same_account: no user_info on receiver, skipping auto-auth");
             return false;
@@ -2272,31 +2281,54 @@ impl Connection {
             log::info!("same_account: user_info has empty name");
             return false;
         }
-        if Config::get_option("same_account_auto_auth") == "N" {
-            log::info!("same_account: disabled by same_account_auto_auth=N");
+        // Hardening: same-account passwordless auto-auth is OPT-IN only.
+        // Default is off so every remote reconnection requires the normal
+        // password / device-2FA path (account MFA already guards sign-in).
+        // Set option same_account_auto_auth=Y to re-enable passwordless.
+        if Config::get_option("same_account_auto_auth") != "Y" {
+            log::info!(
+                "same_account: auto-auth not enabled (set same_account_auto_auth=Y to allow); require password/2FA"
+            );
             return false;
         }
         log::info!("same_account: receiver user_info name='{}'", local_name);
 
-        // Fast path: decode the JWT locally (no network, works offline, no timeout)
-        // This extracts the account email from the token claims.
-        if let Some(token_email) = Self::decode_jwt_email(incoming_token) {
-            log::info!("same_account: decoded JWT email/sub='{}'", token_email);
-            if token_email == local_name {
-                log::info!("same_account: local JWT match -> auto-auth success");
-                return true;
-            }
-        } else {
-            log::info!("same_account: failed to decode JWT payload");
+        let flag =
+            crate::ui_interface::get_peer_option(peer_id.to_string(), "same_account_auto".to_string());
+        if flag == "N" {
+            log::info!(
+                "same_account: peer {} explicitly disabled for passwordless (flag='N')",
+                peer_id
+            );
+            return false;
         }
 
-        // Fallback: original cloud verification (for extra safety or if claims differ)
+        // Cache hit: same peer + same token fingerprint, verified recently.
+        let fp = Self::token_fingerprint(incoming_token);
+        {
+            let cache = SAME_ACCOUNT_TOKEN_CACHE.lock().unwrap();
+            if let Some((cached_fp, exp)) = cache.get(peer_id) {
+                if cached_fp == &fp && *exp > Instant::now() {
+                    log::info!(
+                        "same_account: cache hit for peer {} -> auto-auth success",
+                        peer_id
+                    );
+                    return true;
+                }
+            }
+        }
+
+        // Cloud verification — sc-cloud verifies the JWT signature (HS256).
         let api_url = crate::get_api_server(
             Config::get_option("api-server"),
             Config::get_option("custom-rendezvous-server"),
         );
         let url = format!("{}/api/currentUser", api_url);
-        log::info!("same_account: fallback calling {} with token.len={}", url, incoming_token.len());
+        log::info!(
+            "same_account: cloud verify {} token.len={}",
+            url,
+            incoming_token.len()
+        );
         let client = match reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()
@@ -2318,7 +2350,10 @@ impl Connection {
                 return false;
             }
         };
-        log::info!("same_account: /currentUser response status={}", resp.status());
+        log::info!(
+            "same_account: /currentUser response status={}",
+            resp.status()
+        );
         if resp.status() != 200 {
             return false;
         }
@@ -2330,8 +2365,29 @@ impl Connection {
             }
         };
         let incoming_name = body["name"].as_str().unwrap_or("");
-        log::info!("same_account: /currentUser body name='{}', matches local={}", incoming_name, incoming_name == local_name);
-        incoming_name == local_name
+        log::info!(
+            "same_account: /currentUser body name='{}', matches local={}",
+            incoming_name,
+            incoming_name == local_name
+        );
+        if incoming_name == local_name {
+            let _ = crate::ui_interface::set_peer_option(
+                peer_id.to_string(),
+                "same_account_auto".to_string(),
+                "Y".to_string(),
+            );
+            let exp = Instant::now() + Duration::from_secs(SAME_ACCOUNT_CACHE_SECS);
+            SAME_ACCOUNT_TOKEN_CACHE
+                .lock()
+                .unwrap()
+                .insert(peer_id.to_string(), (fp, exp));
+            log::info!(
+                "same_account: cloud match (flag='{}' -> allow + marked Y) -> auto-auth success",
+                flag
+            );
+            return true;
+        }
+        false
     }
 
     #[inline]
@@ -2622,7 +2678,7 @@ impl Connection {
 
             if !lr.api_auth_token.is_empty() {
                 log::info!("same_account: api_auth_token present (len={}), attempting verify for {}", lr.api_auth_token.len(), lr.my_id);
-                if self.verify_same_account_token(&lr.api_auth_token).await {
+                if self.verify_same_account_token(&lr.api_auth_token, &lr.my_id).await {
                     log::info!("same-account auto-auth approved for {}", lr.my_id);
                     #[cfg(target_os = "linux")]
                     self.linux_headless_handle.wait_desktop_cm_ready().await;
@@ -2709,6 +2765,10 @@ impl Connection {
                     if err_msg.is_empty() {
                         #[cfg(target_os = "linux")]
                         self.linux_headless_handle.wait_desktop_cm_ready().await;
+                        if !lr.api_auth_token.is_empty() {
+                            // First successful password + token present → mark this remote for subsequent passwordless same-account
+                            let _ = crate::ui_interface::set_peer_option(lr.my_id.clone(), "same_account_auto".to_string(), "Y".to_string());
+                        }
                         if !self.send_logon_response_and_keep_alive().await {
                             return false;
                         }

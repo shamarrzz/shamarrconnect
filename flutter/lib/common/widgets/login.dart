@@ -497,6 +497,15 @@ Future<bool?> loginDialog() async {
             if (close != null) {
               close(true);
             }
+            // Post-login verification + helper for same-account persistence.
+            // This makes the feature understandable: verify connection, pull Accessible devices (your remotes),
+            // and guide user that passwordless only for *selected* remote devices (others still require password).
+            Future.delayed(Duration.zero, () async {
+              try {
+                await gFFI.userModel.refreshCurrentUser();
+                await gFFI.groupModel.pull(quiet: true);
+              } catch (_) {}
+            });
             return;
           }
           break;
@@ -938,7 +947,6 @@ Future<void> showEnrollmentCodeDialog(String code) async {
 
 Future<bool?> verificationCodeDialog(
     UserPayload? user, String? secret, bool isEmailVerification) async {
-  var autoLogin = true;
   var isInProgress = false;
   String? errorText;
 
@@ -946,24 +954,49 @@ Future<bool?> verificationCodeDialog(
 
   final res = await gFFI.dialogManager.show<bool>((setState, close, context) {
     void onVerify() async {
-      setState(() => isInProgress = true);
+      final digits = code.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.length != 6) {
+        setState(() =>
+            errorText = translate('2FA code must be 6 digits.'));
+        return;
+      }
+      setState(() {
+        isInProgress = true;
+        errorText = null;
+      });
 
       try {
         final resp = await gFFI.userModel.login(LoginRequest(
-            verificationCode: code.text,
-            tfaCode: isEmailVerification ? null : code.text,
+            verificationCode: digits,
+            // Always send tfaCode for authenticator MFA (tfa_check path).
+            tfaCode: isEmailVerification ? null : digits,
             secret: secret,
             username: user?.name,
             id: await bind.mainGetMyId(),
             uuid: await bind.mainGetUuid(),
-            autoLogin: autoLogin,
-            type: HttpType.kAuthReqTypeEmailCode));
+            autoLogin: true,
+            type: isEmailVerification
+                ? HttpType.kAuthReqTypeEmailCode
+                : HttpType.kAuthReqTypeTfaCode));
 
         switch (resp.type) {
           case HttpType.kAuthResTypeToken:
             if (resp.access_token != null) {
               await bind.mainSetLocalOption(
                   key: 'access_token', value: resp.access_token!);
+              // userModel.login already ran _parseAndUpdateUser when user is
+              // present; refresh to pull currentUser + IPC-sync same-account.
+              if (resp.user != null) {
+                await bind.mainSetLocalOption(
+                    key: 'user_info', value: jsonEncode(resp.user));
+                await bind.mainSetOption(
+                    key: 'user_info', value: jsonEncode(resp.user));
+              }
+              Future.delayed(Duration.zero, () async {
+                try {
+                  await gFFI.userModel.refreshCurrentUser();
+                } catch (_) {}
+              });
               close(true);
               return;
             }
@@ -981,27 +1014,39 @@ Future<bool?> verificationCodeDialog(
       setState(() => isInProgress = false);
     }
 
-    final codeField = isEmailVerification
+    // TOTP (account MFA): 6 pin boxes. Email path keeps the longer text field.
+    final ValidationField codeField = isEmailVerification
         ? DialogEmailCodeField(
             controller: code,
             errorText: errorText,
-            readyCallback: onVerify,
-            onChanged: () => errorText = null,
+            readyCallback: null, // explicit Verify only
+            onChanged: () => setState(() => errorText = null),
           )
         : Dialog2FaField(
             controller: code,
             errorText: errorText,
-            readyCallback: onVerify,
-            onChanged: () => errorText = null,
+            autoSubmit: false,
+            readyCallback: null,
+            onChanged: () => setState(() => errorText = null),
           );
 
-    getOnSubmit() => codeField.isReady ? onVerify : null;
+    bool canSubmit() {
+      final d = code.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+      return !isInProgress && d.length == 6;
+    }
 
     return CustomAlertDialog(
-        title: Text(translate("Verification code")),
-        contentBoxConstraints: BoxConstraints(maxWidth: 300),
+        title: Text(isEmailVerification
+            ? translate("Verification code")
+            : translate("enter-2fa-title")),
+        contentBoxConstraints: const BoxConstraints(minWidth: 320, maxWidth: 380),
         content: Column(
           children: [
+            if (!isEmailVerification)
+              const Text(
+                'Enter the 6-digit code from your authenticator app',
+                textAlign: TextAlign.center,
+              ).marginOnly(bottom: 12),
             Offstage(
                 offstage: !isEmailVerification || user?.email == null,
                 child: TextField(
@@ -1012,30 +1057,15 @@ Future<bool?> verificationCodeDialog(
                 ).workaroundFreezeLinuxMint()),
             isEmailVerification ? const SizedBox(height: 8) : const Offstage(),
             codeField,
-            /*
-            CheckboxListTile(
-              contentPadding: const EdgeInsets.all(0),
-              dense: true,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Row(children: [
-                Expanded(child: Text(translate("Trust this device")))
-              ]),
-              value: trustThisDevice,
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() => trustThisDevice = !trustThisDevice);
-              },
-            ),
-            */
-            // NOT use Offstage to wrap LinearProgressIndicator
             if (isInProgress) const LinearProgressIndicator(),
           ],
         ),
         onCancel: close,
-        onSubmit: getOnSubmit(),
+        onSubmit: canSubmit() ? onVerify : null,
         actions: [
           dialogButton("Cancel", onPressed: close, isOutline: true),
-          dialogButton("Verify", onPressed: getOnSubmit()),
+          dialogButton("Verify",
+              onPressed: canSubmit() ? onVerify : null),
         ]);
   });
   // For verification code, desktop update other models in login dialog, mobile need to close login dialog first,
