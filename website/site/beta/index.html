@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private beta invite — ShamarrConnect</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF;--ok:#166534;--okbg:#DCFCE7;--warn:#92400E;--warnbg:#FEF3C7}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65}
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+  .brand{font-weight:800;font-size:17px;text-decoration:none;color:var(--ink);display:flex;align-items:center;gap:10px}
+  .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center}
+  .wrap{max-width:720px;margin:0 auto;padding:48px 24px 80px}
+  .badge{display:inline-block;font-size:12px;font-weight:700;color:#1E3FA8;background:#EAF0FF;border-radius:100px;padding:6px 14px;margin-bottom:16px}
+  h1{font-size:32px;letter-spacing:-.02em;margin-bottom:12px;line-height:1.2}
+  h2{font-size:18px;margin:36px 0 12px}
+  p,li{font-size:15px;color:var(--muted)}
+  .lead{font-size:16.5px;margin-bottom:28px;max-width:560px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin:16px 0}
+  .card strong{color:var(--ink)}
+  ol,ul{padding-left:1.25rem;margin:10px 0}
+  li{margin:8px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#EEF2FF;color:#1E3FA8;padding:2px 6px;border-radius:6px}
+  .ok{background:var(--okbg);color:var(--ok);border-radius:10px;padding:12px 14px;font-size:14px;margin:16px 0}
+  .warn{background:var(--warnbg);color:var(--warn);border-radius:10px;padding:12px 14px;font-size:14px;margin:16px 0}
+  a{color:var(--brand);font-weight:600}
+  footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size:13px;color:var(--muted)}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:#fff!important;font-weight:700;font-size:14px;padding:12px 20px;border-radius:11px;text-decoration:none;margin-top:8px}
+  .btn:hover{background:#1E3FA8}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="brand" href="/">
+      <span class="mark"><svg width="18" height="18" viewBox="0 0 100 100"><path d="M50 26 C 32 30, 34 47, 50 50 C 66 53, 68 70, 50 74" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="50" cy="26" r="5.5" fill="#fff"/><circle cx="50" cy="74" r="5.5" fill="#fff"/></svg></span>
+      ShamarrConnect
+    </a>
+  </div>
+
+  <div class="wrap">
+    <span class="badge">Private beta · invite only</span>
+    <h1>Welcome — onboarding guide</h1>
+    <p class="lead">
+      ShamarrConnect is a self-hosted remote desktop product. During private beta,
+      accounts and downloads are invite-only. This page is your checklist.
+    </p>
+
+    <div class="ok">
+      <strong>What you need from your invite contact</strong><br>
+      1) Download access (Cloudflare Access email invite or a one-time link)<br>
+      2) An account (email + password) — self-signup is disabled<br>
+      3) Optional: a <em>device code</em> to join a second PC to the same account without sharing the password
+    </div>
+
+    <h2>1. Install the app (Windows)</h2>
+    <div class="card">
+      <ol>
+        <li>Open the gated download page (you will be asked to sign in with the invited email):<br>
+          <a href="/admin/get/">shamarrconnect.com/admin/get/</a>
+        </li>
+        <li>Download <strong>ShamarrConnect.exe</strong> (installer) and run it.</li>
+        <li>If Windows SmartScreen warns, choose <em>More info → Run anyway</em> (beta builds are not yet code-signed).</li>
+      </ol>
+      <p style="margin-top:12px">Server is preconfigured for ShamarrConnect cloud
+        (<code>api.shamarrconnect.com</code> / relay). You should not need custom server settings unless told otherwise.</p>
+    </div>
+
+    <h2>2. Sign in</h2>
+    <div class="card">
+      <ol>
+        <li>Open ShamarrConnect → <strong>Login</strong>.</li>
+        <li>Enter the email and password from your invite contact.</li>
+        <li>If MFA is enabled on your account, enter the <strong>6-digit code</strong> from your authenticator app
+          (Google Authenticator, Authy, Microsoft Authenticator, etc.).</li>
+      </ol>
+      <div class="warn">
+        <strong>MFA is required for hardened accounts.</strong>
+        After password, you should see six digit boxes. If login still works with password only,
+        turn on Account MFA in the app (next section).
+      </div>
+    </div>
+
+    <h2>3. Protect your account (MFA) — in the app</h2>
+    <div class="card">
+      <p>Account MFA is separate from “Security → 2FA” on a machine (device 2FA protects <em>incoming</em> remote sessions).</p>
+      <ul>
+        <li><strong>Account MFA</strong> — Settings → <strong>Account</strong> → <em>Account sign-in protection</em> (desktop)
+          or <em>Account MFA (sign-in)</em> (mobile). Enable → scan QR → enter code → <strong>save recovery codes</strong>.</li>
+        <li><strong>Device 2FA</strong> — Settings → Security → 2FA — optional extra protection when someone connects <em>to</em> this PC.</li>
+      </ul>
+      <p style="margin-top:10px">Disable needs your password + authenticator (or recovery) code.
+        If you lose your authenticator without recovery codes, only an admin can reset MFA.</p>
+    </div>
+
+    <h2>4. Connect two machines</h2>
+    <div class="card">
+      <ol>
+        <li>Install and sign in on <strong>both</strong> PCs with the same account (or join the second with a device code).</li>
+        <li>Note each machine’s ShamarrConnect ID on the home screen.</li>
+        <li>From machine A, enter machine B’s ID and connect.</li>
+        <li>You will be asked for the remote password / approval (same-account passwordless auto-connect is <strong>off by default</strong> in this beta for security).</li>
+      </ol>
+      <p style="margin-top:10px"><strong>Device code (second PC without password):</strong> on a logged-in PC use the “add another device” / device code flow → enter that code on the new PC under Login → join with code.</p>
+    </div>
+
+    <h2>5. Good habits during beta</h2>
+    <div class="card">
+      <ul>
+        <li>Use a unique, strong account password.</li>
+        <li>Keep MFA recovery codes offline (password manager “secure note” is fine).</li>
+        <li>Report bugs with: OS version, what you did, what you expected, screenshots if possible.</li>
+        <li>Do not share your account password; use device codes for extra machines.</li>
+        <li>Log out on shared computers.</li>
+      </ul>
+    </div>
+
+    <h2>6. Troubleshooting</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Wrong password</strong> — request a reset from your invite contact (admin).</li>
+        <li><strong>Stuck on MFA</strong> — check phone time is automatic; try a recovery code; ask admin for MFA reset.</li>
+        <li><strong>Cannot register</strong> — expected. Self-registration is disabled; you need an invite.</li>
+        <li><strong>Cannot download</strong> — use the invited email for Cloudflare Access; clear cookies if the wrong account is stuck.</li>
+        <li><strong>Connect fails</strong> — confirm both sides are online, IDs are correct, and firewall allows outbound connections.</li>
+      </ul>
+    </div>
+
+    <h2>Help</h2>
+    <div class="card">
+      <p>Email: <a href="mailto:hello@shamarrconnect.com?subject=ShamarrConnect%20beta%20help">hello@shamarrconnect.com</a></p>
+      <p style="margin-top:8px">Include your account email (not your password) and a short description of the issue.</p>
+      <a class="btn" href="/admin/get/">Go to downloads</a>
+    </div>
+  </div>
+
+  <footer>
+    ShamarrConnect private beta · <a href="/privacy/">Privacy</a> · <a href="/">Home</a>
+  </footer>
+</body>
+</html>

@@ -205,6 +205,81 @@ class UserModel {
     return getLoginResponseFromAuthBody(body);
   }
 
+  // ── Account MFA (sign-in protection) ──────────────────────────────────────
+
+  Future<Map<String, String>> _authJsonHeaders() async {
+    final token = bind.mainGetLocalOption(key: 'access_token');
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  Future<Map<String, dynamic>> _mfaRequest(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final url = await bind.mainGetApiServer();
+    final token = bind.mainGetLocalOption(key: 'access_token');
+    if (token.isEmpty) {
+      throw RequestException(401, 'Not logged in');
+    }
+    final headers = await _authJsonHeaders();
+    final uri = Uri.parse('$url$path');
+    final http.Response resp;
+    if (method == 'GET') {
+      resp = await http.get(uri, headers: headers);
+    } else {
+      resp = await http.post(uri,
+          headers: headers, body: body == null ? null : jsonEncode(body));
+    }
+    final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(decode_http_response(resp));
+    } catch (_) {
+      throw RequestException(resp.statusCode, 'Invalid server response');
+    }
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw RequestException(
+          resp.statusCode, (data['error'] ?? 'Request failed').toString());
+    }
+    if (data['error'] != null) {
+      throw RequestException(0, data['error'].toString());
+    }
+    return data;
+  }
+
+  /// Whether account MFA (login second factor) is enabled.
+  Future<bool> mfaStatus() async {
+    final data = await _mfaRequest('GET', '/api/user/mfa/status');
+    return data['enabled'] == true;
+  }
+
+  /// Start enrollment. Returns secret + otpauth_url for QR.
+  Future<Map<String, dynamic>> mfaSetup() async {
+    return _mfaRequest('POST', '/api/user/mfa/setup');
+  }
+
+  /// Confirm enrollment with a live TOTP code. Returns recovery_codes once.
+  Future<List<String>> mfaConfirm(String code) async {
+    final data =
+        await _mfaRequest('POST', '/api/user/mfa/confirm', body: {'code': code});
+    final codes = data['recovery_codes'];
+    if (codes is List) {
+      return codes.map((e) => e.toString()).toList();
+    }
+    return [];
+  }
+
+  /// Disable MFA (requires account password + TOTP or recovery code).
+  Future<void> mfaDisable({required String password, required String code}) async {
+    await _mfaRequest('POST', '/api/user/mfa/disable', body: {
+      'password': password,
+      'code': code,
+    });
+  }
+
   /// Generate a device enrollment code for the currently-logged-in account.
   /// Returns the 6-character code string, or null on failure.
   Future<String?> enrollGenerate() async {

@@ -24,6 +24,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
+import '../../common/widgets/account_mfa.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 
@@ -2043,6 +2044,11 @@ class _AccountState extends State<_Account> {
       controller: scrollController,
       children: [
         _Card(title: 'Account', children: [accountAction(), useInfo()]),
+        // Account MFA (login) — not the same as Security → device 2FA.
+        _Card(
+          title: 'Account sign-in protection',
+          children: const [AccountMfaCard()],
+        ),
       ],
     ).marginOnly(bottom: _kListViewBottomMargin);
   }

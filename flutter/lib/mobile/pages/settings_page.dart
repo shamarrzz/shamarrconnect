@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
@@ -13,6 +14,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common.dart';
 import '../../common/widgets/dialog.dart';
+import '../../common/widgets/account_mfa.dart';
 import '../../common/widgets/login.dart';
 import '../../consts.dart';
 import '../../models/model.dart';
@@ -706,6 +708,29 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                     loginDialog();
                   } else {
                     logOutConfirmDialog();
+                  }
+                },
+              ),
+              // Account MFA (sign-in). Device 2FA remains under Security section.
+              SettingsTile(
+                title: Text('Account MFA (sign-in)'),
+                description: Text(
+                    'Authenticator for login — not device remote-session 2FA'),
+                leading: Icon(Icons.shield_outlined),
+                onPressed: (context) async {
+                  if (gFFI.userModel.userName.value.isEmpty) {
+                    loginDialog();
+                    return;
+                  }
+                  try {
+                    final on = await gFFI.userModel.mfaStatus();
+                    if (on) {
+                      await showAccountMfaDisableDialog(context);
+                    } else {
+                      await showAccountMfaEnableDialog(context);
+                    }
+                  } catch (e) {
+                    BotToast.showText(text: e.toString());
                   }
                 },
               ),
