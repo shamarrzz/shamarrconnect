@@ -2281,14 +2281,12 @@ impl Connection {
             log::info!("same_account: user_info has empty name");
             return false;
         }
-        // Hardening: same-account passwordless auto-auth is OPT-IN only.
-        // Default is off so every remote reconnection requires the normal
-        // password / device-2FA path (account MFA already guards sign-in).
-        // Set option same_account_auto_auth=Y to re-enable passwordless.
-        if Config::get_option("same_account_auto_auth") != "Y" {
-            log::info!(
-                "same_account: auto-auth not enabled (set same_account_auto_auth=Y to allow); require password/2FA"
-            );
+        // Same-account passwordless is the DEFAULT product promise when both
+        // devices are signed into the same ShamarrConnect account (MFA protects
+        // *account login*, not peer connects). Opt out with same_account_auto_auth=N
+        // or per-peer same_account_auto=N.
+        if Config::get_option("same_account_auto_auth") == "N" {
+            log::info!("same_account: disabled by same_account_auto_auth=N");
             return false;
         }
         log::info!("same_account: receiver user_info name='{}'", local_name);

@@ -96,6 +96,13 @@ class GroupModel {
         .where((e) => oldOnlineIDs.contains(e.id))
         .map((e) => e.online = true)
         .toList();
+    // Same-account passwordless: mark accessible peers unless user opted out ("N").
+    for (final p in tmpPeers) {
+      final current = bind.mainGetPeerOption(id: p.id, key: 'same_account_auto');
+      if (current.isEmpty) {
+        bind.mainSetPeerOption(id: p.id, key: 'same_account_auto', value: 'Y');
+      }
+    }
     groupLoadError.value = '';
     _callbackPeerUpdate();
   }
