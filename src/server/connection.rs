@@ -73,11 +73,7 @@ use windows::Win32::Foundation::{CloseHandle, HANDLE};
 use crate::virtual_display_manager;
 pub type Sender = mpsc::UnboundedSender<(Instant, Arc<Message>)>;
 
-/// Short-lived cache of cloud-verified same-account tokens.
-/// Map: peer_id → (token_sha256_hex, expires_at).
 lazy_static::lazy_static! {
-    static ref SAME_ACCOUNT_TOKEN_CACHE: Arc<Mutex<HashMap<String, (String, Instant)>>> =
-        Default::default();
     static ref LOGIN_FAILURES: [Arc::<Mutex<HashMap<String, (i32, i32, i32)>>>; 2] = Default::default();
     static ref SESSIONS: Arc::<Mutex<HashMap<SessionKey, Session>>> = Default::default();
     static ref ALIVE_CONNS: Arc::<Mutex<Vec<i32>>> = Default::default();
@@ -279,6 +275,9 @@ pub struct Connection {
     tx_to_cm: mpsc::UnboundedSender<ipc::Data>,
     authorized: bool,
     require_2fa: Option<totp_rs::TOTP>,
+    /// Same-account connect waiting for account MFA (TOTP) from the peer.
+    /// Holds (api_auth_token, my_id, my_name).
+    pending_account_mfa: Option<(String, String, String)>,
     keyboard: bool,
     clipboard: bool,
     audio: bool,
@@ -401,8 +400,7 @@ const TEST_DELAY_TIMEOUT: Duration = Duration::from_secs(1);
 const SEC30: Duration = Duration::from_secs(30);
 const H1: Duration = Duration::from_secs(3600);
 const MILLI1: Duration = Duration::from_millis(1);
-/// How long a cloud-verified same-account token is trusted without re-calling the API.
-const SAME_ACCOUNT_CACHE_SECS: u64 = 15 * 60;
+
 const SEND_TIMEOUT_VIDEO: u64 = 12_000;
 const SEND_TIMEOUT_OTHER: u64 = SEND_TIMEOUT_VIDEO * 10;
 const SESSION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -458,6 +456,7 @@ impl Connection {
                 tx_video: Some(tx_video),
             },
             require_2fa: crate::auth_2fa::get_2fa(None),
+            pending_account_mfa: None,
             display_idx: *display_service::PRIMARY_DISPLAY_IDX,
             stream,
             server,
@@ -2247,19 +2246,45 @@ impl Connection {
         false
     }
 
-    /// SHA-256 fingerprint of the full token (not decoded claims). Used for a
-    /// short-lived cache after a successful cloud verification so reconnects
-    /// stay fast without trusting unsigned JWT payloads.
-    fn token_fingerprint(token: &str) -> String {
-        let mut h = Sha256::new();
-        h.update(token.as_bytes());
-        format!("{:x}", h.finalize())
+    /// Reconnect after a successful same-account connect (with or without account MFA).
+    /// Does not require password in LoginRequest — only session.tfa within timeout.
+    fn is_recent_same_account_session(&mut self) -> bool {
+        SESSIONS
+            .lock()
+            .unwrap()
+            .retain(|_, s| s.last_recv_time.lock().unwrap().elapsed() < SESSION_TIMEOUT);
+        let session = SESSIONS
+            .lock()
+            .unwrap()
+            .get(&self.session_key())
+            .map(|s| s.to_owned());
+        if let Some(session) = session {
+            if session.tfa && session.last_recv_time.lock().unwrap().elapsed() < SESSION_TIMEOUT {
+                log::info!("same_account: recent session reconnect — skip MFA re-prompt");
+                return true;
+            }
+        }
+        false
     }
 
-    /// Same-account auto-auth: only accept tokens that sc-cloud validates.
-    /// Unsigned local JWT payload decoding was removed — a forged token with a
-    /// matching email claim could otherwise bypass the password prompt.
-    async fn verify_same_account_token(&self, incoming_token: &str, peer_id: &str) -> bool {
+    /// Result of evaluating same-account auth for a LoginRequest.
+    /// - Approve: same account, no account-MFA (or MFA already satisfied for reconnect)
+    /// - RequireAccountMfa: same account + MFA on — prompt peer for authenticator code
+    /// - Reject: not same account / disabled
+    enum SameAccountEval {
+        Approve,
+        RequireAccountMfa,
+        Reject,
+    }
+
+    /// Same-account identity check via sc-cloud. Does **not** complete auth when
+    /// account MFA is enabled — returns RequireAccountMfa so every *new* connect
+    /// prompts for TOTP. Reconnects use `is_recent_same_account_session` instead.
+    async fn evaluate_same_account_token(
+        &self,
+        incoming_token: &str,
+        peer_id: &str,
+    ) -> SameAccountEval {
         // Prefer shared Config (IPC-synced from Flutter UI via mainSetOption) so
         // the Windows service (SYSTEM) sees the logged-in account.
         let local_user_json = crate::ui_interface::get_option("user_info".to_owned());
@@ -2270,24 +2295,19 @@ impl Connection {
         };
         if local_user_json.is_empty() {
             log::info!("same_account: no user_info on receiver, skipping auto-auth");
-            return false;
+            return SameAccountEval::Reject;
         }
-        // user_info is a serialized UserPayload; the "name" field holds the account email
         let local_name: String = match serde_json::from_str::<serde_json::Value>(&local_user_json) {
             Ok(v) => v["name"].as_str().unwrap_or("").to_owned(),
-            Err(_) => return false,
+            Err(_) => return SameAccountEval::Reject,
         };
         if local_name.is_empty() {
             log::info!("same_account: user_info has empty name");
-            return false;
+            return SameAccountEval::Reject;
         }
-        // Same-account passwordless is the DEFAULT product promise when both
-        // devices are signed into the same ShamarrConnect account (MFA protects
-        // *account login*, not peer connects). Opt out with same_account_auto_auth=N
-        // or per-peer same_account_auto=N.
         if Config::get_option("same_account_auto_auth") == "N" {
             log::info!("same_account: disabled by same_account_auto_auth=N");
-            return false;
+            return SameAccountEval::Reject;
         }
         log::info!("same_account: receiver user_info name='{}'", local_name);
 
@@ -2298,42 +2318,28 @@ impl Connection {
                 "same_account: peer {} explicitly disabled for passwordless (flag='N')",
                 peer_id
             );
-            return false;
+            return SameAccountEval::Reject;
         }
 
-        // Cache hit: same peer + same token fingerprint, verified recently.
-        let fp = Self::token_fingerprint(incoming_token);
-        {
-            let cache = SAME_ACCOUNT_TOKEN_CACHE.lock().unwrap();
-            if let Some((cached_fp, exp)) = cache.get(peer_id) {
-                if cached_fp == &fp && *exp > Instant::now() {
-                    log::info!(
-                        "same_account: cache hit for peer {} -> auto-auth success",
-                        peer_id
-                    );
-                    return true;
-                }
-            }
-        }
-
-        // Cloud verification — sc-cloud verifies the JWT signature (HS256).
         let api_url = crate::get_api_server(
             Config::get_option("api-server"),
             Config::get_option("custom-rendezvous-server"),
-        );
-        let url = format!("{}/api/currentUser", api_url);
-        log::info!(
-            "same_account: cloud verify {} token.len={}",
-            url,
-            incoming_token.len()
         );
         let client = match reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()
         {
             Ok(c) => c,
-            Err(_) => return false,
+            Err(_) => return SameAccountEval::Reject,
         };
+
+        // Cloud verification — sc-cloud verifies the JWT signature (HS256).
+        let url = format!("{}/api/currentUser", api_url);
+        log::info!(
+            "same_account: cloud verify {} token.len={}",
+            url,
+            incoming_token.len()
+        );
         let resp = match client
             .post(&url)
             .header("Authorization", format!("Bearer {}", incoming_token))
@@ -2345,47 +2351,100 @@ impl Connection {
             Ok(r) => r,
             Err(e) => {
                 log::info!("same_account: /currentUser request error: {}", e);
-                return false;
+                return SameAccountEval::Reject;
             }
         };
-        log::info!(
-            "same_account: /currentUser response status={}",
-            resp.status()
-        );
         if resp.status() != 200 {
-            return false;
+            log::info!(
+                "same_account: /currentUser response status={}",
+                resp.status()
+            );
+            return SameAccountEval::Reject;
         }
         let body: serde_json::Value = match resp.json().await {
             Ok(v) => v,
             Err(e) => {
                 log::info!("same_account: /currentUser json parse error: {}", e);
-                return false;
+                return SameAccountEval::Reject;
             }
         };
         let incoming_name = body["name"].as_str().unwrap_or("");
-        log::info!(
-            "same_account: /currentUser body name='{}', matches local={}",
-            incoming_name,
-            incoming_name == local_name
-        );
-        if incoming_name == local_name {
-            let _ = crate::ui_interface::set_peer_option(
-                peer_id.to_string(),
-                "same_account_auto".to_string(),
-                "Y".to_string(),
-            );
-            let exp = Instant::now() + Duration::from_secs(SAME_ACCOUNT_CACHE_SECS);
-            SAME_ACCOUNT_TOKEN_CACHE
-                .lock()
-                .unwrap()
-                .insert(peer_id.to_string(), (fp, exp));
+        if incoming_name != local_name {
             log::info!(
-                "same_account: cloud match (flag='{}' -> allow + marked Y) -> auto-auth success",
-                flag
+                "same_account: name mismatch local='{}' peer='{}'",
+                local_name,
+                incoming_name
             );
-            return true;
+            return SameAccountEval::Reject;
         }
-        false
+
+        let _ = crate::ui_interface::set_peer_option(
+            peer_id.to_string(),
+            "same_account_auto".to_string(),
+            "Y".to_string(),
+        );
+
+        // Does this account require MFA on each new remote connect?
+        let mfa_url = format!("{}/api/user/mfa/status", api_url);
+        let mfa_enabled = match client
+            .get(&mfa_url)
+            .header("Authorization", format!("Bearer {}", incoming_token))
+            .send()
+            .await
+        {
+            Ok(r) if r.status() == 200 => r
+                .json::<serde_json::Value>()
+                .await
+                .ok()
+                .and_then(|v| v.get("enabled").and_then(|e| e.as_bool()))
+                .unwrap_or(false),
+            _ => false,
+        };
+
+        if mfa_enabled {
+            log::info!("same_account: identity ok + account MFA on → require TOTP for this connect");
+            SameAccountEval::RequireAccountMfa
+        } else {
+            log::info!("same_account: identity ok, MFA off → approve");
+            SameAccountEval::Approve
+        }
+    }
+
+    /// Verify account TOTP via sc-cloud for same-account connect challenge.
+    async fn verify_account_mfa_code(token: &str, code: &str) -> bool {
+        let api_url = crate::get_api_server(
+            Config::get_option("api-server"),
+            Config::get_option("custom-rendezvous-server"),
+        );
+        let url = format!("{}/api/user/mfa/verify", api_url);
+        let client = match reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+        {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
+        match client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", token))
+            .header("Content-Type", "application/json")
+            .body(serde_json::json!({ "code": code }).to_string())
+            .send()
+            .await
+        {
+            Ok(r) if r.status() == 200 => {
+                log::info!("same_account: account MFA verify ok");
+                true
+            }
+            Ok(r) => {
+                log::info!("same_account: account MFA verify status={}", r.status());
+                false
+            }
+            Err(e) => {
+                log::info!("same_account: account MFA verify error: {}", e);
+                false
+            }
+        }
     }
 
     #[inline]
@@ -2675,9 +2734,14 @@ impl Connection {
             let is_logon = || crate::platform::is_prelogin();
 
             if !lr.api_auth_token.is_empty() {
-                log::info!("same_account: api_auth_token present (len={}), attempting verify for {}", lr.api_auth_token.len(), lr.my_id);
-                if self.verify_same_account_token(&lr.api_auth_token, &lr.my_id).await {
-                    log::info!("same-account auto-auth approved for {}", lr.my_id);
+                log::info!(
+                    "same_account: api_auth_token present (len={}), peer={}",
+                    lr.api_auth_token.len(),
+                    lr.my_id
+                );
+                // Reconnect within session timeout after successful MFA → no re-prompt.
+                if self.is_recent_same_account_session() {
+                    log::info!("same_account: reconnect approved for {}", lr.my_id);
                     #[cfg(target_os = "linux")]
                     self.linux_headless_handle.wait_desktop_cm_ready().await;
                     if !self.send_logon_response_and_keep_alive().await {
@@ -2685,8 +2749,43 @@ impl Connection {
                     }
                     self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), true);
                     return true;
-                } else {
-                    log::info!("same_account: verify_same_account_token returned false for {}", lr.my_id);
+                }
+                match self
+                    .evaluate_same_account_token(&lr.api_auth_token, &lr.my_id)
+                    .await
+                {
+                    Self::SameAccountEval::Approve => {
+                        log::info!("same-account auto-auth approved for {}", lr.my_id);
+                        // Mark session for reconnect without MFA re-prompt.
+                        raii::AuthedConnID::set_session_2fa(self.session_key());
+                        #[cfg(target_os = "linux")]
+                        self.linux_headless_handle.wait_desktop_cm_ready().await;
+                        if !self.send_logon_response_and_keep_alive().await {
+                            return false;
+                        }
+                        self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), true);
+                        return true;
+                    }
+                    Self::SameAccountEval::RequireAccountMfa => {
+                        // Every *new* same-account connect requires authenticator code.
+                        self.pending_account_mfa = Some((
+                            lr.api_auth_token.clone(),
+                            lr.my_id.clone(),
+                            lr.my_name.clone(),
+                        ));
+                        log::info!(
+                            "same_account: requesting account MFA for peer {}",
+                            lr.my_id
+                        );
+                        self.send_login_error(crate::client::REQUIRE_2FA).await;
+                        return true;
+                    }
+                    Self::SameAccountEval::Reject => {
+                        log::info!(
+                            "same_account: evaluate rejected for {}",
+                            lr.my_id
+                        );
+                    }
                 }
             }
 
@@ -2781,7 +2880,26 @@ impl Connection {
             if !res {
                 return true;
             }
-            if let Some(totp) = self.require_2fa.as_ref() {
+            // Same-account connect: account MFA (sc-cloud TOTP) before remote session.
+            if let Some((token, my_id, my_name)) = self.pending_account_mfa.clone() {
+                if Self::verify_account_mfa_code(&token, &tfa.code).await {
+                    self.update_failure(failure, true, 1);
+                    self.pending_account_mfa = None;
+                    raii::AuthedConnID::set_session_2fa(self.session_key());
+                    log::info!("same_account: account MFA ok — authorizing {}", my_id);
+                    #[cfg(target_os = "linux")]
+                    self.linux_headless_handle.wait_desktop_cm_ready().await;
+                    if !self.send_logon_response_and_keep_alive().await {
+                        return false;
+                    }
+                    self.try_start_cm(my_id, my_name, true);
+                } else {
+                    self.update_failure(failure, false, 1);
+                    self.send_login_error(crate::client::LOGIN_MSG_2FA_WRONG)
+                        .await;
+                }
+            } else if let Some(totp) = self.require_2fa.as_ref() {
+                // Device-local 2FA (Security → 2FA on this PC).
                 if let Ok(res) = totp.check_current(&tfa.code) {
                     if res {
                         self.update_failure(failure, true, 1);
