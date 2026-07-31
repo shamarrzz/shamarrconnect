@@ -223,6 +223,16 @@ struct Session {
     tfa: bool,
 }
 
+/// Result of evaluating same-account auth for a LoginRequest.
+/// - Approve: same account, MFA off → passwordless connect
+/// - RequireAccountMfa: same account + MFA on → prompt connecting peer for TOTP
+/// - Reject: not same account / disabled
+enum SameAccountEval {
+    Approve,
+    RequireAccountMfa,
+    Reject,
+}
+
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 struct StartCmIpcPara {
     rx_to_cm: mpsc::UnboundedReceiver<ipc::Data>,
@@ -2267,16 +2277,6 @@ impl Connection {
         false
     }
 
-    /// Result of evaluating same-account auth for a LoginRequest.
-    /// - Approve: same account, no account-MFA (or MFA already satisfied for reconnect)
-    /// - RequireAccountMfa: same account + MFA on — prompt peer for authenticator code
-    /// - Reject: not same account / disabled
-    enum SameAccountEval {
-        Approve,
-        RequireAccountMfa,
-        Reject,
-    }
-
     /// Same-account identity check via sc-cloud. Does **not** complete auth when
     /// account MFA is enabled — returns RequireAccountMfa so every *new* connect
     /// prompts for TOTP. Reconnects use `is_recent_same_account_session` instead.
@@ -2754,7 +2754,7 @@ impl Connection {
                     .evaluate_same_account_token(&lr.api_auth_token, &lr.my_id)
                     .await
                 {
-                    Self::SameAccountEval::Approve => {
+                    SameAccountEval::Approve => {
                         log::info!("same-account auto-auth approved for {}", lr.my_id);
                         // Mark session for reconnect without MFA re-prompt.
                         raii::AuthedConnID::set_session_2fa(self.session_key());
@@ -2766,7 +2766,7 @@ impl Connection {
                         self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), true);
                         return true;
                     }
-                    Self::SameAccountEval::RequireAccountMfa => {
+                    SameAccountEval::RequireAccountMfa => {
                         // Every *new* same-account connect requires authenticator code.
                         self.pending_account_mfa = Some((
                             lr.api_auth_token.clone(),
@@ -2780,7 +2780,7 @@ impl Connection {
                         self.send_login_error(crate::client::REQUIRE_2FA).await;
                         return true;
                     }
-                    Self::SameAccountEval::Reject => {
+                    SameAccountEval::Reject => {
                         log::info!(
                             "same_account: evaluate rejected for {}",
                             lr.my_id
