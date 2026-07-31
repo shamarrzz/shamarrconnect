@@ -101,7 +101,12 @@
         <li>Note each machine’s ShamarrConnect ID on the home screen.</li>
         <li>From machine A, enter machine B’s ID and connect.</li>
         <li>Same account + MFA on: each <strong>new</strong> connect asks for your authenticator code (not the remote permanent password). Quick reconnects within the session do not re-prompt MFA.</li>
+        <li>Same account + MFA off: connect is passwordless (no authenticator, no remote password).</li>
       </ol>
+      <div class="warn" style="margin-top:12px">
+        Both PCs need the <strong>same recent app build</strong>. After installing, fully quit ShamarrConnect
+        (including the tray icon) on both sides, then sign in again on the machine you will connect <em>to</em>.
+      </div>
       <p style="margin-top:10px"><strong>Device code (second PC without password):</strong> on a logged-in PC use the “add another device” / device code flow → enter that code on the new PC under Login → join with code.</p>
     </div>
 
@@ -121,6 +126,8 @@
       <ul>
         <li><strong>Wrong password</strong> — request a reset from your invite contact (admin).</li>
         <li><strong>Stuck on MFA</strong> — check phone time is automatic; try a recovery code; ask admin for MFA reset.</li>
+        <li><strong>Asked for remote password on same account</strong> — reinstall the latest build on <em>both</em> PCs; fully quit tray; sign in on the receiver once. Confirm Account MFA settings if you expected authenticator instead of password.</li>
+        <li><strong>MFA every reconnect</strong> — should not happen for quick reconnects; report with both client versions if it does.</li>
         <li><strong>Cannot register</strong> — expected. Self-registration is disabled; you need an invite.</li>
         <li><strong>Cannot download</strong> — use the invited email for Cloudflare Access; clear cookies if the wrong account is stuck.</li>
         <li><strong>Connect fails</strong> — confirm both sides are online, IDs are correct, and firewall allows outbound connections.</li>
