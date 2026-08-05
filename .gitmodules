@@ -1,4 +1,4 @@
 [submodule "libs/hbb_common"]
 	path = libs/hbb_common
-	url = git@github-shamarrconnect:shamarrzz/hbb_common.git
+	url = git@github-shamarrconnect-hbb:shamarrzz/hbb_common.git
 	branch = shamarrconnect
