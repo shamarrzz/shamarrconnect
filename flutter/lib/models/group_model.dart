@@ -98,7 +98,7 @@ class GroupModel {
         .toList();
     // Same-account passwordless: mark accessible peers unless user opted out ("N").
     for (final p in tmpPeers) {
-      final current = bind.mainGetPeerOption(id: p.id, key: 'same_account_auto');
+      final current = await bind.mainGetPeerOption(id: p.id, key: 'same_account_auto');
       if (current.isEmpty) {
         bind.mainSetPeerOption(id: p.id, key: 'same_account_auto', value: 'Y');
       }
