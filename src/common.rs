@@ -949,12 +949,14 @@ pub fn check_software_update() {
     }
 }
 
-// No need to check `danger_accept_invalid_cert` for now.
-// Because the url is always `https://api.rustdesk.com/version/latest`.
+// ShamarrConnect: version checks go to our own API, never api.rustdesk.com.
+// The URL is compile-time fixed, so no `danger_accept_invalid_cert` concern.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
-    let (request, url) =
+    const VERSION_CHECK_URL: &str = "https://api.shamarrconnect.com/api/version/latest";
+    let (request, _upstream_url) =
         hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
+    let url = VERSION_CHECK_URL.to_string();
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);

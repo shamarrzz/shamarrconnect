@@ -136,8 +136,10 @@ fn check_update(manually: bool) -> ResultType<()> {
         let version = download_url.split('/').last().unwrap_or_default();
         #[cfg(target_os = "windows")]
         let download_url = if cfg!(feature = "flutter") {
+            // ShamarrConnect: must match the artifact names produced by
+            // .github/workflows/sc-release.yml and uploaded to the releases repo.
             format!(
-                "{}/rustdesk-{}-x86_64.{}",
+                "{}/ShamarrConnect-{}-x86_64.{}",
                 download_url,
                 version,
                 if update_msi { "msi" } else { "exe" }
