@@ -3,8 +3,10 @@
 // 2) Every other host requires a VALID Cloudflare Access JWT (signature verified
 //    against the team's public keys) — defense-in-depth so /admin stays locked
 //    even if the Zero Trust app is misconfigured or deleted.
-const TEAM = "https://your-team.cloudflareaccess.com";
-const ALLOWED_EMAILS = ["hello@shamarrconnect.com"];
+// Config lives in Pages environment variables (Production + Preview):
+//   ACCESS_TEAM     Cloudflare Access team URL, https://<team>.cloudflareaccess.com
+//   ALLOWED_EMAILS  comma-separated allow-list
+// If either is unset the area is locked for EVERYONE (fail closed).
 
 const SEC = {
   "X-Frame-Options": "DENY",
@@ -23,16 +25,16 @@ function b64urlToBytes(s) {
   return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 }
 
-async function verifyAccessJWT(token) {
+async function verifyAccessJWT(token, team) {
   try {
     const [h, p, sig] = token.split(".");
     if (!h || !p || !sig) return null;
     const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h)));
     const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p)));
     const now = Math.floor(Date.now() / 1000);
-    if (payload.iss !== TEAM) return null;
+    if (payload.iss !== team) return null;
     if (!payload.exp || payload.exp < now) return null;
-    const res = await fetch(`${TEAM}/cdn-cgi/access/certs`, {
+    const res = await fetch(`${team}/cdn-cgi/access/certs`, {
       cf: { cacheTtl: 3600, cacheEverything: true },
     });
     if (!res.ok) return null;
@@ -61,9 +63,11 @@ export async function onRequest({ request, env }) {
     return new Response("Not found", { status: 404, headers: SEC });
   }
 
+  const team = env.ACCESS_TEAM;
+  const allowed = (env.ALLOWED_EMAILS || "").split(",").map((s) => s.trim()).filter(Boolean);
   const cookie = (request.headers.get("Cookie") || "").match(/CF_Authorization=([^;\s]+)/);
   const token = request.headers.get("Cf-Access-Jwt-Assertion") || (cookie && cookie[1]);
-  const email = token ? await verifyAccessJWT(token) : null;
+  const email = team && token ? await verifyAccessJWT(token, team) : null;
   if (!email) {
     return new Response(
       "<!DOCTYPE html><title>Locked</title><h1>403 — admin is locked</h1>" +
@@ -71,7 +75,7 @@ export async function onRequest({ request, env }) {
       { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
     );
   }
-  if (!ALLOWED_EMAILS.includes(email)) {
+  if (!allowed.includes(email)) {
     return new Response(
       "<!DOCTYPE html><title>Forbidden</title><h1>403 — not authorised</h1>" +
       `<p>${email} does not have access to this area.</p>`,
