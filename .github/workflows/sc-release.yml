@@ -224,6 +224,7 @@ jobs:
           popd
           mkdir -p ./SignOutput
           mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
+          cp ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe ./SignOutput/ShamarrConnect-windows-x86_64.exe
 
       - name: Sign installer (skipped without cert secrets)
         if: env.WIN_CERT_PFX_BASE64 != ''
@@ -240,8 +241,11 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          # Tag-named file feeds the auto-updater; the stable alias feeds
+          # the website /releases/latest/download/ deep links.
           files: |
             ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
+            ./SignOutput/ShamarrConnect-windows-x86_64.exe
 
   macos:
     needs: [generate-bridge]
@@ -414,6 +418,10 @@ jobs:
           codesign --force --options runtime -s ${{ secrets.MACOS_CODESIGN_IDENTITY }} --deep --strict ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg -vvv
           rcodesign notary-submit --api-key-path ${{ github.workspace }}/shamarrconnect.json --staple ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
 
+      - name: Stage stable alias for website deep links
+        run: |
+          cp ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ShamarrConnect-macos-${{ matrix.job.arch }}.dmg
+
       - name: Publish dmg
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
@@ -424,6 +432,7 @@ jobs:
           name: ShamarrConnect ${{ env.VERSION }}
           files: |
             ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
+            ShamarrConnect-macos-${{ matrix.job.arch }}.dmg
 
   linux:
     needs: [generate-bridge]
@@ -594,6 +603,10 @@ jobs:
               mv "$name" "ShamarrConnect-${{ env.VERSION }}-x86_64.deb"
             done
 
+      - name: Stage stable alias for website deep links
+        run: |
+          cp ShamarrConnect-${{ env.VERSION }}-x86_64.deb shamarrconnect-linux-amd64.deb
+
       - name: Publish deb package
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
@@ -604,6 +617,7 @@ jobs:
           name: ShamarrConnect ${{ env.VERSION }}
           files: |
             ShamarrConnect-${{ env.VERSION }}-x86_64.deb
+            shamarrconnect-linux-amd64.deb
 
       - name: Upload deb for appimage job
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -642,6 +656,7 @@ jobs:
           for name in shamarrconnect-*.AppImage; do
             mv "$name" "ShamarrConnect-${{ env.VERSION }}-x86_64.AppImage"
           done
+          cp ShamarrConnect-${{ env.VERSION }}-x86_64.AppImage ShamarrConnect-linux-x86_64.AppImage
 
       - name: Publish AppImage package
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -653,6 +668,7 @@ jobs:
           name: ShamarrConnect ${{ env.VERSION }}
           files: |
             ./appimage/ShamarrConnect-${{ env.VERSION }}-x86_64.AppImage
+            ./appimage/ShamarrConnect-linux-x86_64.AppImage
 
   source-offer:
     needs: [windows, macos, linux, appimage]
