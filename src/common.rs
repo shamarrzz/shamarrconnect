@@ -2088,6 +2088,14 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
+#[cfg(target_os = "macos")]
+fn set_macos_org() {
+    *config::ORG.write().unwrap() = "com.shamarrconnect".to_owned();
+}
+
+#[cfg(not(target_os = "macos"))]
+fn set_macos_org() {}
+
 pub fn load_custom_client() {
     // ShamarrConnect: brand this build as a custom client without relying on
     // RustDesk's signed custom.txt blob (that is gated by RustDesk's private
@@ -2099,8 +2107,9 @@ pub fn load_custom_client() {
     *config::APP_NAME.write().unwrap() = "ShamarrConnect".to_owned();
     // macOS-only: launchd plist names, ~/Library paths, bundle org. The ORG
     // static is #[cfg(target_os = "macos")] in hbb_common, so this must be too.
-    #[cfg(target_os = "macos")]
-    *config::ORG.write().unwrap() = "com.shamarrconnect".to_owned();
+    // NOTE: #[cfg] on an expression statement is unstable Rust (E0658), hence
+    // the cfg-gated helper called unconditionally.
+    set_macos_org();
 
     // Bake in server config so the client never falls back to RustDesk's public
     // rendezvous server (rs-ny.rustdesk.com). We set three layers in priority order:
