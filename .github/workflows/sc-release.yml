@@ -34,6 +34,8 @@ env:
   MAC_RUST_VERSION: "1.81"
   LLVM_VERSION: "15.0.6"
   FLUTTER_VERSION: "3.24.5"
+  NDK_VERSION: "r28c"
+  CARGO_NDK_VERSION: "3.1.2"
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   MACOS_P12_BASE64: "${{ secrets.MACOS_P12_BASE64 }}"
@@ -669,6 +671,218 @@ jobs:
           files: |
             ./appimage/ShamarrConnect-${{ env.VERSION }}-x86_64.AppImage
             ./appimage/ShamarrConnect-linux-x86_64.AppImage
+
+  android:
+    needs: [generate-bridge]
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { arch: aarch64, target: aarch64-linux-android, abisuffix: arm64-v8a, platform: android-arm64, ndkscript: ndk_arm64.sh }
+          - { arch: armv7, target: armv7-linux-androideabi, abisuffix: armeabi-v7a, platform: android-arm, ndkscript: ndk_arm.sh }
+          - { arch: x86_64, target: x86_64-linux-android, abisuffix: x86_64, platform: android-x64, ndkscript: ndk_x64.sh }
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+               clang \
+               cmake \
+               curl \
+               gcc-multilib \
+               git \
+               g++ \
+               g++-multilib \
+               libayatana-appindicator3-dev \
+               libasound2-dev \
+               libc6-dev \
+               libclang-dev \
+               libunwind-dev \
+               libgstreamer1.0-dev \
+               libgstreamer-plugins-base1.0-dev \
+               libgtk-3-dev \
+               libpam0g-dev \
+               libpulse-dev \
+               libva-dev \
+               libxcb-randr0-dev \
+               libxcb-shape0-dev \
+               libxcb-xfixes0-dev \
+               libxdo-dev \
+               libxfixes-dev \
+               llvm-dev \
+               nasm \
+               ninja-build \
+               openjdk-17-jdk-headless \
+               pkg-config \
+               tree \
+               wget
+
+      - name: Checkout source code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+
+      - name: Install flutter
+        uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225 # v2.12.0
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Patch flutter
+        run: |
+          cd $(dirname $(dirname $(which flutter)))
+          [[ "3.24.5" == ${{env.FLUTTER_VERSION}} ]] && git apply ${{ github.workspace }}/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff
+
+      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1
+        id: setup-ndk
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+          add-to-path: true
+
+      - name: Setup vcpkg with Github Actions binary cache
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
+        with:
+          vcpkgDirectory: /opt/artifacts/vcpkg
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+
+      - name: Install vcpkg dependencies
+        run: |
+          case ${{ matrix.job.abisuffix }} in
+            arm64-v8a) ANDROID_TARGET=arm64-v8a ;;
+            armeabi-v7a) ANDROID_TARGET=armeabi-v7a ;;
+            x86_64) ANDROID_TARGET=x86_64 ;;
+          esac
+          if ! ./flutter/build_android_deps.sh "${ANDROID_TARGET}"; then
+            find "${VCPKG_ROOT}/" -name "*.log" | while read -r _1; do
+              echo "$_1:"
+              echo "======"
+              cat "$_1"
+              echo "======"
+              echo ""
+            done
+            exit 1
+          fi
+        shell: bash
+
+      - name: Restore bridge files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bridge-artifact
+          path: ./
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: "rustfmt"
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          prefix-key: shamarrconnect-lib-cache-android
+          key: ${{ matrix.job.target }}
+
+      - name: Build rustdesk lib
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          rustup target add ${{ matrix.job.target }}
+          cargo install cargo-ndk --version ${{ env.CARGO_NDK_VERSION }} --locked
+          ./flutter/${{ matrix.job.ndkscript }}
+          mkdir -p ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}
+          cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}/librustdesk.so
+
+      - name: Build rustdesk APK
+        shell: bash
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
+          # Increase Gradle JVM memory for CI builds
+          sed -i "s/org.gradle.jvmargs=-Xmx1024M/org.gradle.jvmargs=-Xmx2g/g" ./flutter/android/gradle.properties
+          # temporary use debug sign config (real signing happens in the sign step below)
+          sed -i "s/signingConfigs.release/signingConfigs.debug/g" ./flutter/android/app/build.gradle
+          mkdir -p ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}
+          case ${{ matrix.job.abisuffix }} in
+            arm64-v8a) LIBC_DIR=aarch64-linux-android ;;
+            armeabi-v7a) LIBC_DIR=arm-linux-androideabi ;;
+            x86_64) LIBC_DIR=x86_64-linux-android ;;
+          esac
+          cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${LIBC_DIR}/libc++_shared.so ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}/
+          cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}/librustdesk.so
+          pushd flutter
+          flutter build apk --release --target-platform ${{ matrix.job.platform }} --split-per-abi
+          popd
+          mkdir -p signed-apk
+          mv flutter/build/app/outputs/flutter-apk/app-${{ matrix.job.abisuffix }}-release.apk signed-apk/ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+
+      - name: Setup sign tool version variable
+        shell: bash
+        run: |
+          BUILD_TOOL_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
+          echo "ANDROID_SIGN_TOOL_VERSION=$BUILD_TOOL_VERSION" >> $GITHUB_ENV
+          echo Last build tool version is: $BUILD_TOOL_VERSION
+
+      - uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
+        name: Sign app APK
+        if: env.ANDROID_SIGNING_KEY != ''
+        id: sign-android
+        with:
+          releaseDirectory: ./signed-apk
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: ${{ env.ANDROID_SIGN_TOOL_VERSION }}
+
+      - name: Prepare publish files
+        shell: bash
+        run: |
+          TAGGED="signed-apk/ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.apk"
+          if [ "${{ env.ANDROID_SIGNING_KEY }}" != "" ]; then
+            # signer usually rewrites in place; force the tagged path to hold
+            # the signed bytes even if it emitted a different filename
+            cp "${{ steps.sign-android.outputs.signedReleaseFile }}" "$TAGGED"
+          fi
+          cp "$TAGGED" "signed-apk/ShamarrConnect-android-${{ matrix.job.arch }}.apk"
+
+      - name: Publish APK
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        with:
+          repository: shamarrzz/shamarrconnect-releases
+          token: ${{ secrets.RELEASES_TOKEN }}
+          draft: true
+          tag_name: ${{ env.VERSION }}
+          name: ShamarrConnect ${{ env.VERSION }}
+          # Tag-named file is the canonical artifact; the stable alias feeds
+          # the website /releases/latest/download/ deep links.
+          files: |
+            signed-apk/ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+            signed-apk/ShamarrConnect-android-${{ matrix.job.arch }}.apk
 
   source-offer:
     needs: [windows, macos, linux, appimage]
