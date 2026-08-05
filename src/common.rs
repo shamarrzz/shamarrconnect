@@ -2097,6 +2097,8 @@ pub fn load_custom_client() {
     // firewall rules, the window + About title, and suppresses the upstream
     // rustdesk.com help cards and the "set up your own server" tip.
     *config::APP_NAME.write().unwrap() = "ShamarrConnect".to_owned();
+    // macOS-only in practice: launchd plist names, ~/Library paths, bundle org.
+    *config::ORG.write().unwrap() = "com.shamarrconnect".to_owned();
 
     // Bake in server config so the client never falls back to RustDesk's public
     // rendezvous server (rs-ny.rustdesk.com). We set three layers in priority order:
