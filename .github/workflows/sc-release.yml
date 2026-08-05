@@ -648,11 +648,12 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y libarchive-tools libfuse2
-          # appimage-builder is legacy setup.py-style; setuptools>=78 (pulled into
-          # pip's isolated build env) removed ignore_egg_info_in_manifest and
-          # breaks its metadata generation. Pin the build env to setuptools<78.
-          echo 'setuptools<78' | sudo tee /tmp/pip-constraints.txt
-          sudo PIP_CONSTRAINT=/tmp/pip-constraints.txt pip3 install git+https://github.com/rustdesk-org/appimage-builder.git
+          # appimage-builder is legacy setup.py-style; setuptools>=78 removed
+          # ignore_egg_info_in_manifest and breaks its metadata generation.
+          # Runner pip (22.0.x) ignores PIP_CONSTRAINT inside build isolation
+          # (fixed only in pip 22.1), so pin system setuptools and skip isolation.
+          sudo pip3 install 'setuptools<78' wheel
+          sudo pip3 install --no-build-isolation git+https://github.com/rustdesk-org/appimage-builder.git
           pushd appimage
           sudo appimage-builder --skip-tests --recipe ./AppImageBuilder-x86_64.yml
           for name in shamarrconnect-*.AppImage; do
