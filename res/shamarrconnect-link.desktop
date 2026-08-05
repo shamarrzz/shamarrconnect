@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=ShamarrConnect
+NoDisplay=true
+MimeType=x-scheme-handler/shamarrconnect;
+TryExec=shamarrconnect
+Exec=shamarrconnect %u
+Icon=shamarrconnect
+Terminal=false
+Type=Application
+StartupNotify=false
+StartupWMClass=shamarrconnect
