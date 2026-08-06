@@ -666,6 +666,9 @@ jobs:
           sudo pip3 install --no-build-isolation git+https://github.com/rustdesk-org/appimage-builder.git
           pushd appimage
           sudo appimage-builder --skip-tests --recipe ./AppImageBuilder-x86_64.yml
+          # the recipe extracts the deb via tar as root; the data.tar './'
+          # entry chowns the cwd to root, so reclaim ownership before mv/cp
+          sudo chown -R "$(id -u):$(id -g)" .
           for name in shamarrconnect-*.AppImage; do
             mv "$name" "ShamarrConnect-${{ env.VERSION }}-x86_64.AppImage"
           done
