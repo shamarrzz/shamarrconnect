@@ -1,0 +1,28 @@
+# Gitleaks config for ShamarrConnect (public repo).
+# The allowlist below covers noise inherited from upstream rustdesk history:
+# translation strings in src/lang that trip generic-api-key, upstream license
+# code, and long-deleted upstream web/firebase experiment files. None of these
+# exist in the current tree; they only appear when scanning full history.
+# SC-authored commits must scan clean — do not widen this list to hide a real
+# leak; rotate the secret instead.
+
+title = "ShamarrConnect gitleaks config"
+
+# Keep the built-in rules — a custom config REPLACES the defaults otherwise.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Upstream rustdesk historical artifacts (false positives / dead files)"
+paths = [
+  '''^src/lang/''',
+  '''^src/license\.rs$''',
+  '''^src/tr\.rs$''',
+  '''^flutter/web/index\.html$''',
+  '''^web/''',
+  '''^flutter_hbb/''',
+]
+# base64("foobar.,2") — fake key in upstream custom_server.rs unit tests
+stopwords = [
+  "Zm9vYmFyLiwyCg==",
+]

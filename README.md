@@ -2,20 +2,20 @@
 
 A self-hosted remote desktop product — install it on your own server and give your users a branded TeamViewer-style experience. Built on the [RustDesk](https://github.com/rustdesk/rustdesk) open-source remote desktop engine.
 
-**Website:** [shamarrconnect.com](https://shamarrconnect.com)  
-**API backend:** [shamarrzz/shamarrconnect-cloud](https://github.com/shamarrzz/shamarrconnect-cloud)
+**Website:** [shamarrconnect.com](https://shamarrconnect.com)
+**Download:** [Latest release](https://github.com/shamarrzz/shamarrconnect-releases/releases/latest) (Windows, macOS, Linux, Android)
 
 ---
 
 ## What this repo is
 
-This is the **desktop client** — the app your users download and run. It is a custom-branded fork of the RustDesk client (Rust core + Flutter UI).
+This is the **client** — the app your users download and run. It is a custom-branded fork of the RustDesk client (Rust core + Flutter UI), covering Windows, Linux, macOS, and Android.
 
 ```
-shamarrconnect/          ← this repo — desktop client (Windows / Linux / macOS)
-shamarrconnect-cloud/    ← API backend (login, address book, heartbeat)
+shamarrconnect/          ← this repo — the client app
+shamarrconnect-releases/ ← public release artifacts (built by CI)
+shamarrconnect-cloud/    ← API backend (login, address book, heartbeat) — private
 sc-server/               ← RustDesk relay/rendezvous (on the server)
-sc-website/              ← Marketing website (Cloudflare Pages)
 ```
 
 ---
@@ -67,6 +67,7 @@ shamarrconnect/
 │   ├── scrap/         # Screen capture
 │   └── enigo/         # Input simulation
 ├── res/               # Icons, MSI resources, desktop files
+├── website/           # Marketing + download site (Cloudflare Pages)
 └── .github/workflows/ # CI / build pipelines
 ```
 
@@ -74,7 +75,7 @@ shamarrconnect/
 
 ## How the client authenticates
 
-On login the client calls `POST /api/login` with `username` + `password`.  
+On login the client calls `POST /api/login` with `username` + `password`.
 The server returns an `access_token` (JWT). The client stores it in `LocalConfig` and sends it as `Authorization: Bearer <token>` on all subsequent API calls (address book, current user).
 
 The heartbeat (`POST /api/heartbeat`) runs every 15 seconds and does **not** require the token — it identifies the device by `id` and `uuid`. This means:
@@ -84,21 +85,15 @@ The heartbeat (`POST /api/heartbeat`) runs every 15 seconds and does **not** req
 
 ---
 
-## Building the Windows client
+## Building
 
-> Windows builds are produced on the Windows development machine.  
-> CI builds via GitHub Actions will be added as the project matures.
+All release builds are produced by GitHub Actions (see `.github/workflows/sc-release.yml`): Windows installer, two macOS DMGs (Apple Silicon + Intel), Debian package, AppImage, and three Android APKs, plus source tarballs. Releases are published to [shamarrzz/shamarrconnect-releases](https://github.com/shamarrzz/shamarrconnect-releases).
 
-**Prerequisites (Windows):**
-- Rust stable (`rustup`)
-- Flutter 3.24.x
-- [vcpkg](https://vcpkg.io) with the packages listed in `vcpkg.json`
-- LLVM / Clang (for the Rust FFI bindings)
+To build locally for development:
 
-**Build:**
-```powershell
+```bash
 # Clone with submodule
-git clone --recursive git@github.com:shamarrzz/shamarrconnect.git
+git clone --recursive https://github.com/shamarrzz/shamarrconnect.git
 cd shamarrconnect
 
 # Build Flutter assets first
@@ -106,18 +101,15 @@ cd flutter && flutter pub get && cd ..
 
 # Build the Rust binary
 cargo build --release
-
-# Package (MSI / portable exe)
-python build.py --portable   # or --msi for installer
 ```
 
-The build script (`build.py`) handles branding, icon injection, and packaging.
+Prerequisites: Rust stable (`rustup`), Flutter 3.24.x, [vcpkg](https://vcpkg.io) with the packages listed in `vcpkg.json`, and LLVM/Clang (for the Rust FFI bindings). See [RUNBOOK.md](RUNBOOK.md) for the full release procedure.
 
 ---
 
 ## Pointing the client at your server
 
-The client reads its server addresses from `libs/hbb_common/src/config.rs`.  
+The client reads its server addresses from `libs/hbb_common/src/config.rs`.
 For a custom-branded build the relevant constants are:
 
 | Config key | Value |
@@ -134,7 +126,7 @@ These are baked in at build time via the branding configuration. End users conne
 ### Rust side (logic / protocol)
 
 ```bash
-git clone --recursive git@github.com:shamarrzz/shamarrconnect.git
+git clone --recursive https://github.com/shamarrzz/shamarrconnect.git
 cd shamarrconnect
 cargo build   # builds the core library
 cargo test
@@ -169,12 +161,12 @@ See [AGENTS.md](AGENTS.md) for the full coding standards. Key rules:
 
 | Repo | Purpose |
 |------|---------|
-| [shamarrzz/shamarrconnect-cloud](https://github.com/shamarrzz/shamarrconnect-cloud) | API backend (Rust/Axum) |
+| [shamarrzz/shamarrconnect-releases](https://github.com/shamarrzz/shamarrconnect-releases) | Public release artifacts |
+| [shamarrzz/hbb_common](https://github.com/shamarrzz/hbb_common) | Shared proto/config library (submodule, `shamarrconnect` branch) |
 | [rustdesk/rustdesk-server](https://github.com/rustdesk/rustdesk-server) | Relay/rendezvous server (used as-is) |
-| [rustdesk/hbb_common](https://github.com/rustdesk/hbb_common) | Shared proto/config library (submodule) |
 
 ---
 
 ## Licence
 
-This project is a fork of [RustDesk](https://github.com/rustdesk/rustdesk) and is distributed under the same AGPL-3.0 licence. See [LICENCE](LICENCE).
+This project is a fork of [RustDesk](https://github.com/rustdesk/rustdesk) and is distributed under the same AGPL-3.0 licence. See [LICENCE](LICENCE). Corresponding source for each release, including the submodule, is published as source tarballs alongside the release binaries.

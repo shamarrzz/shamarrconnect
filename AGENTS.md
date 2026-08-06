@@ -61,6 +61,15 @@
 * Do not make formatting-only changes.
 * Keep naming/style consistent with nearby code.
 
+## Security / Secrets (public repo)
+
+* This repo is **public**. Never commit secrets: tokens, passwords, private keys, keystores, `.env` files, or credentials of any kind.
+* The pre-commit hook (`.githooks/pre-commit`, activated via `git config core.hooksPath .githooks`) runs gitleaks on staged changes. Do not bypass it (`--no-verify`).
+* `.github/workflows/secret-scan.yml` re-scans every push/PR as a backstop.
+* If a secret ever lands in history: rotate it immediately, then purge it from history — deleting the file in a later commit is not enough.
+* `.gitleaks.toml` allowlists upstream false positives only. Do not widen it to silence a real finding — rotate the secret instead.: rotate it immediately, then purge it from history — deleting the file in a later commit is not enough.
+* `.gitleaks.toml` allowlists upstream false positives only. Do not widen it to silence a real finding — rotate the secret instead.
+
 ## Localization (`src/lang/*.rs`)
 
 Each file is a `HashMap<key, translation>`. Layout:
