@@ -20,7 +20,7 @@ const CLOSED_PAGE = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Downloads are invite-only — ShamarrConnect</title>
+<title>Downloads are invite-only - ShamarrConnect</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
@@ -45,8 +45,8 @@ const CLOSED_PAGE = `<!DOCTYPE html>
   <div class="box">
     <span class="eyebrow">Private beta</span>
     <h1>Downloads are invite-only<br>for now.</h1>
-    <p>ShamarrConnect is in private beta. Public downloads open at launch —
-       leave your email and we'll tell you the moment they're live.</p>
+    <p>ShamarrConnect is in private beta. Public downloads open at launch.
+       Leave your email and we'll tell you the moment they're live.</p>
     <a class="btn" href="/#waitlist">Notify me at launch</a>
     <p class="alt">Invited to the beta? Your onboarding guide is at
        <a href="/beta">/beta</a>.</p>

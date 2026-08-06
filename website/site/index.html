@@ -3,70 +3,418 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShamarrConnect - Coming Soon</title>
-<meta name="description" content="Private, self-hosted remote desktop. Launching soon.">
+<title>ShamarrConnect - Hosted remote desktop, billed monthly</title>
+<meta name="description" content="Fast, end-to-end encrypted remote desktop with the servers run for you. Monthly billing, pay in Naira or USD. Free tier included.">
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="shortcut icon" href="/favicon.ico">
 <style>
-  :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5}
+  :root{
+    --brand:#2B5CE6;
+    --brand-dark:#1E3FA8;
+    --brand-soft:#EAF0FF;
+    --ink:#0F1B33;
+    --muted:#5A6B85;
+    --line:#E6ECF5;
+    --bg:#FFFFFF;
+    --bg-soft:#F8FAFF;
+    --ok:#16A34A;
+    --radius:16px;
+    --shadow:0 10px 30px rgba(20,40,90,.08);
+    --shadow-lg:0 24px 60px rgba(20,40,90,.14);
+  }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);
-    min-height:100vh;display:grid;place-items:center;text-align:center;
-    background:radial-gradient(1000px 500px at 50% -10%, #F1F0FF 0%, transparent 60%),linear-gradient(180deg,#F6F9FF,#FFFFFF)}
-  .box{padding:40px 28px;max-width:560px}
-  .mark{width:130px;height:130px;margin:0 auto 22px;display:grid;place-items:center}
-  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:#EAF0FF;color:#1E3FA8;
-    font-weight:600;font-size:13px;padding:7px 15px;border-radius:100px;margin-bottom:24px}
-  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#16A34A}
-  h1{font-size:44px;line-height:1.1;letter-spacing:-.03em;font-weight:800;margin-bottom:16px}
-  h1 .g{color:var(--brand)}
-  p{font-size:18px;color:var(--muted);max-width:440px;margin:0 auto 32px}
-  .wl{display:flex;gap:10px;max-width:420px;margin:0 auto}
-  .wl input[type=email]{flex:1;padding:12px 16px;border:1px solid var(--line);border-radius:11px;font-size:15px;min-width:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:Arial,Helvetica,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:15px;
+    padding:13px 22px;border-radius:12px;border:1px solid transparent;cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn-primary{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(43,92,230,.28)}
+  .btn-primary:hover{background:var(--brand-dark);transform:translateY(-1px);box-shadow:0 12px 26px rgba(43,92,230,.34)}
+  .btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+  .btn-lg{padding:16px 28px;font-size:16px;border-radius:14px}
+
+  /* NAV */
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);
+    backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
+  nav{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .brand .mark{width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center;
+    box-shadow:0 6px 14px rgba(43,92,230,.35)}
+  .navlinks{display:flex;align-items:center;gap:30px}
+  .navlinks a{color:var(--muted);font-weight:500;font-size:15px;transition:color .15s}
+  .navlinks a:hover{color:var(--ink)}
+  .nav-cta{display:flex;align-items:center;gap:14px}
+  @media(max-width:820px){.navlinks{display:none}}
+
+  /* HERO */
+  .hero{position:relative;overflow:hidden;
+    background:radial-gradient(1200px 600px at 70% -10%, #F1F0FF 0%, transparent 60%),
+               linear-gradient(180deg,#F6F9FF 0%, #FFFFFF 100%)}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;
+    padding:88px 0 96px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;background:var(--brand-soft);
+    color:var(--brand-dark);font-weight:600;font-size:13px;padding:7px 14px;border-radius:100px;margin-bottom:22px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  h1{font-size:54px;line-height:1.07;letter-spacing:-.03em;font-weight:800;margin-bottom:20px}
+  h1 .grad{color:var(--brand)}
+  .lede{font-size:19px;color:var(--muted);max-width:520px;margin-bottom:32px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .micro{margin-top:16px;font-size:13.5px;color:var(--muted)}
+  .micro b{color:var(--ink)}
+  @media(max-width:820px){.hero-grid{grid-template-columns:1fr;padding:60px 0}.hero-art{order:-1}h1{font-size:40px}}
+
+  /* APP MOCK */
+  .hero-art{display:flex;justify-content:center}
+  .window{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);
+    border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden}
+  .titlebar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg-soft)}
+  .titlebar .tdot{width:11px;height:11px;border-radius:50%;background:#D4DCEA}
+  .win-body{padding:24px}
+  .field-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+  .idbox{display:flex;align-items:center;justify-content:space-between;background:var(--bg-soft);
+    border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:18px}
+  .idbox .id{font-size:24px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+  .statuspill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ok)}
+  .connect-row{display:flex;gap:10px;margin-top:6px}
+  .connect-row input{flex:1;border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:15px;color:var(--ink)}
+  .connect-row .go{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:0 20px;font-weight:600;font-size:15px;cursor:pointer}
+
+  /* TRUST STRIP */
+  .trust{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
+  .trust .wrap{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;padding:24px}
+  .trust span{color:var(--muted);font-weight:600;font-size:14.5px;padding:6px 28px;border-left:1px solid var(--line)}
+  .trust span:first-child{border-left:none}
+
+  /* SECTIONS */
+  section.block{padding:96px 0}
+  .center{text-align:center;max-width:720px;margin:0 auto 56px}
+  .center h2{font-size:38px;letter-spacing:-.025em;font-weight:800;margin-bottom:16px}
+  .center p{font-size:18px;color:var(--muted)}
+  h2 .grad{color:var(--brand)}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+  @media(max-width:980px){.cards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.cards{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px 24px;
+    box-shadow:var(--shadow);transition:transform .18s ease, box-shadow .18s ease}
+  .card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+  .card .ico{width:46px;height:46px;border-radius:12px;background:var(--brand-soft);display:grid;place-items:center;margin-bottom:18px}
+  .card h3{font-size:18px;margin-bottom:9px;letter-spacing:-.01em}
+  .card p{font-size:14.5px;color:var(--muted)}
+
+  /* STEPS */
+  .steps{background:var(--bg-soft)}
+  .steprow{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+  @media(max-width:780px){.steprow{grid-template-columns:1fr}}
+  .step{position:relative;padding:8px 4px}
+  .stepnum{width:44px;height:44px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;
+    display:grid;place-items:center;font-size:18px;margin-bottom:18px;box-shadow:0 8px 18px rgba(43,92,230,.3)}
+  .step h3{font-size:19px;margin-bottom:8px}
+  .step p{color:var(--muted);font-size:15px}
+
+  /* SECURITY BAND */
+  .secband{background:linear-gradient(135deg,#0F1B33,#1E2F5C);color:#fff;border-radius:24px;
+    padding:56px 48px;display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:center}
+  @media(max-width:820px){.secband{grid-template-columns:1fr;padding:40px 28px}}
+  .secband h2{font-size:32px;letter-spacing:-.02em;margin-bottom:14px}
+  .secband p{color:#C3CEE8;font-size:16.5px}
+  .seclist{list-style:none;display:grid;gap:14px}
+  .seclist li{display:flex;gap:12px;align-items:flex-start;font-size:15.5px;color:#E6ECFA}
+  .seclist .chk{flex:none;width:24px;height:24px;border-radius:7px;background:rgba(22,163,74,.18);display:grid;place-items:center;margin-top:1px}
+
+  /* DOWNLOAD */
+  .dlcards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:8px}
+  @media(max-width:880px){.dlcards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:480px){.dlcards{grid-template-columns:1fr}}
+  .dl{border:1px solid var(--line);border-radius:var(--radius);padding:26px 22px;text-align:center;background:#fff;transition:transform .18s,box-shadow .18s,border-color .18s;display:block}
+  .dl:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--brand)}
+  .dl .os{font-weight:700;font-size:17px;margin:14px 0 4px}
+  .dl .sub{font-size:13px;color:var(--muted);margin-bottom:16px}
+
+  /* WAITLIST */
+  .waitlist{background:var(--bg-soft)}
+  .wl{display:flex;gap:10px;max-width:440px;margin:0 auto}
+  .wl input[type=email]{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;font-size:15px;min-width:0;background:#fff}
   .wl input[type=email]:focus{outline:2px solid var(--brand);outline-offset:1px}
-  .wl button{background:var(--brand);color:#fff;border:0;border-radius:11px;padding:12px 20px;font-weight:700;font-size:14px;cursor:pointer}
-  .wl button:hover{background:#1E3FA8}
+  .wl button{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:14px 24px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 20px rgba(43,92,230,.28)}
+  .wl button:hover{background:var(--brand-dark)}
   .wl button:disabled{opacity:.6;cursor:default}
   .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
-  .wlmsg{margin:14px auto 0;font-size:14px;min-height:20px;max-width:420px}
-  .wlmsg.ok{color:#16A34A}
+  .wlmsg{margin:14px auto 0;font-size:14px;min-height:20px;max-width:440px;text-align:center}
+  .wlmsg.ok{color:var(--ok)}
   .wlmsg.err{color:#DC2626}
-  .foot{margin-top:40px;font-size:13px;color:var(--muted)}
-  @media(max-width:560px){h1{font-size:34px}.wl{flex-direction:column}}
+  @media(max-width:560px){.wl{flex-direction:column}}
+
+  /* FOOTER */
+  footer{background:var(--bg-soft);border-top:1px solid var(--line);padding:64px 0 30px;margin-top:20px}
+  .fgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px;margin-bottom:40px}
+  @media(max-width:780px){.fgrid{grid-template-columns:1fr 1fr}}
+  .fcol h4{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:16px}
+  .fcol a{display:block;color:var(--ink);font-size:14.5px;margin-bottom:11px;opacity:.85}
+  .fcol a:hover{color:var(--brand);opacity:1}
+  .fbrand p{color:var(--muted);font-size:14px;max-width:280px;margin-top:14px}
+  .fbottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:13.5px}
+  .disclaimer{max-width:620px}
 </style>
 </head>
 <body>
-  <div class="box">
-    <div class="mark">
-      <svg width="130" height="130" viewBox="0 0 100 100">
-        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B7BF0"/><stop offset="1" stop-color="#1E3FA8"/></linearGradient></defs>
-        <g>
-          <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="5s" repeatCount="indefinite"/>
-          <circle cx="50" cy="22" r="6" fill="url(#g)"><animate attributeName="r" values="5;7.5;5" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/></circle>
-          <circle cx="50" cy="78" r="6" fill="url(#g)"><animate attributeName="r" values="7.5;5;7.5" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.6 1;0.4 0 0.6 1"/></circle>
-          <path d="M50 78 C 72 74, 70 54, 50 50 C 30 46, 28 26, 50 22" pathLength="100" stroke="url(#g)" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="100"><animate attributeName="stroke-dashoffset" values="100;-100" dur="2.8s" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" repeatCount="indefinite"/></path>
-          <path d="M50 78 C 72 74, 70 54, 50 50 C 30 46, 28 26, 50 22" pathLength="100" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="10 110"><animate attributeName="stroke-dashoffset" values="100;-20" dur="2.8s" calcMode="spline" keyTimes="0;1" keySplines="0.45 0 0.55 1" repeatCount="indefinite"/></path>
-        </g>
-      </svg>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#top">
+        <span class="mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 6 C 7.5 7, 8 11.3, 12 12 C 16 12.7, 16.5 17, 12 18" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="12" cy="6" r="1.7" fill="#fff"/><circle cx="12" cy="18" r="1.7" fill="#fff"/>
+            <g/>
+          </svg>
+        </span>
+        ShamarrConnect
+      </a>
+      <div class="navlinks">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#security">Security</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/download">Download</a>
+      </div>
+      <div class="nav-cta">
+        <a class="btn btn-primary" href="#waitlist">Get notified</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<a id="top"></a>
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span> Launching soon</span>
+        <h1>Remote desktop,<br><span class="grad">hosted for you</span>.</h1>
+        <p class="lede">ShamarrConnect gives you fast, end-to-end encrypted control of any computer. We run the servers, you just sign in and connect. Billed monthly, payable in Naira or USD.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#waitlist">Join the waitlist</a>
+          <a class="btn btn-ghost btn-lg" href="/pricing">See pricing</a>
+        </div>
+        <p class="micro"><b>Free tier included at launch.</b> Windows, macOS, Linux and Android.</p>
+      </div>
+
+      <div class="hero-art">
+        <div class="window" role="img" aria-label="ShamarrConnect app preview">
+          <div class="titlebar">
+            <span class="tdot"></span>
+            <span class="tdot"></span>
+            <span class="tdot"></span>
+            <span style="margin-left:8px;font-size:13px;font-weight:600;color:var(--muted)">ShamarrConnect</span>
+          </div>
+          <div class="win-body">
+            <div class="field-label">Your ID</div>
+            <div class="idbox">
+              <span class="id">724 091 356</span>
+              <span class="statuspill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#16A34A"/><path d="m8 12 2.5 2.5L16 9" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Ready
+              </span>
+            </div>
+            <div class="field-label">Control a remote computer</div>
+            <div class="connect-row">
+              <input type="text" placeholder="Enter partner ID" aria-label="Partner ID">
+              <button class="go">Connect</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <span class="eyebrow"><span class="dot"></span> Launching soon</span>
-    <h1>Something private<br>is <span class="g">coming</span>.</h1>
-    <p>ShamarrConnect is a fast, end-to-end encrypted remote desktop you run on your own server. We're putting the finishing touches on it.</p>
-    <form class="wl" id="waitlist" novalidate>
+  </div>
+</section>
+
+<div class="trust">
+  <div class="wrap">
+    <span>End-to-end encrypted</span>
+    <span>Hosted for you</span>
+    <span>Monthly billing</span>
+    <span>Pay in NGN or USD</span>
+    <span>All platforms</span>
+  </div>
+</div>
+
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="center">
+      <h2>The remote desktop experience, <span class="grad">without the server work</span>.</h2>
+      <p>Everything you expect from a modern remote desktop tool, with the infrastructure run for you and billing that fits how you actually budget.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2.5" stroke="#2B5CE6" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="12" cy="15.5" r="1.6" fill="#2B5CE6"/></svg></div>
+        <h3>End-to-end encrypted</h3>
+        <p>Every session is sealed with modern cryptography. Our relay only ever sees ciphertext, never your screen or files.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="6" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><rect x="4" y="14" width="16" height="6" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="8" cy="7" r="1" fill="#2B5CE6"/><circle cx="8" cy="17" r="1" fill="#2B5CE6"/></svg></div>
+        <h3>Hosted, not self-hosted</h3>
+        <p>No relay server to install, patch or secure. We run the infrastructure and the updates, you use the app.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+        <h3>Fast and lightweight</h3>
+        <p>A single small app. Connections go directly between devices whenever possible, for control that feels local.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><path d="M8 21h8M12 17v4" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <h3>Built for real work</h3>
+        <p>Unattended access, file transfer, multi-monitor support and account sync. Windows, macOS, Linux and Android.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block steps" id="how">
+  <div class="wrap">
+    <div class="center">
+      <h2>Up and running in <span class="grad">three steps</span>.</h2>
+      <p>No server to install and nothing to configure. The app arrives already pointed at the ShamarrConnect cloud.</p>
+    </div>
+    <div class="steprow">
+      <div class="step">
+        <div class="stepnum">1</div>
+        <h3>Download the app</h3>
+        <p>One small download for Windows, macOS, Linux or Android. Nothing else to install.</p>
+      </div>
+      <div class="step">
+        <div class="stepnum">2</div>
+        <h3>Create your account</h3>
+        <p>Sign up with your email. Your saved devices and address book sync to your account.</p>
+      </div>
+      <div class="step">
+        <div class="stepnum">3</div>
+        <h3>Connect</h3>
+        <p>Every device gets a nine-digit ID. Enter a partner's ID to connect from anywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="security">
+  <div class="wrap">
+    <div class="secband">
+      <div>
+        <h2>Your sessions stay private.</h2>
+        <p>Remote sessions are encrypted end-to-end between your devices. Our relay moves ciphertext and nothing else: we cannot read your screen, your files or your keystrokes. The client is open source, so you do not have to take our word for it.</p>
+      </div>
+      <ul class="seclist">
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> End-to-end encryption on every session</li>
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Relay sees only ciphertext</li>
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Open source under AGPL-3.0, fully auditable</li>
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Server key pinning blocks impostor servers</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="download" style="padding-top:40px">
+  <div class="wrap">
+    <div class="center">
+      <h2>One app, every platform</h2>
+      <p>Pre-configured for the ShamarrConnect cloud. Download, sign in, connect.</p>
+    </div>
+    <div class="dlcards">
+      <a class="dl" href="/download">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13L10.5 19.6v-7H3v6Zm8.5 1.3L21 21V12.5h-9.5v7.3Zm0-15.6V11.5H21V3l-9.5 1.2Z"/></svg>
+        <div class="os">Windows</div>
+        <div class="sub">Windows 10 and 11, 64-bit</div>
+      </a>
+      <a class="dl" href="/download">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6"><path d="M16 2c-1.5 0-3 1.2-3 3 0 .2 0 .4.1.6C11.4 6 10 7.7 10 10c0 .5-1 1-1 3s1 4 1 6 1 3 2 3 1.5-1 3-1 2 1 3 1 2-2 2-4-1-3.5-1-5 1-2 1-4-1.6-3.2-3.1-3.4c.1-.2.1-.4.1-.6 0-1.8-1.5-3-3-3Z"/></svg>
+        <div class="os">macOS</div>
+        <div class="sub">Apple Silicon and Intel</div>
+      </a>
+      <a class="dl" href="/download">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6"><path d="M12 2c-2 0-3 2-3 4 0 1.5.5 2.5.5 3.5 0 1-2.5 3-2.5 6 0 2 1 3 1 4.5 0 1 1 2 2 2h4c1 0 2-1 2-2 0-1.5 1-2.5 1-4.5 0-3-2.5-5-2.5-6 0-1 .5-2 .5-3.5 0-2-1-4-3-4Z"/></svg>
+        <div class="os">Linux</div>
+        <div class="sub">deb and AppImage</div>
+      </a>
+      <a class="dl" href="/download">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6"><rect x="6" y="2" width="12" height="20" rx="2.5"/><rect x="10" y="18.5" width="4" height="1.4" rx=".7" fill="#fff"/></svg>
+        <div class="os">Android</div>
+        <div class="sub">Phones and tablets</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="block waitlist" id="waitlist">
+  <div class="wrap">
+    <div class="center" style="margin-bottom:32px">
+      <h2>Launching soon</h2>
+      <p>Public downloads open at launch. Leave your email and we will tell you the moment they do.</p>
+    </div>
+    <form class="wl" id="waitlist-form" novalidate>
       <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" aria-label="Email address">
       <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button type="submit">Notify me</button>
     </form>
     <div class="wlmsg" id="wlmsg" role="status"></div>
-    <div class="foot">Copyright 2026 ShamarrConnect</div>
   </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fcol fbrand">
+        <a class="brand" href="#top">
+          <span class="mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 6 C 7.5 7, 8 11.3, 12 12 C 16 12.7, 16.5 17, 12 18" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="12" cy="6" r="1.7" fill="#fff"/><circle cx="12" cy="18" r="1.7" fill="#fff"/>
+              <g/>
+            </svg>
+          </span>
+          ShamarrConnect
+        </a>
+        <p>Hosted remote desktop with end-to-end encryption. Monthly billing, payable in Naira or USD.</p>
+      </div>
+      <div class="fcol">
+        <h4>Product</h4>
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/download">Download</a>
+      </div>
+      <div class="fcol">
+        <h4>Resources</h4>
+        <a href="https://github.com/shamarrzz/shamarrconnect">GitHub</a>
+        <a href="mailto:support@shamarrconnect.com">Support</a>
+      </div>
+      <div class="fcol">
+        <h4>Company</h4>
+        <a href="mailto:hello@shamarrconnect.com">Contact</a>
+        <a href="/privacy">Privacy</a>
+      </div>
+    </div>
+    <div class="fbottom">
+      <span>Copyright 2026 ShamarrConnect. All rights reserved.</span>
+      <span class="disclaimer">Built on open-source technology under the AGPL-3.0 license.</span>
+    </div>
+  </div>
+</footer>
+
 <script>
 (function(){
-  var f=document.getElementById('waitlist'),m=document.getElementById('wlmsg');
+  var f=document.getElementById('waitlist-form'),m=document.getElementById('wlmsg');
   f.addEventListener('submit',function(e){
     e.preventDefault();
     m.textContent='';m.className='wlmsg';
@@ -75,13 +423,14 @@
       body:JSON.stringify({email:f.email.value,company:f.company.value})})
     .then(function(r){return r.json()})
     .then(function(d){
-      if(d.ok){m.textContent="You're on the list — we'll be in touch.";m.classList.add('ok');f.reset();}
-      else{m.textContent=(d.error==='invalid email')?'Please enter a valid email address.':'Something went wrong — please try again in a moment.';m.classList.add('err');}
+      if(d.ok){m.textContent="You're on the list. We'll be in touch.";m.classList.add('ok');f.reset();}
+      else{m.textContent=(d.error==='invalid email')?'Please enter a valid email address.':'Something went wrong. Please try again in a moment.';m.classList.add('err');}
     })
-    .catch(function(){m.textContent='Network error — please try again.';m.classList.add('err');})
+    .catch(function(){m.textContent='Network error. Please try again.';m.classList.add('err');})
     .finally(function(){btn.disabled=false;});
   });
 })();
 </script>
+
 </body>
 </html>

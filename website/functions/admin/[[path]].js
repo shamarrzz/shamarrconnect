@@ -70,14 +70,14 @@ export async function onRequest({ request, env }) {
   const email = team && token ? await verifyAccessJWT(token, team) : null;
   if (!email) {
     return new Response(
-      "<!DOCTYPE html><title>Locked</title><h1>403 — admin is locked</h1>" +
+      "<!DOCTYPE html><title>Locked</title><h1>403: admin is locked</h1>" +
       "<p>Sign in via Cloudflare Access first, then reload this page.</p>",
       { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
     );
   }
   if (!allowed.includes(email)) {
     return new Response(
-      "<!DOCTYPE html><title>Forbidden</title><h1>403 — not authorised</h1>" +
+      "<!DOCTYPE html><title>Forbidden</title><h1>403: not authorised</h1>" +
       `<p>${email} does not have access to this area.</p>`,
       { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
     );

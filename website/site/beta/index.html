@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Private beta invite — ShamarrConnect</title>
+<title>Private beta invite - ShamarrConnect</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
   :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF;--ok:#166534;--okbg:#DCFCE7;--warn:#92400E;--warnbg:#FEF3C7}
@@ -41,7 +41,7 @@
 
   <div class="wrap">
     <span class="badge">Private beta · invite only</span>
-    <h1>Welcome — onboarding guide</h1>
+    <h1>Welcome: onboarding guide</h1>
     <p class="lead">
       ShamarrConnect is a self-hosted remote desktop product. During private beta,
       accounts and downloads are invite-only. This page is your checklist.
@@ -50,7 +50,7 @@
     <div class="ok">
       <strong>What you need from your invite contact</strong><br>
       1) Download access (Cloudflare Access email invite or a one-time link)<br>
-      2) An account (email + password) — self-signup is disabled<br>
+      2) An account (email + password). Self-signup is disabled<br>
       3) Optional: a <em>device code</em> to join a second PC to the same account without sharing the password
     </div>
 
@@ -61,7 +61,7 @@
           <a href="/admin/get/">shamarrconnect.com/admin/get/</a>
         </li>
         <li>Download <strong>ShamarrConnect.exe</strong> (installer) and run it.</li>
-        <li>If Windows SmartScreen warns, choose <em>More info → Run anyway</em> (beta builds are not yet code-signed).</li>
+        <li>If Windows SmartScreen warns, choose <em>More info</em>, then <em>Run anyway</em> (beta builds are not yet code-signed).</li>
       </ol>
       <p style="margin-top:12px">Server is preconfigured for ShamarrConnect cloud
         (<code>api.shamarrconnect.com</code> / relay). You should not need custom server settings unless told otherwise.</p>
@@ -70,7 +70,7 @@
     <h2>2. Sign in</h2>
     <div class="card">
       <ol>
-        <li>Open ShamarrConnect → <strong>Login</strong>.</li>
+        <li>Open ShamarrConnect and go to <strong>Login</strong>.</li>
         <li>Enter the email and password from your invite contact.</li>
         <li>If MFA is enabled on your account, enter the <strong>6-digit code</strong> from your authenticator app
           (Google Authenticator, Authy, Microsoft Authenticator, etc.).</li>
@@ -82,13 +82,13 @@
       </div>
     </div>
 
-    <h2>3. Protect your account (MFA) — in the app</h2>
+    <h2>3. Protect your account (MFA) in the app</h2>
     <div class="card">
-      <p>Account MFA is separate from “Security → 2FA” on a machine (device 2FA protects <em>incoming</em> remote sessions).</p>
+      <p>Account MFA is separate from “Security &gt; 2FA” on a machine (device 2FA protects <em>incoming</em> remote sessions).</p>
       <ul>
-        <li><strong>Account MFA</strong> — Settings → <strong>Account</strong> → <em>Account sign-in protection</em> (desktop)
-          or <em>Account MFA (sign-in)</em> (mobile). Enable → scan QR → enter code → <strong>save recovery codes</strong>.</li>
-        <li><strong>Device 2FA</strong> — Settings → Security → 2FA — optional extra protection when someone connects <em>to</em> this PC.</li>
+        <li><strong>Account MFA</strong>: Settings &gt; <strong>Account</strong> &gt; <em>Account sign-in protection</em> (desktop)
+          or <em>Account MFA (sign-in)</em> (mobile). Enable, scan the QR code, enter the code, then <strong>save recovery codes</strong>.</li>
+        <li><strong>Device 2FA</strong>: Settings &gt; Security &gt; 2FA. Optional extra protection when someone connects <em>to</em> this PC.</li>
       </ul>
       <p style="margin-top:10px">Disable needs your password + authenticator (or recovery) code.
         If you lose your authenticator without recovery codes, only an admin can reset MFA.</p>
@@ -107,7 +107,7 @@
         Both PCs need the <strong>same recent app build</strong>. After installing, fully quit ShamarrConnect
         (including the tray icon) on both sides, then sign in again on the machine you will connect <em>to</em>.
       </div>
-      <p style="margin-top:10px"><strong>Device code (second PC without password):</strong> on a logged-in PC use the “add another device” / device code flow → enter that code on the new PC under Login → join with code.</p>
+      <p style="margin-top:10px"><strong>Device code (second PC without password):</strong> on a logged-in PC use the “add another device” / device code flow, then enter that code on the new PC under Login &gt; join with code.</p>
     </div>
 
     <h2>5. Good habits during beta</h2>
@@ -124,13 +124,13 @@
     <h2>6. Troubleshooting</h2>
     <div class="card">
       <ul>
-        <li><strong>Wrong password</strong> — request a reset from your invite contact (admin).</li>
-        <li><strong>Stuck on MFA</strong> — check phone time is automatic; try a recovery code; ask admin for MFA reset.</li>
-        <li><strong>Asked for remote password on same account</strong> — reinstall the latest build on <em>both</em> PCs; fully quit tray; sign in on the receiver once. Confirm Account MFA settings if you expected authenticator instead of password.</li>
-        <li><strong>MFA every reconnect</strong> — should not happen for quick reconnects; report with both client versions if it does.</li>
-        <li><strong>Cannot register</strong> — expected. Self-registration is disabled; you need an invite.</li>
-        <li><strong>Cannot download</strong> — use the invited email for Cloudflare Access; clear cookies if the wrong account is stuck.</li>
-        <li><strong>Connect fails</strong> — confirm both sides are online, IDs are correct, and firewall allows outbound connections.</li>
+        <li><strong>Wrong password</strong>: request a reset from your invite contact (admin).</li>
+        <li><strong>Stuck on MFA</strong>: check phone time is automatic; try a recovery code; ask admin for MFA reset.</li>
+        <li><strong>Asked for remote password on same account</strong>: reinstall the latest build on <em>both</em> PCs; fully quit tray; sign in on the receiver once. Confirm Account MFA settings if you expected authenticator instead of password.</li>
+        <li><strong>MFA every reconnect</strong>: should not happen for quick reconnects; report with both client versions if it does.</li>
+        <li><strong>Cannot register</strong>: expected. Self-registration is disabled; you need an invite.</li>
+        <li><strong>Cannot download</strong>: use the invited email for Cloudflare Access; clear cookies if the wrong account is stuck.</li>
+        <li><strong>Connect fails</strong>: confirm both sides are online, IDs are correct, and firewall allows outbound connections.</li>
       </ul>
     </div>
 

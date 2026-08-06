@@ -1,4 +1,4 @@
 # Pre-launch: keep the whole site out of search indexes.
-# LAUNCH DAY: delete this file (or replace with Allow) — see LAUNCH.md.
+# LAUNCH DAY: delete this file (or replace with Allow). See docs/psc/LAUNCH.md.
 User-agent: *
 Disallow: /
