@@ -910,7 +910,9 @@ jobs:
       - name: Create source tarballs (AGPL-3.0 corresponding-source offer)
         run: |
           git archive --format=tar.gz --prefix=shamarrconnect/ -o shamarrconnect-${{ env.VERSION }}-src.tar.gz HEAD
-          git -C libs/hbb_common archive --format=tar.gz --prefix=hbb_common/ -o hbb_common-${{ env.VERSION }}-src.tar.gz HEAD
+          # -o resolves relative to the -C dir, so climb back to the workspace
+          # root or the publish step's file list won't find the tarball
+          git -C libs/hbb_common archive --format=tar.gz --prefix=hbb_common/ -o ../../hbb_common-${{ env.VERSION }}-src.tar.gz HEAD
 
       - name: Publish source tarballs
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
