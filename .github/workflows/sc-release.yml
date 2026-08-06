@@ -648,11 +648,16 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y libarchive-tools libfuse2
-          # appimage-builder is legacy setup.py-style; setuptools>=78 removed
-          # ignore_egg_info_in_manifest and breaks its metadata generation.
+          # appimage-builder is legacy setup.py-style; its setup_requires pulls
+          # setuptools_scm 10.x, whose egg_info integration needs
+          # ignore_egg_info_in_manifest — present only in setuptools 61..77.
+          # ubuntu-22.04 system setuptools is 59.6.0 (too OLD), so a plain
+          # 'setuptools<78' pin is a no-op ("already satisfied"); -U forces the
+          # upgrade into the working window. Pre-installing setuptools_scm also
+          # satisfies setup_requires, skipping the .eggs easy_install fetch.
           # Runner pip (22.0.x) ignores PIP_CONSTRAINT inside build isolation
-          # (fixed only in pip 22.1), so pin system setuptools and skip isolation.
-          sudo pip3 install 'setuptools<78' wheel
+          # (fixed only in pip 22.1), so skip isolation to use this system env.
+          sudo pip3 install -U 'setuptools<78' wheel setuptools_scm
           sudo pip3 install --no-build-isolation git+https://github.com/rustdesk-org/appimage-builder.git
           pushd appimage
           sudo appimage-builder --skip-tests --recipe ./AppImageBuilder-x86_64.yml
