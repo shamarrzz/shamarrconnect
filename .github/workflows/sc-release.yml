@@ -647,7 +647,12 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libarchive-tools libfuse2
+          # appimage-builder runs host binaries against the AppDir:
+          # gdk-pixbuf-query-loaders + glib-compile-schemas + gtk-update-icon-cache
+          # (setup helpers), mksquashfs + zsyncmake (prime stage, update-info: guess).
+          sudo apt-get install -y libarchive-tools libfuse2 \
+            libgdk-pixbuf-2.0-0 libglib2.0-bin gtk-update-icon-cache \
+            squashfs-tools zsync
           # appimage-builder is legacy setup.py-style; its setup_requires pulls
           # setuptools_scm 10.x, whose egg_info integration needs
           # ignore_egg_info_in_manifest — present only in setuptools 61..77.
