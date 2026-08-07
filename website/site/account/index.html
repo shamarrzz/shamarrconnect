@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your account · ShamarrConnect</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Sign in to see your computers and account activity.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root{
+    --brand:#2B5CE6;--brand2:#5B7BF0;--brand-dk:#1E3FA8;
+    --ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF;
+    --ok:#1D9E75;--off:#9AA7BC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;min-height:100vh;display:flex;flex-direction:column}
+  a{color:var(--brand);text-decoration:none}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
+
+  header{background:#fff;border-bottom:1px solid var(--line)}
+  header .bar{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
+  header .who{margin-left:auto;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:14px}
+  header .who button{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;
+    font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+  header .who button:hover{border-color:var(--brand);color:var(--brand)}
+
+  main{flex:1;max-width:760px;width:100%;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:26px;letter-spacing:-.02em;line-height:1.2;text-wrap:balance;margin-bottom:8px}
+  h2{font-size:17px;letter-spacing:-.01em;margin:34px 0 12px}
+  .sub{color:var(--muted);font-size:15px;margin-bottom:26px}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;
+    box-shadow:0 10px 30px rgba(20,40,90,.05)}
+  label{display:block;font-size:13.5px;font-weight:600;margin:14px 0 6px}
+  input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:15px;
+    font-family:inherit;color:var(--ink);background:#fff}
+  input:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px rgba(43,92,230,.15)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;
+    font-weight:700;font-size:14.5px;padding:12px 20px;border-radius:11px;border:0;cursor:pointer;
+    width:100%;margin-top:20px;transition:background .15s}
+  .btn:hover{background:var(--brand-dk)}
+  .btn[disabled]{opacity:.6;cursor:default}
+  .err{background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:10px;
+    padding:10px 14px;font-size:13.5px;margin-top:16px;display:none}
+  .hint{font-size:13px;color:var(--muted);margin-top:18px;text-align:center}
+
+  .dev{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line)}
+  .dev:last-child{border-bottom:0}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 4px rgba(29,158,117,.15)}
+  .dot.off{background:var(--off)}
+  .dev .nm{font-weight:650;font-size:15px}
+  .dev .meta{font-size:13px;color:var(--muted)}
+  .dev .state{margin-left:auto;font-size:12.5px;font-weight:650}
+  .dev .state.on{color:var(--ok)}
+  .dev .state.off{color:var(--muted)}
+  .empty{color:var(--muted);font-size:14px;padding:18px 4px}
+
+  .act{display:flex;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px}
+  .act:last-child{border-bottom:0}
+  .act .when{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap;padding-left:12px}
+  .note{font-size:13px;color:var(--muted);margin-top:10px}
+  footer{border-top:1px solid var(--line);padding:20px 24px;text-align:center;font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a href="/" aria-label="ShamarrConnect home"><img src="/wordmark.svg" width="264" height="30" alt="ShamarrConnect" style="display:block"></a>
+    <div class="who" id="who" hidden>
+      <span id="who-email"></span>
+      <button id="signout" type="button">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Signed out -->
+  <section id="view-login">
+    <h1>Sign in to your account</h1>
+    <p class="sub">See which of your computers are online and what has been happening on your account.</p>
+    <div class="card">
+      <form id="login-form" novalidate>
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <div id="mfa-row" hidden>
+          <label for="code">Two-step code</label>
+          <input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from your app">
+        </div>
+        <button class="btn" id="login-btn" type="submit">Sign in</button>
+        <div class="err" id="login-err"></div>
+      </form>
+    </div>
+    <p class="hint">No account yet? ShamarrConnect is in private beta — <a href="/#waitlist">join the waitlist</a>.</p>
+  </section>
+
+  <!-- Console -->
+  <section id="view-console" hidden>
+    <h1>Your computers</h1>
+    <p class="sub">Computers signed in with your account. This updates itself every 30 seconds.</p>
+    <div class="card" id="devices"><div class="empty">Checking…</div></div>
+
+    <div id="peers-wrap" hidden>
+      <h2>Saved devices</h2>
+      <div class="card" id="peers"></div>
+      <p class="note">Online status shows for devices signed in with your account. For other saved devices,
+        the app shows their status directly.</p>
+    </div>
+
+    <h2>Recent activity</h2>
+    <div class="card" id="activity"><div class="empty">Nothing yet — activity will show here.</div></div>
+  </section>
+</main>
+
+<footer>ShamarrConnect · <a href="/privacy">Privacy</a> · Sessions are private by design — we can never see your screen.</footer>
+
+<script>
+(function(){
+  var API = "https://api.shamarrconnect.com";
+  var $ = function(id){ return document.getElementById(id); };
+  var mfaSecret = null, pollTimer = null;
+
+  function token(){ return sessionStorage.getItem("sc_token"); }
+  function setToken(t){ t ? sessionStorage.setItem("sc_token", t) : sessionStorage.removeItem("sc_token"); }
+
+  function showLogin(msg){
+    $("view-console").hidden = true; $("who").hidden = true;
+    $("view-login").hidden = false;
+    if (msg){ var e = $("login-err"); e.textContent = msg; e.style.display = "block"; }
+    if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  }
+  function showConsole(email){
+    $("view-login").hidden = true;
+    $("view-console").hidden = false; $("who").hidden = false;
+    $("who-email").textContent = email || "";
+    refresh();
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function(){ if (!document.hidden) refresh(); }, 30000);
+  }
+
+  function relTime(s){
+    var d = new Date(s.replace(" ", "T") + "Z");
+    var sec = Math.max(0, (Date.now() - d.getTime()) / 1000);
+    if (sec < 45) return "just now";
+    if (sec < 3600) return Math.round(sec/60) + " min ago";
+    if (sec < 86400) return Math.round(sec/3600) + " h ago";
+    var days = Math.round(sec/86400);
+    return days === 1 ? "yesterday" : days + " days ago";
+  }
+  function prettyOS(s){
+    var m = { windows:"Windows", macos:"macOS", osx:"macOS", darwin:"macOS", linux:"Linux", android:"Android", ios:"iOS" };
+    var k = (s||"").toLowerCase();
+    return m[k] || (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+  }
+  function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+
+  var PHRASES = {
+    login: function(d){ return "Signed in — " + d; },
+    account_created: function(){ return "Account created"; },
+    device_removed: function(d){ return "Device removed — " + d; },
+    devices_signed_out_others: function(d){ return "Signed out other devices (" + d + ")"; },
+    device_joined: function(d){ return "New device joined — " + d; },
+    payment: function(d){ return "Payment received — " + d; },
+    mfa_enabled: function(){ return "Two-step sign-in turned on"; },
+    mfa_disabled: function(){ return "Two-step sign-in turned off"; }
+  };
+  function phrase(ev){
+    var f = PHRASES[ev.kind];
+    var d = ev.detail || "";
+    return f ? f(d) : (ev.kind + (d ? " — " + d : ""));
+  }
+
+  function api(path){
+    return fetch(API + path, { headers: { "Authorization": "Bearer " + token() } })
+      .then(function(r){
+        if (r.status === 401){ showLogin("Please sign in again."); throw new Error("unauthorized"); }
+        if (!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      });
+  }
+
+  function refresh(){
+    api("/api/user/fleet").then(renderFleet).catch(function(){});
+    api("/api/user/activity?limit=30").then(renderActivity).catch(function(){});
+  }
+
+  function renderFleet(v){
+    var el = $("devices"), ds = v.devices || [];
+    if (!ds.length){
+      el.innerHTML = '<div class="empty">No computers signed in yet. Open the app on each computer and sign in with this account — they will show up here.</div>';
+    } else {
+      el.innerHTML = ds.map(function(d){
+        var on = !!d.online;
+        var name = d.device_name || ("Device " + d.device_id);
+        var os = prettyOS(d.device_os);
+        return '<div class="dev"><span class="dot ' + (on ? "on" : "off") + '"></span>' +
+          '<div><div class="nm">' + esc(name) + '</div>' +
+          '<div class="meta">' + esc(os) + (os ? " · " : "") + (on ? "online now" : "last seen " + relTime(d.last_seen)) + '</div></div>' +
+          '<span class="state ' + (on ? "on" : "off") + '">' + (on ? "Online" : "Offline") + '</span></div>';
+      }).join("");
+    }
+    var ps = v.peers || [];
+    $("peers-wrap").hidden = !ps.length;
+    if (ps.length){
+      $("peers").innerHTML = ps.map(function(p){
+        var name = p.alias || p.hostname || p.id;
+        var state, cls;
+        if (p.online === true){ state = "Online"; cls = "on"; }
+        else if (p.online === false){ state = "Offline"; cls = "off"; }
+        else { state = "—"; cls = "off"; }
+        return '<div class="dev"><span class="dot ' + cls + '"></span>' +
+          '<div><div class="nm">' + esc(name) + '</div>' +
+          '<div class="meta">' + esc(prettyOS(p.platform) || p.platform || "") + '</div></div>' +
+          '<span class="state ' + cls + '">' + state + '</span></div>';
+      }).join("");
+    }
+  }
+
+  function renderActivity(v){
+    var el = $("activity"), evs = v.events || [];
+    if (!evs.length){
+      el.innerHTML = '<div class="empty">Nothing yet — activity will show here.</div>';
+      return;
+    }
+    el.innerHTML = evs.map(function(ev){
+      return '<div class="act"><span>' + esc(phrase(ev)) + '</span><span class="when">' + relTime(ev.at) + '</span></div>';
+    }).join("");
+  }
+
+  function login(body){
+    var btn = $("login-btn"); btn.disabled = true; btn.textContent = "Signing in…";
+    $("login-err").style.display = "none";
+    return fetch(API + "/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res){
+        var j = res.j;
+        if (res.ok && j.access_token){
+          setToken(j.access_token);
+          showConsole(body.username);
+          return;
+        }
+        if (j.tfa_type === "tfa_check" && j.secret){
+          mfaSecret = j.secret;
+          $("mfa-row").hidden = false;
+          $("code").focus();
+          return;
+        }
+        throw new Error(j.error || "signin");
+      })
+      .catch(function(e){
+        var msg = "That email or password doesn't match our records.";
+        if (e && e.message && e.message !== "signin") msg = e.message;
+        if (e && e.name === "TypeError") msg = "Can't reach the server right now. Check your connection and try again.";
+        var el = $("login-err"); el.textContent = msg; el.style.display = "block";
+      })
+      .finally(function(){ btn.disabled = false; btn.textContent = "Sign in"; });
+  }
+
+  $("login-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var email = $("email").value.trim(), pw = $("password").value;
+    if (mfaSecret){
+      var code = $("code").value.trim();
+      login({ username: email, type: "tfa_code", tfaCode: code, verificationCode: code, secret: mfaSecret });
+    } else {
+      login({ username: email, password: pw, type: "account" });
+    }
+  });
+
+  $("signout").addEventListener("click", function(){
+    setToken(null); mfaSecret = null; showLogin();
+  });
+
+  if (token()) showConsole("");
+})();
+</script>
+</body>
+</html>
