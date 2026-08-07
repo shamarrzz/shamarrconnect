@@ -15,9 +15,8 @@
   h1,h2{text-wrap:balance}
   a:focus-visible,.dl-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:17px;letter-spacing:-.03em;text-decoration:none;color:var(--ink)}
-  .brand .alt{color:var(--brand)}
-  .brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center;flex-shrink:0}
+  .brand{display:flex;align-items:center;text-decoration:none;color:var(--ink)}
+  .brand .wordmark{height:30px;width:auto;display:block}
   nav{display:flex;gap:8px}
   nav a{font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;padding:8px 14px;border-radius:9px;transition:.15s}
   nav a:hover{background:var(--bg);color:var(--ink)}
@@ -58,9 +57,8 @@
 </head>
 <body>
   <div class="top">
-    <a class="brand" href="/">
-      <span class="mark"><svg width="20" height="20" viewBox="0 0 100 100"><path d="M50 26 C 32 30, 34 47, 50 50 C 66 53, 68 70, 50 74" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="50" cy="26" r="5.5" fill="#fff"/><circle cx="50" cy="74" r="5.5" fill="#fff"/></svg></span>
-      Shamarr<span class="alt">Connect</span>
+    <a class="brand" href="/" aria-label="ShamarrConnect home">
+      <img class="wordmark" src="/wordmark.svg" width="264" height="30" alt="ShamarrConnect">
     </a>
     <nav>
       <a href="/pricing/">Pricing</a>

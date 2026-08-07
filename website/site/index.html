@@ -52,11 +52,8 @@
   header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);
     backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
   nav{display:flex;align-items:center;justify-content:space-between;height:70px}
-  .brand{display:flex;align-items:center;gap:11px;font-weight:750;font-size:19px;letter-spacing:-.03em}
-  .brand .alt{color:var(--brand)}
-  .brand .mark{width:34px;height:34px;border-radius:9px;
-    background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center;
-    box-shadow:0 6px 14px rgba(43,92,230,.35)}
+  .brand{display:flex;align-items:center}
+  .brand .wordmark{height:34px;width:auto;display:block}
   .navlinks{display:flex;align-items:center;gap:30px}
   .navlinks a{color:var(--muted);font-weight:500;font-size:15px;transition:color .15s}
   .navlinks a:hover{color:var(--ink)}
@@ -180,14 +177,8 @@
 <header>
   <div class="wrap">
     <nav>
-      <a class="brand" href="#top">
-        <span class="mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M12 6 C 7.5 7, 8 11.3, 12 12 C 16 12.7, 16.5 17, 12 18" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="12" cy="6" r="1.7" fill="#fff"/><circle cx="12" cy="18" r="1.7" fill="#fff"/>
-            <g/>
-          </svg>
-        </span>
-        Shamarr<span class="alt">Connect</span>
+      <a class="brand" href="#top" aria-label="ShamarrConnect home">
+        <img class="wordmark" src="/wordmark.svg" width="300" height="34" alt="ShamarrConnect">
       </a>
       <div class="navlinks">
         <a href="#features">Features</a>

@@ -13,9 +13,8 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:15px 24px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:17px;letter-spacing:-.03em;text-decoration:none;color:var(--ink)}
-  .brand .alt{color:var(--brand)}
-  .brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center}
+  .brand{display:flex;align-items:center;text-decoration:none;color:var(--ink)}
+  .brand .wordmark{height:30px;width:auto;display:block}
   .wrap{max-width:760px;margin:0 auto;padding:44px 24px 64px}
   h1{font-size:30px;letter-spacing:-.02em;margin-bottom:6px}
   .upd{color:var(--muted);font-size:14px;margin-bottom:30px}
@@ -30,9 +29,8 @@
 </head>
 <body>
   <header class="top">
-    <a class="brand" href="/">
-      <span class="mark"><svg width="20" height="20" viewBox="0 0 100 100"><path d="M50 26 C 32 30, 34 47, 50 50 C 66 53, 68 70, 50 74" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="50" cy="26" r="5.5" fill="#fff"/><circle cx="50" cy="74" r="5.5" fill="#fff"/></svg></span>
-      Shamarr<span class="alt">Connect</span>
+    <a class="brand" href="/" aria-label="ShamarrConnect home">
+      <img class="wordmark" src="/wordmark.svg" width="264" height="30" alt="ShamarrConnect">
     </a>
   </header>
 
