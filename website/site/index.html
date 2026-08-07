@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShamarrConnect - Remote desktop, run for you</title>
+<title>ShamarrConnect: your computers, from anywhere</title>
 <meta name="description" data-region="ng" content="Fast, private remote desktop with everything run for you. Monthly billing, pay in Naira. Free tier included.">
 <meta name="description" data-region="intl" content="Fast, private remote desktop with everything run for you. Monthly billing, pay in USD. Free tier included.">
 <meta name="robots" content="noindex">
@@ -52,7 +52,8 @@
   header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);
     backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
   nav{display:flex;align-items:center;justify-content:space-between;height:70px}
-  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:750;font-size:19px;letter-spacing:-.03em}
+  .brand .alt{color:var(--brand)}
   .brand .mark{width:34px;height:34px;border-radius:9px;
     background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center;
     box-shadow:0 6px 14px rgba(43,92,230,.35)}
@@ -168,7 +169,8 @@
   .fcol h4{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:16px}
   .fcol a{display:block;color:var(--ink);font-size:14.5px;margin-bottom:11px;opacity:.85}
   .fcol a:hover{color:var(--brand);opacity:1}
-  .fbrand p{color:var(--muted);font-size:14px;max-width:280px;margin-top:14px}
+  .foot-name{font-weight:750;font-size:17px;letter-spacing:-.02em}
+  .fbrand p{color:var(--muted);font-size:14px;max-width:280px;margin-top:10px}
   .fbottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:13.5px}
   .disclaimer{max-width:620px}
 </style>
@@ -185,7 +187,7 @@
             <g/>
           </svg>
         </span>
-        ShamarrConnect
+        Shamarr<span class="alt">Connect</span>
       </a>
       <div class="navlinks">
         <a href="#features">Features</a>
@@ -207,13 +209,13 @@
     <div class="hero-grid">
       <div class="hero-copy">
         <span class="eyebrow"><span class="dot"></span> Launching soon</span>
-        <h1>Remote desktop,<br><span class="grad">run for you</span>.</h1>
-        <p class="lede">ShamarrConnect gives you fast, private control of any computer, from anywhere. We run everything behind the scenes. You just sign in and connect. Billed monthly, payable in <span data-region="ng">Naira</span><span data-region="intl">USD</span>.</p>
+        <h1>Remote desktop,<br>without <span class="grad">the annual bill</span>.</h1>
+        <p class="lede">The remote desktop you already know how to use, with everything run for you behind the scenes. Billed monthly, payable in <span data-region="ng">Naira</span><span data-region="intl">USD</span>. Free tier included. Switch in minutes.</p>
         <div class="hero-cta">
           <a class="btn btn-primary btn-lg" href="#waitlist">Join the waitlist</a>
           <a class="btn btn-ghost btn-lg" href="/pricing">See pricing</a>
         </div>
-        <p class="micro"><b>Free tier included at launch.</b> Windows, macOS, Linux and Android.</p>
+        <p class="micro"><b>One app for every platform.</b> Windows, macOS, Linux and Android.</p>
       </div>
 
       <div class="hero-art">
@@ -379,16 +381,8 @@
   <div class="wrap">
     <div class="fgrid">
       <div class="fcol fbrand">
-        <a class="brand" href="#top">
-          <span class="mark">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 6 C 7.5 7, 8 11.3, 12 12 C 16 12.7, 16.5 17, 12 18" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="12" cy="6" r="1.7" fill="#fff"/><circle cx="12" cy="18" r="1.7" fill="#fff"/>
-              <g/>
-            </svg>
-          </span>
-          ShamarrConnect
-        </a>
-        <p>Hosted remote desktop with end-to-end encryption. Monthly billing, payable in <span data-region="ng">Naira</span><span data-region="intl">USD</span>.</p>
+        <div class="foot-name">ShamarrConnect</div>
+        <p>Remote desktop that is private by design and run for you. Monthly billing, payable in <span data-region="ng">Naira</span><span data-region="intl">USD</span>.</p>
       </div>
       <div class="fcol">
         <h4>Product</h4>
