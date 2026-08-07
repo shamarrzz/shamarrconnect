@@ -83,11 +83,42 @@ export async function onRequest({ request, env }) {
     );
   }
 
+  const name = url.pathname.split("/").pop();
+
+  // Large binaries (APKs exceed the 25 MiB Pages asset limit) are streamed
+  // from the public releases repo THROUGH this gate: the Access check above
+  // has already passed, so the gate holds; the upstream URL is never
+  // published. Allowlist exact filenames so this can never become an open
+  // proxy.
+  const RELEASE_TAG = "1.4.8-sc1";
+  const PROXIED = [
+    `ShamarrConnect-${RELEASE_TAG}-aarch64.apk`,
+    `ShamarrConnect-${RELEASE_TAG}-armv7.apk`,
+    `ShamarrConnect-${RELEASE_TAG}-x86_64.apk`,
+  ];
+  if (url.pathname === `/admin/get/${name}` && PROXIED.includes(name)) {
+    const up = await fetch(
+      `https://github.com/shamarrzz/shamarrconnect-releases/releases/download/${RELEASE_TAG}/${name}`,
+      { redirect: "follow" }
+    );
+    if (!up.ok || !up.body) {
+      return new Response("Upstream release asset unavailable", { status: 502, headers: SEC });
+    }
+    const out = new Response(up.body, { status: 200 });
+    for (const [k, v] of Object.entries(SEC)) out.headers.set(k, v);
+    out.headers.set("Content-Type", "application/vnd.android.package-archive");
+    out.headers.set("Content-Disposition", `attachment; filename="${name}"`);
+    out.headers.set("Cache-Control", "no-store");
+    if (up.headers.get("content-length")) {
+      out.headers.set("Content-Length", up.headers.get("content-length"));
+    }
+    return out;
+  }
+
   const res = await env.ASSETS.fetch(request);
   const out = new Response(res.body, res);
   for (const [k, v] of Object.entries(SEC)) out.headers.set(k, v);
   // _headers does not apply to function-served responses; re-apply download headers.
-  const name = url.pathname.split("/").pop();
   if (url.pathname.startsWith("/admin/get/") && name && name.includes(".")) {
     out.headers.set("Content-Type", "application/octet-stream");
     out.headers.set("Content-Disposition", `attachment; filename="${name}"`);
