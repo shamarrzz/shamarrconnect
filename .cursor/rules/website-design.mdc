@@ -1,0 +1,70 @@
+---
+description: Design system + copy rules for the ShamarrConnect website (website/site/). Always apply when editing website pages.
+globs: website/**
+alwaysApply: true
+---
+
+# Website design + copy rules
+
+Applies to everything under `website/`. The site is pre-launch gated: keep
+`noindex` meta and `robots.txt` until LAUNCH.md says otherwise.
+
+## Stack (non-negotiable)
+
+- Static HTML + CSS + vanilla JS only. **No frameworks, no build step, no
+  webfonts, no external assets.** Speed is a product claim; the site must
+  prove it. System font stack everywhere:
+  `system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif`
+- Icons: inline SVG only, geometric stroke style (1.8px stroke, round caps,
+  `currentColor` or brand blue). **No emoji, no AI-sparkle/robot/wand
+  iconography, no "AI" badges** — ever. No stock photos.
+- CSP allows inline `<script>`/`style>` (`'unsafe-inline'`); `connect-src`
+  permits only `api.shamarrconnect.com`. Keep all JS inline and small.
+
+## Design tokens
+
+Use the shared variables, don't invent new ones:
+`--brand:#2B5CE6; --brand-dark:#1E3FA8; --brand-soft:#EAF0FF; --ink:#0F1B33;
+--muted:#5A6B85; --line:#E6ECF5; --bg:#FFFFFF; --bg-soft:#F8FAFF; --ok:#16A34A;
+--radius:16px; --shadow / --shadow-lg (blue-tinted).`
+Dark sections use the navy gradient `linear-gradient(135deg,#0F1B33,#1E2F5C)`.
+Headings: `letter-spacing:-.02/-.03em`, `text-wrap:balance`, weight 800.
+Interactive elements get hover lift (`translateY(-1..-4px)` + shadow) and
+`:focus-visible` outlines. Respect `prefers-reduced-motion`.
+
+## Brand
+
+- Header brand is always `<img src="/wordmark.svg">` — never re-typeset
+  "ShamarrConnect" as header text, never recolor it.
+- Footer brand is plain text (no mark).
+- Page titles: `Page · ShamarrConnect`; home: `ShamarrConnect: your computers, from anywhere`.
+
+## Copy (plain-language rules)
+
+- Write for a non-technical Nigerian business owner. No jargon ("end-to-end
+  encrypted" → "locked end-to-end / scrambled data we cannot read"), no scary
+  terms, no marketing-speak ("revolutionary", "seamless"), no exclamation marks.
+- **Repeat the core promise through lenses** (the TeamViewer pattern): the same
+  value — fast, private, run-for-you, monthly billing — restated per audience
+  (personal / small business / IT support / schools & cybercafés) and per use
+  case. Each section headline must stand alone in plain words.
+- Currency/pricing mentions MUST use `<span data-region="ng">` /
+  `data-region="intl"` variants — the edge middleware strips the non-matching
+  one. Never hardcode one currency.
+- Competitor comparisons: structural facts only (billing cadence, free tier,
+  open source), date-stamped, no exact competitor prices. No superlatives we
+  can't defend.
+- Industry/audience sections: describe the industry's problem + our real
+  capabilities (reach, support, watch over machines) only. Never claim
+  certifications (HIPAA/PCI/ISO), government approval, or existing customers.
+  No "trusted by" until it is literally true.
+
+## Structure
+
+- Every page: sticky header (wordmark + nav + CTA), content sections
+  alternating white / `--bg-soft` / navy band, footer (plain-text brand,
+  Product/Resources/Company columns).
+- The waitlist form posts to `/api/waitlist` (honeypot field `company`);
+  keep it working and CSP-safe.
+- New pages need: noindex meta, description meta (region variants if it
+  mentions price/currency), favicon links, wordmark header, footer.

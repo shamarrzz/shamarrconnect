@@ -38,15 +38,17 @@
   a{color:inherit;text-decoration:none}
   .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
   .btn{
-    display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:15px;
-    padding:13px 22px;border-radius:12px;border:1px solid transparent;cursor:pointer;
+    display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:14.5px;
+    padding:10px 18px;border-radius:11px;border:1px solid transparent;cursor:pointer;
     transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
   }
   .btn-primary{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(43,92,230,.28)}
   .btn-primary:hover{background:var(--brand-dark);transform:translateY(-1px);box-shadow:0 12px 26px rgba(43,92,230,.34)}
   .btn-ghost{background:#fff;color:var(--ink);border-color:var(--line)}
   .btn-ghost:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
-  .btn-lg{padding:16px 28px;font-size:16px;border-radius:14px}
+  .btn-lg{padding:13px 24px;font-size:15.5px;border-radius:13px}
+  .btn-light{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.25)}
+  .btn-light:hover{border-color:#fff;background:rgba(255,255,255,.14);transform:translateY(-1px)}
 
   /* NAV */
   header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);
@@ -60,27 +62,38 @@
   .nav-cta{display:flex;align-items:center;gap:14px}
   @media(max-width:820px){.navlinks{display:none}}
 
-  /* HERO */
-  .hero{position:relative;overflow:hidden;
-    background:radial-gradient(1200px 600px at 70% -10%, #F1F0FF 0%, transparent 60%),
-               linear-gradient(180deg,#F6F9FF 0%, #FFFFFF 100%)}
-  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;
-    padding:88px 0 96px}
-  .eyebrow{display:inline-flex;align-items:center;gap:9px;background:var(--brand-soft);
-    color:var(--brand-dark);font-weight:600;font-size:13px;padding:7px 14px;border-radius:100px;margin-bottom:22px}
-  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
-  h1{font-size:54px;line-height:1.07;letter-spacing:-.03em;font-weight:800;margin-bottom:20px}
-  h1 .grad{color:var(--brand)}
-  .lede{font-size:19px;color:var(--muted);max-width:520px;margin-bottom:32px}
+  /* HERO (dark, dramatic) */
+  .hero{position:relative;overflow:hidden;color:#fff;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(43,92,230,.45) 0%, transparent 55%),
+      radial-gradient(700px 500px at 5% 110%, rgba(43,92,230,.28) 0%, transparent 55%),
+      linear-gradient(160deg,#0B1430 0%, #101E45 55%, #0F1B33 100%)}
+  .hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:56px 56px;
+    -webkit-mask-image:radial-gradient(75% 65% at 50% 30%, #000 0%, transparent 100%);
+            mask-image:radial-gradient(75% 65% at 50% 30%, #000 0%, transparent 100%)}
+  .hero-grid{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;
+    padding:96px 0 104px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.16);color:#D9E4FF;font-weight:600;font-size:13px;
+    padding:7px 14px;border-radius:100px;margin-bottom:24px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;box-shadow:0 0 10px rgba(74,222,128,.9)}
+  .hero h1{font-size:clamp(42px,5.6vw,66px);line-height:1.04;letter-spacing:-.035em;font-weight:800;margin-bottom:22px;color:#fff}
+  .hero h1 .grad{background:linear-gradient(92deg,#7DA2FF 0%,#B9CBFF 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{font-size:19px;color:#B9C6E4;max-width:540px;margin-bottom:34px}
   .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-  .micro{margin-top:16px;font-size:13.5px;color:var(--muted)}
-  .micro b{color:var(--ink)}
-  @media(max-width:820px){.hero-grid{grid-template-columns:1fr;padding:60px 0}.hero-art{order:-1}h1{font-size:40px}}
+  .micro{margin-top:18px;font-size:13.5px;color:#93A4C8}
+  .micro b{color:#E6ECFA}
+  @media(max-width:820px){.hero-grid{grid-template-columns:1fr;padding:64px 0}.hero-art{order:-1}}
 
   /* APP MOCK */
-  .hero-art{display:flex;justify-content:center}
-  .window{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);
-    border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden}
+  .hero-art{position:relative;display:flex;justify-content:center}
+  .hero-art::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;
+    background:radial-gradient(circle,rgba(80,124,255,.4) 0%,transparent 65%);filter:blur(20px);pointer-events:none}
+  .window{position:relative;width:100%;max-width:440px;background:#fff;color:var(--ink);border:1px solid rgba(255,255,255,.4);
+    border-radius:18px;box-shadow:0 40px 90px rgba(2,8,30,.55);overflow:hidden}
   .titlebar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg-soft)}
   .titlebar .tdot{width:11px;height:11px;border-radius:50%;background:#D4DCEA}
   .win-body{padding:24px}
@@ -92,17 +105,24 @@
   .connect-row{display:flex;gap:10px;margin-top:6px}
   .connect-row input{flex:1;border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:15px;color:var(--ink)}
   .connect-row .go{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:0 20px;font-weight:600;font-size:15px;cursor:pointer}
+  .floatcard{position:absolute;left:-20px;bottom:-14px;background:#fff;color:var(--ink);border-radius:14px;
+    box-shadow:0 20px 50px rgba(2,8,30,.5);padding:13px 17px;display:flex;align-items:center;gap:11px;
+    border:1px solid rgba(255,255,255,.4);pointer-events:none}
+  .floatcard .fic{width:34px;height:34px;border-radius:9px;background:var(--brand-soft);display:grid;place-items:center;flex:none}
+  .floatcard .ft{font-size:13px;font-weight:700;line-height:1.3}
+  .floatcard .fs{font-size:12px;color:var(--muted)}
+  @media(max-width:820px){.floatcard{left:6px;bottom:-18px}}
 
-  /* TRUST STRIP */
-  .trust{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff}
-  .trust .wrap{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;padding:24px}
-  .trust span{color:var(--muted);font-weight:600;font-size:14.5px;padding:6px 28px;border-left:1px solid var(--line)}
-  .trust span:first-child{border-left:none}
+  /* FACT CHIPS (hero bottom) */
+  .facts{position:relative;border-top:1px solid rgba(255,255,255,.12)}
+  .facts .wrap{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;padding:22px 24px}
+  .facts span{color:#B9C6E4;font-weight:600;font-size:14.5px;padding:6px 28px;border-left:1px solid rgba(255,255,255,.12)}
+  .facts span:first-child{border-left:none}
 
   /* SECTIONS */
   section.block{padding:96px 0}
-  .center{text-align:center;max-width:720px;margin:0 auto 56px}
-  .center h2{font-size:38px;letter-spacing:-.025em;font-weight:800;margin-bottom:16px}
+  .center{text-align:center;max-width:740px;margin:0 auto 56px}
+  .center h2{font-size:clamp(30px,3.6vw,40px);letter-spacing:-.025em;font-weight:800;margin-bottom:16px}
   .center p{font-size:18px;color:var(--muted)}
   h2 .grad{color:var(--brand)}
 
@@ -115,6 +135,48 @@
   .card .ico{width:46px;height:46px;border-radius:12px;background:var(--brand-soft);display:grid;place-items:center;margin-bottom:18px}
   .card h3{font-size:18px;margin-bottom:9px;letter-spacing:-.01em}
   .card p{font-size:14.5px;color:var(--muted)}
+
+  /* WHO IT'S FOR */
+  .who{background:var(--bg-soft)}
+  .who .card .tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--brand-dark);background:var(--brand-soft);padding:4px 10px;border-radius:100px;margin-bottom:14px}
+
+  /* INDUSTRIES */
+  .ind .card{padding:24px 22px}
+  .ind .card .ico{width:42px;height:42px;margin-bottom:15px}
+  .ind .card h3{font-size:16.5px}
+
+  /* SPEED / CONTROL SPLIT */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+  @media(max-width:820px){.split{grid-template-columns:1fr}}
+  .split h2{font-size:clamp(30px,3.6vw,40px);letter-spacing:-.025em;font-weight:800;margin-bottom:18px}
+  .split .lead{font-size:18px;color:var(--muted);margin-bottom:26px}
+  .ticks{list-style:none;display:grid;gap:16px}
+  .ticks li{display:flex;gap:13px;align-items:flex-start;font-size:15.5px}
+  .ticks .tk{flex:none;width:26px;height:26px;border-radius:8px;background:var(--brand-soft);display:grid;place-items:center;margin-top:1px}
+  .ticks b{font-weight:700}
+  .ticks span{color:var(--muted)}
+  .panel{background:linear-gradient(135deg,#0F1B33,#1E2F5C);color:#fff;border-radius:24px;padding:38px 34px;
+    box-shadow:var(--shadow-lg)}
+  .panel .prow{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+  .panel .prow:last-child{border-bottom:none}
+  .panel .pic{flex:none;width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.1);display:grid;place-items:center}
+  .panel .pt{font-weight:700;font-size:15.5px}
+  .panel .ps{color:#B9C6E4;font-size:13.5px}
+
+  /* COMPARISON */
+  .cmp{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .cmp th,.cmp td{padding:16px 20px;text-align:left;font-size:14.5px;border-bottom:1px solid var(--line)}
+  .cmp thead th{background:var(--bg-soft);font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .cmp thead th.us{color:var(--brand-dark)}
+  .cmp tbody tr:last-child td{border-bottom:none}
+  .cmp td.us{font-weight:700;color:var(--ink);background:#F6F9FF}
+  .cmp th.us{background:#EAF0FF}
+  .cmp .yes{color:var(--ok);font-weight:700}
+  .cmp .no{color:#B03A3A;font-weight:600}
+  .cmp-note{margin-top:16px;font-size:12.5px;color:var(--muted);text-align:center}
+  .cmpwrap{max-width:860px;margin:0 auto;overflow-x:auto}
 
   /* STEPS */
   .steps{background:var(--bg-soft)}
@@ -150,7 +212,7 @@
   .wl{display:flex;gap:10px;max-width:440px;margin:0 auto}
   .wl input[type=email]{flex:1;padding:14px 18px;border:1px solid var(--line);border-radius:12px;font-size:15px;min-width:0;background:#fff}
   .wl input[type=email]:focus{outline:2px solid var(--brand);outline-offset:1px}
-  .wl button{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:14px 24px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 20px rgba(43,92,230,.28)}
+  .wl button{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 8px 20px rgba(43,92,230,.28)}
   .wl button:hover{background:var(--brand-dark)}
   .wl button:disabled{opacity:.6;cursor:default}
   .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
@@ -170,6 +232,19 @@
   .fbrand p{color:var(--muted);font-size:14px;max-width:280px;margin-top:10px}
   .fbottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:13.5px}
   .disclaimer{max-width:620px}
+
+  @media (prefers-reduced-motion: no-preference){
+    .window,.floatcard{animation:rise .7s ease both}
+    .floatcard{animation-delay:.18s}
+    @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+    .titlebar .tdot{animation:dotglow 2.6s ease-in-out infinite}
+    .titlebar .tdot:nth-child(2){animation-delay:.4s}
+    .titlebar .tdot:nth-child(3){animation-delay:.8s}
+    @keyframes dotglow{
+      0%,100%{background:#D4DCEA;box-shadow:none}
+      50%{background:var(--brand);box-shadow:0 0 9px rgba(43,92,230,.65)}
+    }
+  }
 </style>
 </head>
 <body>
@@ -181,9 +256,10 @@
         <img class="wordmark" src="/wordmark.svg" width="300" height="34" alt="ShamarrConnect">
       </a>
       <div class="navlinks">
+        <a href="#who">Who it's for</a>
+        <a href="#industries">Industries</a>
         <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-        <a href="#security">Security</a>
+        <a href="#compare">Compare</a>
         <a href="/pricing">Pricing</a>
         <a href="/download">Download</a>
       </div>
@@ -201,16 +277,16 @@
       <div class="hero-copy">
         <span class="eyebrow"><span class="dot"></span> Launching soon</span>
         <h1>Remote desktop,<br>without <span class="grad">the annual bill</span>.</h1>
-        <p class="lede">The remote desktop you already know how to use, with everything run for you behind the scenes. Billed monthly, payable in <span data-region="ng">Naira</span><span data-region="intl">USD</span>. Free tier included. Switch in minutes.</p>
+        <p class="lede">The remote desktop you already know how to use, with everything run for you behind the scenes. Fast connections, full control, billed monthly and payable in <span data-region="ng">Naira</span><span data-region="intl">USD</span>. Free tier included. Switch in minutes.</p>
         <div class="hero-cta">
           <a class="btn btn-primary btn-lg" href="#waitlist">Join the waitlist</a>
-          <a class="btn btn-ghost btn-lg" href="/pricing">See pricing</a>
+          <a class="btn btn-light btn-lg" href="/pricing">See pricing</a>
         </div>
         <p class="micro"><b>One app for every platform.</b> Windows, macOS, Linux and Android.</p>
       </div>
 
       <div class="hero-art">
-        <div class="window" role="img" aria-label="ShamarrConnect app preview">
+        <div class="window">
           <div class="titlebar">
             <span class="tdot"></span>
             <span class="tdot"></span>
@@ -220,7 +296,7 @@
           <div class="win-body">
             <div class="field-label">Your ID</div>
             <div class="idbox">
-              <span class="id">724 091 356</span>
+              <span class="id"><span data-region="ng">234 801 234</span><span data-region="intl">812 345 678</span></span>
               <span class="statuspill">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#16A34A"/><path d="m8 12 2.5 2.5L16 9" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Ready
@@ -228,27 +304,149 @@
             </div>
             <div class="field-label">Control a remote computer</div>
             <div class="connect-row">
-              <input type="text" placeholder="Enter partner ID" aria-label="Partner ID">
-              <button class="go">Connect</button>
+              <input type="text" id="mock-partner" placeholder="Enter partner ID" aria-label="Partner ID" inputmode="numeric" autocomplete="off">
+              <button class="go" id="mock-connect">Connect</button>
             </div>
           </div>
+        </div>
+        <div class="floatcard" aria-hidden="true">
+          <span class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <span>
+            <span class="ft" id="fc-title">Connected to SHOP-PC</span><br>
+            <span class="fs"><span id="fc-sub">Direct connection</span><span data-region="ng"> · Lagos</span></span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="facts">
+    <div class="wrap">
+      <span>Set up in 3 minutes</span>
+      <span>Free tier included</span>
+      <span>Monthly billing</span>
+      <span data-region="ng">Pay in Naira</span><span data-region="intl">Pay in USD</span>
+      <span>Private by design</span>
+    </div>
+  </div>
+</section>
+
+<section class="block who" id="who">
+  <div class="wrap">
+    <div class="center">
+      <h2>Made for how <span class="grad">you</span> work.</h2>
+      <p>One tool, the same promise everywhere: fast connections, full control, and billing that fits how you actually budget.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <span class="tag">Personal use</span>
+        <h3>Your computers, from anywhere</h3>
+        <p>Reach your home or office computer from your phone or laptop. Free for personal use, with nothing to set up.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Small business</span>
+        <h3>Support your team yourself</h3>
+        <p>Fix a colleague's computer without an IT department and without leaving your desk. Monthly billing, cancel any month.</p>
+      </div>
+      <div class="card">
+        <span class="tag">IT support &amp; freelancers</span>
+        <h3>Help clients, get paid fairly</h3>
+        <p>Connect to client machines in seconds with a nine-digit ID. Look after every client from one account, priced in <span data-region="ng">Naira</span><span data-region="intl">USD</span>.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Schools &amp; cybercaf&eacute;s</span>
+        <h3>Watch over every machine</h3>
+        <p>See all your computers from your browser, know which are online, and reach any of them when something goes wrong.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="industries">
+  <div class="wrap">
+    <div class="center">
+      <h2>Every line of work, <span class="grad">same problem solved</span>.</h2>
+      <p>A computer you need is somewhere you are not. Here is what that looks like in your line of work.</p>
+    </div>
+    <div class="cards ind">
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M5 15l1.6-4.6A2 2 0 0 1 8.5 9h7a2 2 0 0 1 1.9 1.4L19 15" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="15" width="16" height="4" rx="1.5" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="8" cy="19.4" r="1.3" fill="#2B5CE6"/><circle cx="16" cy="19.4" r="1.3" fill="#2B5CE6"/></svg></div>
+        <h3>Automotive</h3>
+        <p>Reach the workshop's diagnostic and records computer without being on-site.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 21v-8" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13c0-3 2.5-5 6-5 0 3-2.5 5-6 5Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13c0-3-2.5-5-6-5 0 3 2.5 5 6 5Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+        <h3>Agriculture</h3>
+        <p>Reach the farm office computer from the city, even on a thin connection.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="12" height="9" rx="1.5" stroke="#2B5CE6" stroke-width="1.8"/><path d="M14.5 10.5h3.8l2.7 3v2.5h-6.5" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18.5" r="1.5" stroke="#2B5CE6" stroke-width="1.6"/><circle cx="17.5" cy="18.5" r="1.5" stroke="#2B5CE6" stroke-width="1.6"/></svg></div>
+        <h3>Logistics &amp; transport</h3>
+        <p>Keep the dispatch computer healthy while your vehicles are on the road.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#2B5CE6" stroke-width="1.8"/><path d="M12 3v2.6M12 18.4V21M3 12h2.6M18.4 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <h3>Manufacturing</h3>
+        <p>Reach the computer on the factory floor without stopping the line.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10l1.2-5h13.6L20 10" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 10v9.5h14V10" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 19.5v-5h5v5" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+        <h3>Retail &amp; POS</h3>
+        <p>Check the shop's sales computer from anywhere and fix the attendant's problem without a trip.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#2B5CE6" stroke-width="1.8"/><path d="M12 8.5v7M8.5 12h7" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <h3>Clinics &amp; healthcare</h3>
+        <p>Expert help for the records computer without an on-site visit. Sessions stay locked end-to-end.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="19" height="10" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" stroke="#2B5CE6" stroke-width="1.6"/><path d="M6 10.5v3M18 10.5v3" stroke="#2B5CE6" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+        <h3>Financial services</h3>
+        <p>Support the computers your agents and branches rely on, all from one account.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 20h16" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><path d="M5.5 20v-8.5M10 20v-8.5M14 20v-8.5M18.5 20v-8.5" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 9 12 4.5 20.5 9" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+        <h3>Public sector &amp; NGOs</h3>
+        <p>Monthly billing in <span data-region="ng">Naira</span><span data-region="intl">USD</span> that fits tight budgets, and field offices supported without travel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="speed" style="padding-top:0">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <h2>Made for speed.<br>Built for <span class="grad">control</span>.</h2>
+        <p class="lead">Your devices talk directly to each other whenever they can, so control feels instant. And when the connection is tight, you decide what matters.</p>
+        <ul class="ticks">
+          <li><span class="tk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#2B5CE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Direct connections.</b> No detours through far-away servers when your devices can reach each other directly.</span></li>
+          <li><span class="tk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#2B5CE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Quality you choose.</b> Turn the picture quality up or down to match your connection, so work continues on slow networks.</span></li>
+          <li><span class="tk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#2B5CE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Your session, your rules.</b> Decide what a partner may do: see your screen, use your keyboard, move files, or nothing at all.</span></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="prow">
+          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z" stroke="#B9CBFF" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <span><span class="pt">Feels instant</span><br><span class="ps">One small app, light on data and memory</span></span>
+        </div>
+        <div class="prow">
+          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="#B9CBFF" stroke-width="1.8"/><path d="M8 21h8M12 17v4" stroke="#B9CBFF" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+          <span><span class="pt">All your screens</span><br><span class="ps">Move between monitors like you are sitting there</span></span>
+        </div>
+        <div class="prow">
+          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0 4-4m-4 4-4-4" stroke="#B9CBFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#B9CBFF" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+          <span><span class="pt">Move files both ways</span><br><span class="ps">Send documents to and from the remote computer</span></span>
+        </div>
+        <div class="prow">
+          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2.5" stroke="#B9CBFF" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#B9CBFF" stroke-width="1.8"/></svg></span>
+          <span><span class="pt">Reach it when no one is there</span><br><span class="ps">Your saved computers stay reachable around the clock</span></span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<div class="trust">
-  <div class="wrap">
-    <span>Private by design</span>
-    <span>No server needed</span>
-    <span>Monthly billing</span>
-    <span data-region="ng">Pay in Naira</span><span data-region="intl">Pay in USD</span>
-    <span>All platforms</span>
-  </div>
-</div>
-
-<section class="block" id="features">
+<section class="block" id="features" style="padding-top:0">
   <div class="wrap">
     <div class="center">
       <h2>The remote desktop experience, <span class="grad">without the server work</span>.</h2>
@@ -266,9 +464,9 @@
         <p>No server to install or look after. We run everything and keep it updated. You just use the app.</p>
       </div>
       <div class="card">
-        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
-        <h3>Fast and lightweight</h3>
-        <p>One small app. Devices talk directly to each other whenever possible, so control feels instant.</p>
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>See your machines at a glance</h3>
+        <p>Your own web page shows every computer on your account, which are online, and what happened recently.</p>
       </div>
       <div class="card">
         <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><path d="M8 21h8M12 17v4" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
@@ -276,6 +474,31 @@
         <p>Reach your computer even when no one is there. Move files, use all your screens, keep everything in sync. Windows, macOS, Linux and Android.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="block" id="compare" style="padding-top:0">
+  <div class="wrap">
+    <div class="center">
+      <h2>Why people switch to <span class="grad">ShamarrConnect</span>.</h2>
+      <p>The same job the big tools do, without the parts that frustrate you.</p>
+    </div>
+    <div class="cmpwrap">
+      <table class="cmp">
+        <thead>
+          <tr><th></th><th class="us">ShamarrConnect</th><th>TeamViewer</th><th>AnyDesk</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pay monthly, cancel any month</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">Annual only</span></td><td><span class="no">Annual only</span></td></tr>
+          <tr><td>Free tier for personal use</td><td class="us"><span class="yes">Yes</span></td><td>Limited</td><td>Limited</td></tr>
+          <tr data-region="ng"><td>Pay in Naira</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">No</span></td><td><span class="no">No</span></td></tr>
+          <tr><td>Sessions locked end-to-end</td><td class="us"><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td></tr>
+          <tr><td>Open-source app you can inspect</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">No</span></td><td><span class="no">No</span></td></tr>
+          <tr><td>Everything run for you, no server</td><td class="us"><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cmp-note">Checked on their public pages, August 2026. TeamViewer and AnyDesk are trademarks of their owners.</p>
   </div>
 </section>
 
@@ -402,6 +625,28 @@
 
 <script>
 (function(){
+  /* Hero mock: floatcard follows the typed partner ID; Connect leads to the
+     waitlist while signups are gated (repoint to signup at launch). */
+  var mp=document.getElementById('mock-partner'),mc=document.getElementById('mock-connect'),
+      fct=document.getElementById('fc-title'),fcs=document.getElementById('fc-sub');
+  if(mp&&mc&&fct&&fcs){
+    var DEF_T=fct.textContent,DEF_S=fcs.textContent;
+    function grp(v){return v.replace(/\D/g,'').slice(0,9).replace(/(\d{3})(?=\d)/g,'$1 ');}
+    mp.addEventListener('input',function(){
+      var g=grp(mp.value);
+      if(g){fct.textContent='Partner '+g;fcs.textContent='Ready to connect';}
+      else{fct.textContent=DEF_T;fcs.textContent=DEF_S;}
+    });
+    function go(){
+      var smooth=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.getElementById('waitlist').scrollIntoView({behavior:smooth?'smooth':'auto'});
+      var em=document.querySelector('#waitlist-form input[type=email]');
+      if(em)setTimeout(function(){em.focus({preventScroll:true});},smooth?600:0);
+    }
+    mc.addEventListener('click',go);
+    mp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
+  }
+
   var f=document.getElementById('waitlist-form'),m=document.getElementById('wlmsg');
   f.addEventListener('submit',function(e){
     e.preventDefault();
