@@ -11,7 +11,7 @@
 <style>
   :root{--brand:#2B5CE6;--brand2:#5B7BF0;--brand-dk:#1E3FA8;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:15px 24px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none;color:var(--ink)}
   .brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center}
@@ -42,13 +42,13 @@
     <p>ShamarrConnect provides remote-desktop access. This statement explains, in plain language, what the service can and cannot see. ShamarrConnect is in private beta and this document will be expanded into full legal terms before public launch.</p>
 
     <h2>Your remote sessions are end-to-end encrypted</h2>
-    <p>When you connect to another device, the session is encrypted directly between the two devices. Our relay servers only pass along encrypted traffic. They cannot read your screen, keystrokes, files, or clipboard.</p>
+    <p>When you connect to another device, the session is locked directly between the two devices. Our servers only pass along scrambled data they cannot read. They cannot see your screen, what you type, your files, or your clipboard.</p>
 
     <h2>What we store</h2>
     <ul>
       <li><strong>Account details</strong>: your email and a securely hashed password (we never store passwords in plain text).</li>
       <li><strong>Your address book</strong>: the device IDs and labels you choose to save, so they sync across your machines.</li>
-      <li><strong>Connection metadata</strong>: device IDs and timestamps used to route connections and protect the network from abuse.</li>
+      <li><strong>Connection details</strong>: device IDs and times, used to route connections and protect the network from abuse.</li>
     </ul>
 
     <h2>What we do not do</h2>
@@ -59,7 +59,7 @@
     </ul>
 
     <h2>Where your data lives</h2>
-    <p>Account data is held on infrastructure operated by ShamarrConnect, not by a third-party remote-desktop vendor. Access to production systems is restricted and audited.</p>
+    <p>Account data is held on systems run by ShamarrConnect, not by a third-party remote-desktop vendor. Access to production systems is restricted and audited.</p>
 
     <h2>Contact</h2>
     <p>Questions about privacy or a data request? Email <a href="mailto:privacy@shamarrconnect.com">privacy@shamarrconnect.com</a>.</p>

@@ -11,7 +11,9 @@
 <style>
   :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65;min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  h1,h2{text-wrap:balance}
+  a:focus-visible,.dl-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none;color:var(--ink)}
   .brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#5B7BF0);display:grid;place-items:center;flex-shrink:0}
@@ -68,7 +70,7 @@
   <div class="wrap">
     <span class="badge">Public beta</span>
     <h1>Get ShamarrConnect</h1>
-    <p class="lead">Hosted remote desktop with end-to-end encryption. Download the app, sign in, and connect.</p>
+    <p class="lead">Remote desktop that is private by design and run for you. Download the app, sign in, and connect.</p>
 
     <div class="platforms">
       <div class="plat featured">
@@ -79,11 +81,11 @@
           </div>
           <span class="chip ready">Available</span>
         </div>
-        <p>Windows 10 / 11, 64-bit. One self-contained installer, no dependencies.</p>
+        <p>Windows 10 and 11, 64-bit. One installer, nothing else needed.</p>
         <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-windows-x86_64.exe">
           Download for Windows
         </a>
-        <p style="font-size:12px;color:var(--muted);text-align:center">Beta builds are not yet code-signed. Click “More info”, then “Run anyway” if SmartScreen warns you.</p>
+        <p style="font-size:12px;color:var(--muted);text-align:center">Windows may show a warning while we are in beta. Click “More info”, then “Run anyway”. It is safe.</p>
       </div>
 
       <div class="plat">
@@ -94,10 +96,10 @@
           </div>
           <span class="chip ready">Available</span>
         </div>
-        <p>Separate builds per chip. Grant Screen Recording &amp; Accessibility when prompted.</p>
+        <p>Pick your Mac's chip. Allow screen recording when macOS asks.</p>
         <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-macos-aarch64.dmg">Apple Silicon (M-series)</a>
         <a class="dl-btn outline" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-macos-x86_64.dmg">Intel</a>
-        <p style="font-size:12px;color:var(--muted);text-align:center">Unsigned beta: right-click the app, then “Open”, to bypass Gatekeeper on first launch.</p>
+        <p style="font-size:12px;color:var(--muted);text-align:center">While we are in beta: right-click the app and choose “Open” the first time you run it.</p>
       </div>
 
       <div class="plat">
@@ -108,7 +110,7 @@
           </div>
           <span class="chip ready">Available</span>
         </div>
-        <p>deb package (Debian/Ubuntu) &amp; AppImage for other distros. Incoming sessions require X11; on Wayland you can connect out but not in.</p>
+        <p>For Ubuntu, Debian and most other Linux systems. On very new desktops (Wayland), you can connect out to others but they cannot connect in yet.</p>
         <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/shamarrconnect-linux-amd64.deb">Download .deb</a>
         <a class="dl-btn outline" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-linux-x86_64.AppImage">Download AppImage</a>
       </div>
@@ -121,9 +123,9 @@
           </div>
           <span class="chip ready">Available</span>
         </div>
-        <p>View and control from your phone. APK direct download; Play Store listing comes later.</p>
+        <p>View and control from your phone. Download straight from us; the Play Store listing comes later.</p>
         <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-android-aarch64.apk">Download APK (64-bit)</a>
-        <p style="font-size:12px;color:var(--muted);text-align:center">Older 32-bit phones: use the armv7 build in the <a href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest" style="color:var(--brand)">releases repository</a>.</p>
+        <p style="font-size:12px;color:var(--muted);text-align:center">Older phones: grab the 32-bit version from our <a href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest" style="color:var(--brand)">releases page</a>.</p>
       </div>
     </div>
 
@@ -134,7 +136,7 @@
           <div class="step-num">1</div>
           <div class="step-body">
             <strong>Download and run</strong>
-            <p>Open the installer. It comes pre-configured for the ShamarrConnect cloud.</p>
+            <p>Open the installer. It is already set up, with nothing to configure.</p>
           </div>
         </div>
         <div class="step">
@@ -148,7 +150,7 @@
           <div class="step-num">3</div>
           <div class="step-body">
             <strong>Connect</strong>
-            <p>Enter the remote device's ID, accept the request, and you're in. End-to-end encrypted.</p>
+            <p>Enter the other device's ID, accept the request, and you're in. Every session is private.</p>
           </div>
         </div>
       </div>
@@ -156,9 +158,9 @@
 
     <div class="info-box">
       <strong>All releases &amp; source</strong>
-      Every version, checksum and the AGPL-3.0 source snapshots live in the public
-      <a href="https://github.com/shamarrzz/shamarrconnect-releases" style="color:#1E3FA8;font-weight:600">releases repository</a>.
-      ShamarrConnect is built on the open-source RustDesk protocol.
+      Every version and its source code live on our public
+      <a href="https://github.com/shamarrzz/shamarrconnect-releases" style="color:#1E3FA8;font-weight:600">releases page</a>.
+      ShamarrConnect is built on open-source technology.
     </div>
   </div>
 

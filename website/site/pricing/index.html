@@ -16,7 +16,9 @@
     --ok:#16A34A;--okbg:#E7F7EE;--okln:#BCE7CE
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  h1,h2,h3{text-wrap:balance}
+  a:focus-visible,.btn:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
   a{color:inherit}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:15px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;text-decoration:none}
@@ -140,8 +142,8 @@
           <li class="head">Includes</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>1 user</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 3 saved devices</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited 1-to-1 sessions</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>End-to-end encryption</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited sessions</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Private by design</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>File transfer &amp; chat</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Community support</li>
         </ul>
@@ -157,11 +159,11 @@
         <a class="btn primary" id="cta-pro" href="mailto:sales@shamarrconnect.com?subject=ShamarrConnect%20Pro">Start with Pro</a>
         <ul class="feats">
           <li class="head">Everything in Free, plus</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 25 managed devices</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited concurrent connections</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Account two-factor authentication</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Address book sync</li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Audit log<span class="s">soon</span></li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 25 saved devices</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited connections at once</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Two-step sign-in</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Synced address book</li>
+          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Activity history<span class="s">soon</span></li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
         </ul>
       </div>
@@ -176,10 +178,10 @@
         <ul class="feats">
           <li class="head">Everything in Pro, plus</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 10 users</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 150 managed devices</li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Web admin console<span class="s">soon</span></li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Role-based access control<span class="s">soon</span></li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Single sign-on (SSO)<span class="s">soon</span></li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 150 saved devices</li>
+          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Manage your team in the browser<span class="s">soon</span></li>
+          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Choose who can do what<span class="s">soon</span></li>
+          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Sign in with a company account<span class="s">soon</span></li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
         </ul>
       </div>
@@ -194,10 +196,10 @@
         <ul class="feats">
           <li class="head">Everything in Team, plus</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited users &amp; devices</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Dedicated relay servers</li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>LDAP / OIDC integration<span class="s">soon</span></li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>White-label branding</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>SLA &amp; onboarding</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Your own private servers</li>
+          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Works with company login systems<span class="s">soon</span></li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Your own branding</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Uptime guarantee &amp; personal onboarding</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Dedicated account manager</li>
         </ul>
       </div>
@@ -216,10 +218,10 @@
 
   <section class="how">
     <h2>From sign-up to connected in minutes</h2>
-    <p class="sub">No server to install. We host the infrastructure for you.</p>
+    <p class="sub">No server to install. We run everything for you.</p>
     <div class="steps">
       <div class="step"><div class="n">1</div><h3>Download the app</h3><p>One small app for Windows, macOS, Linux and Android. Pre-configured for the ShamarrConnect network, no setup.</p></div>
-      <div class="step"><div class="n">2</div><h3>Create your account</h3><p>Sign up with email. Your saved devices sync to your account, TeamViewer-style.</p></div>
+      <div class="step"><div class="n">2</div><h3>Create your account</h3><p>Sign up with your email. Devices you save stay with your account.</p></div>
       <div class="step"><div class="n">3</div><h3>Share your ID</h3><p>Every device gets a 9-digit ID. Share it to receive help, or enter a partner's ID to connect.</p></div>
       <div class="step"><div class="n">4</div><h3>Upgrade when ready</h3><p>Start free. Move to Pro or Team for more devices, users, and admin controls.</p></div>
     </div>
@@ -243,7 +245,7 @@
 
     <details><summary>Do you offer non-profit or education discounts?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Yes. We offer discounts for registered non-profits and educational institutions. <a href="mailto:sales@shamarrconnect.com">Get in touch</a> with a bit about your organization.</div></details>
 
-    <details><summary>Where does my data live, and is it private?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Remote sessions are end-to-end encrypted. Our relay only ever sees ciphertext and cannot read your screen or files. Account data is stored on our own infrastructure, not a third-party remote-desktop vendor.</div></details>
+    <details><summary>Where does my data live, and is it private?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Sessions are locked end-to-end between your devices. Our servers only pass along scrambled data they cannot read. And your account lives on our own systems, not with a third party.</div></details>
   </section>
 
   <footer>
