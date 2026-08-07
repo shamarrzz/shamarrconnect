@@ -126,12 +126,6 @@
     <label class="switch"><input type="checkbox" id="billing" checked><span class="slider"></span></label>
     <span class="lab active" id="lab-year">Annual <span class="save">2 months free</span></span>
   </div>
-  <div class="toggle" style="margin-top:8px">
-    <span class="lab active" id="lab-usd">USD&nbsp;$</span>
-    <label class="switch"><input type="checkbox" id="currency"><span class="slider"></span></label>
-    <span class="lab" id="lab-ngn">NGN&nbsp;₦ <span class="save">Paystack</span></span>
-  </div>
-
   <main class="wrap">
     <div class="grid">
 
@@ -243,7 +237,7 @@
 
     <details><summary>How do I upgrade or downgrade?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">You can change plans at any time from your account console. Upgrades take effect immediately; downgrades apply at the end of your current billing period.</div></details>
 
-    <details><summary>What payment methods do you accept?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Pay in Naira via Paystack (cards, bank transfer, USSD) or in USD with international cards via our payment partner. Flip the USD/NGN switch above to see local pricing. Bank transfer for annual or Enterprise plans: <a href="mailto:sales@shamarrconnect.com">contact sales</a>.</div></details>
+    <details><summary>What payment methods do you accept?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body"><span data-region="ng">Pay in Naira via Paystack: cards, bank transfer, USSD or Apple Pay.</span><span data-region="intl">Pay in USD with international cards via our payment partner.</span> Bank transfer for annual or Enterprise plans: <a href="mailto:sales@shamarrconnect.com">contact sales</a>.</div></details>
 
     <details><summary>Are there any hidden fees?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">No. The price you see covers everything listed in the plan. No setup fees, no per-session charges.</div></details>
 
@@ -266,21 +260,26 @@
 <script>
   (function(){
     // Paste checkout links here when the payment accounts are live (PSC-2).
-    // See sc-cloud docs/psc/payment-links-runbook.md for the exact 8 links to
-    // create: Paystack (NGN) 5000/50000/15000/150000, Dodo (USD) 9/90/29/290,
-    // mapped to pro/team x monthly/annual. Empty slots fall back to the sales
-    // mailto so the page works pre-launch.
+    // See sc-cloud docs/psc/payment-links-runbook.md for the exact links to
+    // create: Paystack (NGN) 5000/50000/15000/150000 for the NG region, and
+    // the international rail (Paystack USD or PayPro Global) 9/90/29/290 for
+    // everyone else, mapped to pro/team x monthly/annual. Empty slots fall
+    // back to the sales mailto so the page works pre-launch.
     var PAYMENT_LINKS = {
       usd: { pro_m: '', pro_y: '', team_m: '', team_y: '' },
       ngn: { pro_m: '', pro_y: '', team_m: '', team_y: '' }
     };
+    // Region is detected at the edge (Cloudflare cf.country) and injected as
+    // window.SC_REGION by functions/_middleware.js: NG visitors see Naira
+    // only, everyone else sees USD only. There is no manual switcher: NGN
+    // prices are PPP-discounted and foreign cards can pay NGN on Paystack,
+    // so a picker would invite arbitrage. Default USD when unset (local dev,
+    // bots). The billing-period toggle above is unaffected.
+    var cur = window.SC_REGION === 'ng' ? 'ngn' : 'usd';
     var billing = document.getElementById('billing');
-    var currency = document.getElementById('currency');
     var labM = document.getElementById('lab-month');
     var labY = document.getElementById('lab-year');
-    var labU = document.getElementById('lab-usd');
-    var labN = document.getElementById('lab-ngn');
-    function cta(id, plan, annual, cur){
+    function cta(id, plan, annual){
       var el = document.getElementById(id);
       if (!el) return;
       var link = PAYMENT_LINKS[cur][plan + '_' + (annual ? 'y' : 'm')];
@@ -288,11 +287,8 @@
     }
     function apply(){
       var annual = billing.checked;
-      var cur = currency.checked ? 'ngn' : 'usd';
       labY.classList.toggle('active', annual);
       labM.classList.toggle('active', !annual);
-      labN.classList.toggle('active', cur === 'ngn');
-      labU.classList.toggle('active', cur === 'usd');
       var k = (annual ? 'y' : 'm') + '-' + cur;
       document.querySelectorAll('.amt[data-m-usd]').forEach(function(el){
         el.textContent = el.getAttribute('data-' + k);
@@ -303,11 +299,10 @@
       document.querySelectorAll('.billed[data-m-usd]').forEach(function(el){
         el.textContent = el.getAttribute('data-' + k);
       });
-      cta('cta-pro', 'pro', annual, cur);
-      cta('cta-team', 'team', annual, cur);
+      cta('cta-pro', 'pro', annual);
+      cta('cta-team', 'team', annual);
     }
     billing.addEventListener('change', apply);
-    currency.addEventListener('change', apply);
     apply();
   })();
 </script>
