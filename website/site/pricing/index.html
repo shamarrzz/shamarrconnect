@@ -270,7 +270,11 @@
     // back to the sales mailto so the page works pre-launch.
     var PAYMENT_LINKS = {
       usd: { pro_m: '', pro_y: '', team_m: '', team_y: '' },
-      ngn: { pro_m: '', pro_y: '', team_m: '', team_y: '' }
+      /* Paystack TEST-mode pages — swap for live pages at go-live. */
+      ngn: { pro_m: 'https://paystack.shop/pay/z3uscbtejd',
+             pro_y: 'https://paystack.shop/pay/9oh5xxufm1',
+             team_m: 'https://paystack.shop/pay/p-7i4q30ku',
+             team_y: 'https://paystack.shop/pay/dde0xb0pif' }
     };
     // Region is detected at the edge (Cloudflare cf.country) and injected as
     // window.SC_REGION by functions/_middleware.js: NG visitors see Naira
