@@ -1,12 +1,20 @@
-// Origin-level lock for /admin/*.
+// Origin-level lock + team management for /admin/*.
 // 1) *.pages.dev never serves admin content (Access doesn't cover those hosts).
-// 2) Every other host requires a VALID Cloudflare Access JWT (signature verified
-//    against the team's public keys) — defense-in-depth so /admin stays locked
-//    even if the Zero Trust app is misconfigured or deleted.
-// Config lives in Pages environment variables (Production + Preview):
-//   ACCESS_TEAM     Cloudflare Access team URL, https://<team>.cloudflareaccess.com
-//   ALLOWED_EMAILS  comma-separated allow-list
-// If either is unset the area is locked for EVERYONE (fail closed).
+// 2) Every other host requires a VALID Cloudflare Access JWT (verified in
+//    _lib/access.js) plus an allowlisted email:
+//      owners  (env.ALLOWED_EMAILS) — full access + member management API
+//      members (KV "allow:<email>") — downloads and pages, no management
+// 3) Owner-only JSON API:
+//      GET    /admin/api/access    → { owners, members }
+//      POST   /admin/api/access    { email } → add member
+//      DELETE /admin/api/access    { email } → remove member
+//      GET    /admin/api/waitlist  → { entries: [{email, ts, src}] }
+// 4) /admin/get/<file> serves gated downloads; large APKs are streamed from
+//    the public releases repo through this gate (allowlisted filenames).
+// If ACCESS_TEAM or ALLOWED_EMAILS is unset the area locks for EVERYONE
+// (fail closed).
+
+import { resolveAccess, ownerEmails, memberEmails } from "../_lib/access.js";
 
 const SEC = {
   "X-Frame-Options": "DENY",
@@ -14,47 +22,75 @@ const SEC = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
-  // connect-src allows the admin users panel to call the sc-cloud API.
+  // connect-src: same-origin management API + the sc-cloud users panel.
   "Content-Security-Policy":
-    "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src https://api.shamarrconnect.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.shamarrconnect.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
 };
 
-function b64urlToBytes(s) {
-  s = s.replace(/-/g, "+").replace(/_/g, "/");
-  while (s.length % 4) s += "=";
-  return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...SEC },
+  });
 }
 
-async function verifyAccessJWT(token, team) {
-  try {
-    const [h, p, sig] = token.split(".");
-    if (!h || !p || !sig) return null;
-    const header = JSON.parse(new TextDecoder().decode(b64urlToBytes(h)));
-    const payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(p)));
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.iss !== team) return null;
-    if (!payload.exp || payload.exp < now) return null;
-    const res = await fetch(`${team}/cdn-cgi/access/certs`, {
-      cf: { cacheTtl: 3600, cacheEverything: true },
-    });
-    if (!res.ok) return null;
-    const { keys } = await res.json();
-    const jwk = (keys || []).find((k) => k.kid === header.kid);
-    if (!jwk) return null;
-    const key = await crypto.subtle.importKey(
-      "jwk", jwk,
-      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-      false, ["verify"]
-    );
-    const valid = await crypto.subtle.verify(
-      "RSASSA-PKCS1-v1_5", key,
-      b64urlToBytes(sig),
-      new TextEncoder().encode(`${h}.${p}`)
-    );
-    return valid ? payload.email : null;
-  } catch {
-    return null;
+function locked() {
+  return new Response(
+    "<!DOCTYPE html><title>Locked</title><h1>403: admin is locked</h1>" +
+    "<p>Sign in via Cloudflare Access first, then reload this page.</p>",
+    { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
+  );
+}
+
+async function apiAccess(request, env) {
+  if (request.method === "GET") {
+    return json({ owners: ownerEmails(env), members: await memberEmails(env) });
   }
+  if (!env.WAITLIST) return json({ ok: false, error: "storage unavailable" }, 503);
+
+  let data;
+  try { data = await request.json(); } catch { return json({ ok: false, error: "bad request" }, 400); }
+  const email = String((data && data.email) || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return json({ ok: false, error: "invalid email" }, 400);
+
+  if (request.method === "POST") {
+    if (ownerEmails(env).includes(email)) return json({ ok: true, already: "owner" });
+    await env.WAITLIST.put(`allow:${email}`,
+      JSON.stringify({ ts: new Date().toISOString(), src: "admin" }));
+    console.error(`access: member added ${email}`);
+    return json({ ok: true });
+  }
+  if (request.method === "DELETE") {
+    await env.WAITLIST.delete(`allow:${email}`);
+    console.error(`access: member removed ${email}`);
+    return json({ ok: true });
+  }
+  return json({ ok: false, error: "method not allowed" }, 405);
+}
+
+async function apiWaitlist(env) {
+  if (!env.WAITLIST) return json({ ok: false, error: "storage unavailable" }, 503);
+  const entries = [];
+  let cursor;
+  try {
+    do {
+      const page = await env.WAITLIST.list({ cursor });
+      for (const k of page.keys) {
+        if (k.name.startsWith("allow:")) continue;
+        let meta = {};
+        try { meta = JSON.parse((await env.WAITLIST.get(k.name)) || "{}"); } catch {}
+        entries.push({ email: k.name, ts: meta.ts || null, src: meta.src || null });
+      }
+      cursor = page.list_complete ? null : page.cursor;
+    } while (cursor);
+  } catch (e) {
+    console.error("waitlist: list failed", e);
+    return json({ ok: false, error: "storage unavailable" }, 503);
+  }
+  entries.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+  return json({ entries });
 }
 
 export async function onRequest({ request, env }) {
@@ -63,24 +99,25 @@ export async function onRequest({ request, env }) {
     return new Response("Not found", { status: 404, headers: SEC });
   }
 
-  const team = env.ACCESS_TEAM;
-  const allowed = (env.ALLOWED_EMAILS || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const cookie = (request.headers.get("Cookie") || "").match(/CF_Authorization=([^;\s]+)/);
-  const token = request.headers.get("Cf-Access-Jwt-Assertion") || (cookie && cookie[1]);
-  const email = team && token ? await verifyAccessJWT(token, team) : null;
-  if (!email) {
+  const { email, role } = await resolveAccess(request, env);
+  if (!email) return locked();
+  if (!role) {
     return new Response(
-      "<!DOCTYPE html><title>Locked</title><h1>403: admin is locked</h1>" +
-      "<p>Sign in via Cloudflare Access first, then reload this page.</p>",
+      "<!DOCTYPE html><title>Forbidden</title><h1>403: not authorised</h1>" +
+      `<p>${email} does not have access to this area. Ask an owner to add you from the admin page.</p>`,
       { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
     );
   }
-  if (!allowed.includes(email)) {
-    return new Response(
-      "<!DOCTYPE html><title>Forbidden</title><h1>403: not authorised</h1>" +
-      `<p>${email} does not have access to this area.</p>`,
-      { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", ...SEC } }
-    );
+
+  // Owner-only management API.
+  if (url.pathname === "/admin/api/access") {
+    if (role !== "owner") return json({ ok: false, error: "owners only" }, 403);
+    return apiAccess(request, env);
+  }
+  if (url.pathname === "/admin/api/waitlist") {
+    if (role !== "owner") return json({ ok: false, error: "owners only" }, 403);
+    if (request.method !== "GET") return json({ ok: false, error: "method not allowed" }, 405);
+    return apiWaitlist(env);
   }
 
   const name = url.pathname.split("/").pop();
