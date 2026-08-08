@@ -5,6 +5,8 @@
 // If the binding is missing the endpoint returns 503 (fail loud in logs,
 // generic message to the client).
 
+import { sendWaitlistEmails } from "../_lib/email.js";
+
 const SEC = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -20,7 +22,7 @@ function json(body, status = 200) {
   });
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, ctx }) {
   if (!env.WAITLIST) {
     console.error("waitlist: WAITLIST KV binding missing");
     return json({ ok: false, error: "temporarily unavailable" }, 503);
@@ -44,15 +46,19 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: "invalid email" }, 400);
   }
 
+  const region = data && data.region === "ng" ? "ng" : "intl";
+  const ts = new Date().toISOString();
+
   try {
-    await env.WAITLIST.put(
-      email,
-      JSON.stringify({ ts: new Date().toISOString(), src: "landing" })
-    );
+    await env.WAITLIST.put(email, JSON.stringify({ ts, src: "landing", region }));
   } catch (e) {
     console.error("waitlist: KV put failed", e);
     return json({ ok: false, error: "temporarily unavailable" }, 503);
   }
+
+  // Notify hello@ (reply-to = subscriber) + branded confirmation to the
+  // subscriber. Runs after the response via ctx.waitUntil; never blocks.
+  await sendWaitlistEmails(env, ctx, email, region);
 
   return json({ ok: true });
 }
