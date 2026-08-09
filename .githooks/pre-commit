@@ -1,16 +1,13 @@
 #!/bin/sh
 # ShamarrConnect pre-commit: block secrets from entering the public repo.
 # Activated per-clone via: git config core.hooksPath .githooks
-# Requires gitleaks (https://github.com/gitleaks/gitleaks). On this box it
-# lives at ~/sc-build/bin/gitleaks.
+# Requires gitleaks (https://github.com/gitleaks/gitleaks).
 
 if command -v gitleaks >/dev/null 2>&1; then
   GITLEAKS=gitleaks
-elif [ -x "$HOME/sc-build/bin/gitleaks" ]; then
-  GITLEAKS="$HOME/sc-build/bin/gitleaks"
 else
   echo "pre-commit: gitleaks NOT FOUND — refusing to commit without a secret scan." >&2
-  echo "Install: https://github.com/gitleaks/gitleaks/releases (or see RUNBOOK.md)." >&2
+  echo "Install: https://github.com/gitleaks/gitleaks/releases" >&2
   exit 1
 fi
 

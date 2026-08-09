@@ -103,7 +103,7 @@ cd flutter && flutter pub get && cd ..
 cargo build --release
 ```
 
-Prerequisites: Rust stable (`rustup`), Flutter 3.24.x, [vcpkg](https://vcpkg.io) with the packages listed in `vcpkg.json`, and LLVM/Clang (for the Rust FFI bindings). See [RUNBOOK.md](RUNBOOK.md) for the full release procedure.
+Prerequisites: Rust stable (`rustup`), Flutter 3.24.x, [vcpkg](https://vcpkg.io) with the packages listed in `vcpkg.json`, and LLVM/Clang (for the Rust FFI bindings). Releases are built by CI — tag a release and the workflow publishes artifacts to [shamarrconnect-releases](https://github.com/shamarrzz/shamarrconnect-releases).
 
 ---
 
