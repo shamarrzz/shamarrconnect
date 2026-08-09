@@ -1,4 +1,5 @@
 private/
+.wrangler/
 # Override parent repo ignores — site assets are not build artifacts
 !*.png
 !*.svg

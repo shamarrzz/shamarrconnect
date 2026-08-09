@@ -14,9 +14,9 @@ This is the **client** — the app your users download and run. It is a custom-b
 ```
 shamarrconnect/          ← this repo — the client app
 shamarrconnect-releases/ ← public release artifacts (built by CI)
-shamarrconnect-cloud/    ← API backend (login, address book, heartbeat) — private
-sc-server/               ← RustDesk relay/rendezvous (on the server)
 ```
+
+The API backend and relay infrastructure are closed-source and live in separate private repositories.
 
 ---
 
@@ -41,7 +41,7 @@ User's device                     Your server
 ```
 
 The client:
-1. Authenticates via `api.shamarrconnect.com` (sc-cloud) on login
+1. Authenticates via `api.shamarrconnect.com` on login
 2. Registers its ID with the rendezvous server (`connect.shamarrconnect.com`)
 3. Establishes peer-to-peer tunnels through the relay server for remote sessions
 
