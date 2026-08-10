@@ -38,7 +38,7 @@ class SettingsPage extends StatefulWidget implements PageShape {
   State<SettingsPage> createState() => _SettingsState();
 }
 
-const url = 'https://rustdesk.com/';
+const url = 'https://shamarrconnect.com/';
 
 enum KeepScreenOn {
   never,
@@ -104,6 +104,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
   var _isUsingPublicServer = false;
   var _allowAskForNoteAtEndOfConnection = false;
   var _preventSleepWhileConnected = true;
+  var _dataSaver = false;
 
   _SettingsState() {
     _enableAbr = option2bool(
@@ -127,6 +128,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
         bind.mainGetLocalOption(key: kOptionAllowAutoRecordOutgoing));
     _localIP = bind.mainGetOptionSync(key: 'local-ip-addr');
     _directAccessPort = bind.mainGetOptionSync(key: kOptionDirectAccessPort);
+    _dataSaver = bind.mainGetLocalOption(key: 'data_saver') == 'Y';
     _allowAutoDisconnect = option2bool(kOptionAllowAutoDisconnect,
         bind.mainGetOptionSync(key: kOptionAllowAutoDisconnect));
     _autoDisconnectTimeout =
@@ -532,7 +534,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
               title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(translate('Keep RustDesk background service')),
+                    Text(translate('Keep ShamarrConnect background service')),
                     Text('* ${translate('Ignore Battery Optimizations')}',
                         style: Theme.of(context).textTheme.bodySmall),
                   ]),
@@ -562,6 +564,36 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 }
               }));
     }
+    enhancementsTiles.add(SettingsTile.switchTile(
+        initialValue: _dataSaver,
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(translate('Data saver')),
+          Text(
+              '* ${translate('Use less data in remote sessions (lower picture quality)')}',
+              style: Theme.of(context).textTheme.bodySmall),
+        ]),
+        onToggle: isOptionFixed(kOptionImageQuality)
+            ? null
+            : (v) async {
+                if (v) {
+                  // Remember the user's choice so "off" restores it.
+                  await bind.mainSetLocalOption(
+                      key: 'data_saver_prev_quality',
+                      value: bind.mainGetUserDefaultOption(
+                          key: kOptionImageQuality));
+                  await bind.mainSetUserDefaultOption(
+                      key: kOptionImageQuality, value: kRemoteImageQualityLow);
+                } else {
+                  final prev =
+                      bind.mainGetLocalOption(key: 'data_saver_prev_quality');
+                  await bind.mainSetUserDefaultOption(
+                      key: kOptionImageQuality,
+                      value: prev.isEmpty ? kRemoteImageQualityBalanced : prev);
+                }
+                await bind.mainSetLocalOption(
+                    key: 'data_saver', value: v ? 'Y' : 'N');
+                setState(() => _dataSaver = v);
+              }));
     enhancementsTiles.add(SettingsTile.switchTile(
         initialValue: _enableStartOnBoot,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -985,7 +1017,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 title: Text(translate("Version: ") + version),
                 value: Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('rustdesk.com',
+                  child: Text('shamarrconnect.com',
                       style: TextStyle(
                         decoration: TextDecoration.underline,
                       )),
@@ -1010,7 +1042,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
             SettingsTile(
               title: Text(translate("Privacy Statement")),
               onPressed: (context) =>
-                  launchUrlString('https://rustdesk.com/privacy.html'),
+                  launchUrlString('https://shamarrconnect.com/privacy'),
               leading: Icon(Icons.privacy_tip),
             )
           ],
@@ -1118,17 +1150,17 @@ void showThemeSettings(OverlayDialogManager dialogManager) async {
 void showAbout(OverlayDialogManager dialogManager) {
   dialogManager.show((setState, close, context) {
     return CustomAlertDialog(
-      title: Text(translate('About RustDesk')),
+      title: Text(translate('About ShamarrConnect')),
       content: Wrap(direction: Axis.vertical, spacing: 12, children: [
         Text('Version: $version'),
         InkWell(
             onTap: () async {
-              const url = 'https://rustdesk.com/';
+              const url = 'https://shamarrconnect.com/';
               await launchUrl(Uri.parse(url));
             },
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('rustdesk.com',
+              child: Text('shamarrconnect.com',
                   style: TextStyle(
                     decoration: TextDecoration.underline,
                   )),

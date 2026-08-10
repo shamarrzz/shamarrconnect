@@ -428,7 +428,7 @@ class LoginWidgetUserPass extends StatelessWidget {
 const kAuthReqTypeOidc = 'oidc/';
 
 // call this directly
-Future<bool?> loginDialog() async {
+Future<bool?> loginDialog({String initialMode = 'login'}) async {
   var username =
       TextEditingController(text: UserModel.getLocalUserInfo()?['name'] ?? '');
   var password = TextEditingController();
@@ -442,7 +442,7 @@ Future<bool?> loginDialog() async {
   String? confirmPasswordMsg;
   String? joinCodeMsg;
   var isInProgress = false;
-  var dialogMode = 'login'; // 'login' | 'register' | 'join'
+  var dialogMode = initialMode; // 'login' | 'register' | 'join'
   var justRegistered = false;
   final RxString curOP = ''.obs;
   // Track hover state for the close icon

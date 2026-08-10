@@ -14,6 +14,7 @@ import '../../consts.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 import 'home_page.dart';
+import 'onboarding_page.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
   @override
@@ -214,6 +215,7 @@ class _ServerPageState extends State<ServerPage> {
                             ? ServerInfo()
                             : ServiceNotRunningNotification(),
                         const ConnectionManager(),
+                        const SetupHealthBanner(),
                         const PermissionChecker(),
                         SizedBox.fromSize(size: const Size(0, 15.0)),
                       ],
@@ -568,6 +570,87 @@ class ServerInfo extends StatelessWidget {
             ConnectionStateNotification()
           ],
         ));
+  }
+}
+
+/// Compact setup-health summary shown only while any core permission is
+/// missing (screen capture, remote input, background running, alerts).
+/// Tapping "Finish setup" opens the guided wizard.
+class SetupHealthBanner extends StatefulWidget {
+  const SetupHealthBanner({Key? key}) : super(key: key);
+
+  @override
+  State<SetupHealthBanner> createState() => _SetupHealthBannerState();
+}
+
+class _SetupHealthBannerState extends State<SetupHealthBanner>
+    with WidgetsBindingObserver {
+  bool _batteryOk = true;
+  bool _notifyOk = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final battery = await AndroidPermissionManager.check(
+        kRequestIgnoreBatteryOptimizations);
+    final notify = await AndroidPermissionManager.check(
+        kAndroid13Notification);
+    if (!mounted) return;
+    setState(() {
+      _batteryOk = battery;
+      _notifyOk = notify;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final serverModel = Provider.of<ServerModel>(context);
+    final missing = <String>[
+      if (!serverModel.mediaOk) translate("Screen Capture"),
+      if (!serverModel.inputOk) translate("Input Control"),
+      if (!_batteryOk) translate("Background running"),
+      if (!_notifyOk) translate("Notifications"),
+    ];
+    if (missing.isEmpty) return const SizedBox.shrink();
+    return PaddingCard(
+      title: translate("Setup incomplete"),
+      titleIcon: const Icon(Icons.health_and_safety_outlined,
+          color: Colors.orange),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${translate("Missing")}: ${missing.join(', ')}',
+            style: const TextStyle(fontSize: 12, color: MyTheme.darkGray),
+          ).marginOnly(bottom: 8),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.tune),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => OnboardingPage(destination: (_) => HomePage()),
+              ));
+            },
+            label: Text(translate("Finish setup")),
+          ),
+        ],
+      ),
+    );
   }
 }
 

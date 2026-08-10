@@ -3055,6 +3055,9 @@ pub mod server_side {
         custom_client_config: JString,
     ) {
         log::debug!("startServer from jvm");
+        // The Android service runs in its own process; without this it would
+        // fall back to the upstream public rendezvous instead of ours.
+        crate::load_custom_client();
         let mut env = env;
         if let Ok(app_dir) = env.get_string(&app_dir) {
             *config::APP_DIR.write().unwrap() = app_dir.into();
