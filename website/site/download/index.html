@@ -23,23 +23,35 @@
   .wrap{flex:1;max-width:820px;margin:0 auto;padding:56px 24px}
   .badge{display:inline-block;font-size:12px;font-weight:700;color:#1E3FA8;background:#EAF0FF;border-radius:100px;padding:6px 14px;margin-bottom:20px}
   h1{font-size:36px;letter-spacing:-.02em;margin-bottom:14px;line-height:1.2}
-  .lead{color:var(--muted);font-size:16.5px;margin-bottom:40px;max-width:520px}
+  .lead{color:var(--muted);font-size:16.5px;margin-bottom:32px;max-width:520px}
+
+  /* Detected-device hero */
+  .hero-dl{background:linear-gradient(135deg,#0A1737,#12295C);border-radius:20px;padding:32px 28px;margin-bottom:14px;color:#fff;display:flex;flex-direction:column;gap:16px;box-shadow:0 18px 40px -18px rgba(10,23,55,.45)}
+  .hero-os{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8FB0FF}
+  .hero-dl h2{font-size:26px;letter-spacing:-.01em;line-height:1.25}
+  .hero-meta{font-size:13px;color:#B9C8EA}
+  .hero-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--brand);color:#fff;font-weight:700;font-size:16px;padding:16px 28px;border-radius:13px;text-decoration:none;transition:.15s;box-shadow:0 10px 24px -8px rgba(43,92,230,.55)}
+  .hero-btn:hover{background:#1E3FA8;transform:translateY(-1px)}
+  .hero-alt{font-size:13px;color:#B9C8EA;text-decoration:underline;text-underline-offset:3px}
+  .hero-alt:hover{color:#fff}
+  .beta-note{background:#FFF7E6;border:1px solid #FDE9C8;color:#8A5A00;border-radius:12px;padding:14px 18px;font-size:13.5px;margin-bottom:48px}
+  .beta-note a{color:#8A5A00;font-weight:700}
+
   .platforms{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:48px}
   @media(max-width:560px){.platforms{grid-template-columns:1fr}}
   .plat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:12px}
-  .plat.featured{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+  .plat.mine{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
   .plat-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .plat-name{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:8px}
   .plat-icon{width:28px;height:28px;opacity:.75}
   .chip{font-size:11px;font-weight:700;border-radius:6px;padding:3px 9px}
   .chip.ready{color:#166534;background:#DCFCE7}
-  .chip.soon{color:var(--muted);background:var(--bg);border:1px solid var(--line)}
+  .chip.mine{color:#1E3FA8;background:#EAF0FF}
   .plat p{font-size:13.5px;color:var(--muted)}
   .dl-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:#fff;font-weight:700;font-size:14px;padding:12px 22px;border-radius:11px;text-decoration:none;transition:.15s;border:none;cursor:pointer;width:100%}
   .dl-btn:hover{background:#1E3FA8}
   .dl-btn.outline{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
   .dl-btn.outline:hover{background:#EAF0FF}
-  .dl-btn.disabled{background:var(--bg);color:var(--muted);border:1px solid var(--line);cursor:default;pointer-events:none}
   .section{margin-bottom:48px}
   .section h2{font-size:18px;margin-bottom:16px}
   .steps{display:flex;flex-direction:column;gap:12px}
@@ -50,6 +62,7 @@
   .step-body p{font-size:13.5px;color:var(--muted)}
   .info-box{background:#EAF0FF;border-radius:12px;padding:18px 20px;font-size:13.5px;color:#1E3FA8;margin-top:8px}
   .info-box strong{display:block;margin-bottom:4px}
+  .info-box a{color:#1E3FA8;font-weight:600}
   footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size:13px;color:var(--muted)}
   footer a{color:var(--muted);text-decoration:none}
   footer a:hover{color:var(--brand)}
@@ -67,12 +80,27 @@
   </div>
 
   <div class="wrap">
-    <span class="badge">Public beta</span>
+    <span class="badge">Private beta</span>
     <h1>Get ShamarrConnect</h1>
     <p class="lead">Remote desktop that is private by design and run for you. Download the app, sign in, and connect.</p>
 
-    <div class="platforms">
-      <div class="plat featured">
+    <div class="hero-dl" id="hero" hidden>
+      <div>
+        <div class="hero-os" id="hero-os"></div>
+        <h2 id="hero-title">Download ShamarrConnect</h2>
+      </div>
+      <a class="hero-btn" id="hero-btn" href="#">Download</a>
+      <div class="hero-meta" id="hero-meta"></div>
+      <a class="hero-alt" id="hero-alt" href="#" hidden></a>
+    </div>
+
+    <div class="beta-note">
+      During private beta, downloads ask for your <strong>invited email</strong> and send you a one-time code.
+      No invite yet? <a href="/#waitlist">Join the waitlist</a> and we will reach out.
+    </div>
+
+    <div class="platforms" id="platforms">
+      <div class="plat" data-plat="windows">
         <div class="plat-head">
           <div class="plat-name">
             <svg class="plat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
@@ -81,13 +109,11 @@
           <span class="chip ready">Available</span>
         </div>
         <p>Windows 10 and 11, 64-bit. One installer, nothing else needed.</p>
-        <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-windows-x86_64.exe">
-          Download for Windows
-        </a>
+        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc1-x86_64.exe">Download for Windows</a>
         <p style="font-size:12px;color:var(--muted);text-align:center">Windows may show a warning while we are in beta. Click “More info”, then “Run anyway”. It is safe.</p>
       </div>
 
-      <div class="plat">
+      <div class="plat" data-plat="mac">
         <div class="plat-head">
           <div class="plat-name">
             <svg class="plat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
@@ -96,12 +122,12 @@
           <span class="chip ready">Available</span>
         </div>
         <p>Pick your Mac's chip. Allow screen recording when macOS asks.</p>
-        <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-macos-aarch64.dmg">Apple Silicon (M-series)</a>
-        <a class="dl-btn outline" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-macos-x86_64.dmg">Intel</a>
+        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc1-aarch64.dmg">Apple Silicon (M-series)</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc1-x86_64.dmg">Intel</a>
         <p style="font-size:12px;color:var(--muted);text-align:center">While we are in beta: right-click the app and choose “Open” the first time you run it.</p>
       </div>
 
-      <div class="plat">
+      <div class="plat" data-plat="linux">
         <div class="plat-head">
           <div class="plat-name">
             <svg class="plat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
@@ -110,11 +136,11 @@
           <span class="chip ready">Available</span>
         </div>
         <p>For Ubuntu, Debian and most other Linux systems. On very new desktops (Wayland), you can connect out to others but they cannot connect in yet.</p>
-        <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/shamarrconnect-linux-amd64.deb">Download .deb</a>
-        <a class="dl-btn outline" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-linux-x86_64.AppImage">Download AppImage</a>
+        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc1-x86_64.deb">Download .deb</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc1-x86_64.AppImage">Download AppImage</a>
       </div>
 
-      <div class="plat">
+      <div class="plat" data-plat="android">
         <div class="plat-head">
           <div class="plat-name">
             <svg class="plat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
@@ -123,8 +149,8 @@
           <span class="chip ready">Available</span>
         </div>
         <p>View and control from your phone. Download straight from us; the Play Store listing comes later.</p>
-        <a class="dl-btn" href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest/download/ShamarrConnect-android-aarch64.apk">Download APK (64-bit)</a>
-        <p style="font-size:12px;color:var(--muted);text-align:center">Older phones: grab the 32-bit version from our <a href="https://github.com/shamarrzz/shamarrconnect-releases/releases/latest" style="color:var(--brand)">releases page</a>.</p>
+        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc1-aarch64.apk">Download APK (64-bit)</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc1-armv7.apk">Older phone? 32-bit APK</a>
       </div>
     </div>
 
@@ -141,7 +167,7 @@
         <div class="step">
           <div class="step-num">2</div>
           <div class="step-body">
-            <strong>Get your 9-digit ID</strong>
+            <strong>Get your device ID</strong>
             <p>ShamarrConnect assigns your device a permanent ID. Share it with anyone you want to give access.</p>
           </div>
         </div>
@@ -156,10 +182,9 @@
     </div>
 
     <div class="info-box">
-      <strong>All releases &amp; source</strong>
-      Every version and its source code live on our public
-      <a href="https://github.com/shamarrzz/shamarrconnect-releases" style="color:#1E3FA8;font-weight:600">releases page</a>.
-      ShamarrConnect is built on open-source technology.
+      <strong>Built on open source</strong>
+      ShamarrConnect is built on open-source technology. Source code and every release are
+      available on request during beta — <a href="mailto:hello@shamarrconnect.com">ask us</a>.
     </div>
   </div>
 
@@ -167,5 +192,81 @@
     <a href="/">ShamarrConnect</a> · <a href="/pricing/">Pricing</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/refund/">Refunds</a> · <a href="mailto:hello@shamarrconnect.com">Contact</a>
     <br><br>&copy; 2026 ShamarrConnect
   </footer>
+
+<script>
+  (function () {
+    // Detect the visitor's platform and put the right download one tap away.
+    // All links route through /admin/get/ (invite-gated during beta).
+    var TAG = '1.4.9-sc1';
+    var ua = navigator.userAgent || '';
+    var plat = 'windows';
+    if (/android/i.test(ua)) plat = 'android';
+    else if (/iphone|ipad|ipod/i.test(ua)) plat = 'ios';
+    else if (/macintosh|mac os x/i.test(ua)) plat = 'mac';
+    else if (/windows/i.test(ua)) plat = 'windows';
+    else if (/linux/i.test(ua)) plat = 'linux';
+
+    var HERO = {
+      android: {
+        os: 'For your Android device',
+        btn: 'Download for Android',
+        href: '/admin/get/ShamarrConnect-' + TAG + '-aarch64.apk',
+        meta: 'APK · 64-bit · ~29 MB · v' + TAG.replace('-sc1', '') + ' beta',
+        alt: 'Older phone? Get the 32-bit APK',
+        altHref: '/admin/get/ShamarrConnect-' + TAG + '-armv7.apk'
+      },
+      windows: {
+        os: 'For your Windows PC',
+        btn: 'Download for Windows',
+        href: '/admin/get/ShamarrConnect-' + TAG + '-x86_64.exe',
+        meta: 'Installer · 64-bit · ~24 MB · v' + TAG.replace('-sc1', '') + ' beta'
+      },
+      mac: {
+        os: 'For your Mac',
+        btn: 'Download for macOS',
+        href: '/admin/get/ShamarrConnect-' + TAG + '-aarch64.dmg',
+        meta: 'Apple Silicon · ~26 MB · v' + TAG.replace('-sc1', '') + ' beta',
+        alt: 'On an Intel Mac? Get that version',
+        altHref: '/admin/get/ShamarrConnect-' + TAG + '-x86_64.dmg'
+      },
+      linux: {
+        os: 'For your Linux machine',
+        btn: 'Download for Linux',
+        href: '/admin/get/ShamarrConnect-' + TAG + '-x86_64.deb',
+        meta: '.deb · 64-bit · ~23 MB · v' + TAG.replace('-sc1', '') + ' beta',
+        alt: 'Prefer AppImage? Get that instead',
+        altHref: '/admin/get/ShamarrConnect-' + TAG + '-x86_64.AppImage'
+      }
+    };
+
+    var hero = document.getElementById('hero');
+    var cfg = HERO[plat];
+    if (cfg) {
+      document.getElementById('hero-os').textContent = cfg.os;
+      var btn = document.getElementById('hero-btn');
+      btn.textContent = cfg.btn;
+      btn.href = cfg.href;
+      document.getElementById('hero-meta').textContent = cfg.meta;
+      if (cfg.alt) {
+        var alt = document.getElementById('hero-alt');
+        alt.textContent = cfg.alt;
+        alt.href = cfg.altHref;
+        alt.hidden = false;
+      }
+      hero.hidden = false;
+    }
+    // iOS: no app yet — leave the hero hidden; the beta note covers the CTA.
+
+    // Mark the matching platform card as "Your device".
+    if (plat !== 'ios') {
+      var card = document.querySelector('.plat[data-plat="' + plat + '"]');
+      if (card) {
+        card.classList.add('mine');
+        var chip = card.querySelector('.chip');
+        if (chip) { chip.textContent = 'Your device'; chip.classList.add('mine'); chip.classList.remove('ready'); }
+      }
+    }
+  })();
+</script>
 </body>
 </html>

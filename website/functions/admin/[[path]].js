@@ -132,6 +132,11 @@ export async function onRequest({ request, env }) {
     `ShamarrConnect-${RELEASE_TAG}-aarch64.apk`,
     `ShamarrConnect-${RELEASE_TAG}-armv7.apk`,
     `ShamarrConnect-${RELEASE_TAG}-x86_64.apk`,
+    `ShamarrConnect-${RELEASE_TAG}-x86_64.exe`,
+    `ShamarrConnect-${RELEASE_TAG}-aarch64.dmg`,
+    `ShamarrConnect-${RELEASE_TAG}-x86_64.dmg`,
+    `ShamarrConnect-${RELEASE_TAG}-x86_64.deb`,
+    `ShamarrConnect-${RELEASE_TAG}-x86_64.AppImage`,
   ];
   if (url.pathname === `/admin/get/${name}` && PROXIED.includes(name)) {
     const up = await fetch(
@@ -141,9 +146,17 @@ export async function onRequest({ request, env }) {
     if (!up.ok || !up.body) {
       return new Response("Upstream release asset unavailable", { status: 502, headers: SEC });
     }
+    const TYPES = {
+      ".apk": "application/vnd.android.package-archive",
+      ".exe": "application/vnd.microsoft.portable-executable",
+      ".dmg": "application/x-apple-diskimage",
+      ".deb": "application/vnd.debian.binary-package",
+      ".appimage": "application/x-executable",
+    };
     const out = new Response(up.body, { status: 200 });
     for (const [k, v] of Object.entries(SEC)) out.headers.set(k, v);
-    out.headers.set("Content-Type", "application/vnd.android.package-archive");
+    const ext = name.slice(name.lastIndexOf(".")).toLowerCase();
+    out.headers.set("Content-Type", TYPES[ext] || "application/octet-stream");
     out.headers.set("Content-Disposition", `attachment; filename="${name}"`);
     out.headers.set("Cache-Control", "no-store");
     if (up.headers.get("content-length")) {
