@@ -238,7 +238,7 @@
 
     <details><summary>How do I upgrade or downgrade?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">You can change plans at any time from your account console. Upgrades take effect immediately; downgrades apply at the end of your current billing period.</div></details>
 
-    <details><summary>What payment methods do you accept?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body"><span data-region="ng">Pay in Naira via Paystack: cards, bank transfer, USSD or Apple Pay.</span><span data-region="intl">Pay in USD with international cards via our payment partner.</span> Bank transfer for annual or Enterprise plans: <a href="mailto:sales@shamarrconnect.com">contact sales</a>.</div></details>
+    <details><summary>What payment methods do you accept?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body"><span data-region="ng">Pay in Naira via Paystack: cards, bank transfer, USSD or Apple Pay.</span><span data-region="intl">Pay in USD with international cards via Stripe.</span> Bank transfer for annual or Enterprise plans: <a href="mailto:sales@shamarrconnect.com">contact sales</a>.</div></details>
 
     <details><summary>Are there any hidden fees?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">No. The price you see covers everything listed in the plan. No setup fees, no per-session charges.</div></details>
 
@@ -262,14 +262,16 @@
 
 <script>
   (function(){
-    // Paste checkout links here when the payment accounts are live (PSC-2).
-    // See sc-cloud docs/psc/payment-links-runbook.md for the exact links to
-    // create: Paystack (NGN) 5000/50000/15000/150000 for the NG region, and
-    // the international rail (Paystack USD or PayPro Global) 9/90/29/290 for
-    // everyone else, mapped to pro/team x monthly/annual. Empty slots fall
-    // back to the sales mailto so the page works pre-launch.
+    // Checkout links (PSC-2). See sc-cloud docs/psc/payment-links-runbook.md.
+    // NGN rail: Paystack 5000/50000/15000/150000 for the NG region. USD rail:
+    // Stripe 9/90/29/290 for everyone else, mapped to pro/team x
+    // monthly/annual. Empty slots fall back to the sales mailto pre-launch.
     var PAYMENT_LINKS = {
-      usd: { pro_m: '', pro_y: '', team_m: '', team_y: '' },
+      /* Stripe TEST-mode links — swap for live links at go-live. */
+      usd: { pro_m: 'https://buy.stripe.com/test_28E7sKdoJ3zmejJc3l4AU00',
+             pro_y: 'https://buy.stripe.com/test_fZu3cuckFc5ScbBc3l4AU01',
+             team_m: 'https://buy.stripe.com/test_9B6aEWgAV7PCgrR7N54AU02',
+             team_y: 'https://buy.stripe.com/test_fZu4gy2K54Dq8ZpgjB4AU03' },
       /* Paystack TEST-mode pages — swap for live pages at go-live. */
       ngn: { pro_m: 'https://paystack.shop/pay/z3uscbtejd',
              pro_y: 'https://paystack.shop/pay/9oh5xxufm1',
