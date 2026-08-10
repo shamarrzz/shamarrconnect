@@ -3715,25 +3715,22 @@ Widget loadPowered(BuildContext context) {
 }
 
 // max 300 x 60
+// Prefer logo.png; fall back to wordmark.png (logo.png is not always shipped).
 Widget loadLogo() {
-  return FutureBuilder<ByteData>(
-      future: rootBundle.load('assets/logo.png'),
-      builder: (BuildContext context, AsyncSnapshot<ByteData> snapshot) {
-        if (snapshot.hasData) {
-          final image = Image.asset(
-            'assets/logo.png',
-            fit: BoxFit.contain,
-            errorBuilder: (ctx, error, stackTrace) {
-              return Container();
-            },
-          );
-          return Container(
-            constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
-            child: image,
-          ).marginOnly(left: 12, right: 12, top: 12);
-        }
-        return const Offstage();
-      });
+  return Container(
+    constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
+    child: Image.asset(
+      'assets/logo.png',
+      fit: BoxFit.contain,
+      errorBuilder: (ctx, error, stackTrace) {
+        return Image.asset(
+          'assets/wordmark.png',
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        );
+      },
+    ),
+  ).marginOnly(left: 12, right: 12, top: 12);
 }
 
 Widget loadIcon(double size) {
