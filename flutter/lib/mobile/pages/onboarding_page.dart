@@ -34,6 +34,7 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   int _step = 0;
   bool _busy = false;
+  bool _finishing = false;
   String _oemTip = '';
 
   // Runtime-checked statuses (service states come from ServerModel).
@@ -128,9 +129,13 @@ class _OnboardingPageState extends State<OnboardingPage>
   }
 
   void _maybeAdvance() {
+    if (!mounted || _finishing) return;
+    var advanced = false;
     while (_step < 4 && _statusOf(_step)) {
       _step++;
+      advanced = true;
     }
+    if (advanced) setState(() {});
     if (_step >= 4) _finish();
   }
 
@@ -148,12 +153,13 @@ class _OnboardingPageState extends State<OnboardingPage>
               'android.settings.ACCESSIBILITY_SETTINGS');
           break;
         case 2:
-          await AndroidPermissionManager.request(
-              kRequestIgnoreBatteryOptimizations);
+          // Fire-and-forget: XXPermissions only calls back on grant, so
+          // awaiting would hang on deny. The lifecycle-resume re-check and
+          // the delayed refresh below pick up the result either way.
+          AndroidPermissionManager.request(kRequestIgnoreBatteryOptimizations);
           break;
         default:
-          await AndroidPermissionManager.request(
-              kAndroid13Notification);
+          AndroidPermissionManager.request(kAndroid13Notification);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -163,6 +169,8 @@ class _OnboardingPageState extends State<OnboardingPage>
   }
 
   Future<void> _finish() async {
+    if (_finishing) return;
+    _finishing = true;
     await OnboardingPage.markDone();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(PageRouteBuilder(

@@ -41,12 +41,16 @@ class _GetHelpPageState extends State<GetHelpPage> {
   }
 
   String get _idSpaced {
+    // Group in threes from the right, matching the app's ID formatting
+    // (e.g. "1 302 500 006").
     final digits = _id.replaceAll(' ', '');
     if (digits.length <= 3) return digits;
     final parts = <String>[];
-    for (var i = 0; i < digits.length; i += 3) {
-      final end = i + 3 > digits.length ? digits.length : i + 3;
-      parts.add(digits.substring(i, end));
+    var end = digits.length;
+    while (end > 0) {
+      final start = end - 3 < 0 ? 0 : end - 3;
+      parts.insert(0, digits.substring(start, end));
+      end = start;
     }
     return parts.join(' ');
   }
