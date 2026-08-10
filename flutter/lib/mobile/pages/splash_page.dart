@@ -25,8 +25,8 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage>
     with SingleTickerProviderStateMixin {
-  static const _kMinDisplay = Duration(milliseconds: 1300);
-  static const _kAnimDuration = Duration(milliseconds: 1400);
+  static const _kMinDisplay = Duration(milliseconds: 850);
+  static const _kAnimDuration = Duration(milliseconds: 900);
 
   late final AnimationController _controller =
       AnimationController(vsync: this, duration: _kAnimDuration)

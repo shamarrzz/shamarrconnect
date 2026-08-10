@@ -521,9 +521,14 @@ Future<bool?> loginDialog({String initialMode = 'login'}) async {
           }
           if (isEmailVerification != null) {
             if (isMobile) {
-              if (close != null) close(null);
-              verificationCodeDialog(
+              // Await the code dialog and propagate its result: callers
+              // (AuthGatePage) navigate only when loginDialog returns true.
+              // Previously the result was dropped (close(null) + unawaited
+              // dialog), so a successful MFA bounced back to the gate.
+              final res = await verificationCodeDialog(
                   resp.user, resp.secret, isEmailVerification);
+              if (close != null) close(res == true);
+              return;
             } else {
               setState(() => isInProgress = false);
               // Workaround for web, close the dialog first, then show the verification code dialog.
