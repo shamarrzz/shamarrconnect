@@ -103,7 +103,7 @@ class _SplashPageState extends State<SplashPage>
                       opacity: Curves.easeOut
                           .transform(((t - 0.35) / 0.65).clamp(0.0, 1.0)),
                       child: Image.asset(
-                        'assets/wordmark.png',
+                        'assets/wordmark-light.png',
                         width: MediaQuery.of(context).size.width * 0.58,
                         fit: BoxFit.contain,
                       ),

@@ -220,7 +220,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
               children: [
                 const Spacer(flex: 3),
                 Image.asset(
-                  'assets/wordmark.png',
+                  'assets/wordmark-light.png',
                   width: MediaQuery.of(context).size.width * 0.62,
                   fit: BoxFit.contain,
                 ),
