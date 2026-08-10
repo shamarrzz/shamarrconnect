@@ -127,7 +127,7 @@ export async function onRequest({ request, env }) {
   // has already passed, so the gate holds; the upstream URL is never
   // published. Allowlist exact filenames so this can never become an open
   // proxy.
-  const RELEASE_TAG = "1.4.8-sc1";
+  const RELEASE_TAG = "1.4.9-sc1";
   const PROXIED = [
     `ShamarrConnect-${RELEASE_TAG}-aarch64.apk`,
     `ShamarrConnect-${RELEASE_TAG}-armv7.apk`,
