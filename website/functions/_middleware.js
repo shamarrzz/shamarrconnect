@@ -8,12 +8,10 @@
 //    Fail closed: if LAUNCH_OPEN is unset or anything else, the gate stays shut.
 //
 // 2) Region split for every HTML page (pricing, landing, ...).
-//    Cloudflare adds the visitor country to every request (request.cf.country,
-//    free, no third-party GeoIP). NG visitors get the "ng" region (Naira pricing
-//    via Paystack), everyone else gets "intl" (USD via the international rail).
-//    There is deliberately no manual currency switcher: NGN prices are
-//    PPP-discounted and foreign cards can pay NGN on Paystack, so a picker
-//    would invite arbitrage. Wrong-region edge cases go through support.
+//    Cloudflare adds the visitor country (request.cf.country). NG → "ng"
+//    (local-currency checkout); everyone else → "intl" (USD / MoR rail).
+//    No public country/currency picker: discounted local prices must not be
+//    selected from abroad (arbitrage). Wrong-region edge cases → support/sales.
 //
 //    Mechanism:
 //    - injects <script>window.SC_REGION="ng|intl"</script> at the top of <head>
