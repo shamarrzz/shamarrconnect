@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../common.dart';
 import '../../common/widgets/login.dart';
 import '../../models/platform_model.dart';
 import '../../utils/http_service.dart' as http;
@@ -219,18 +218,21 @@ class _AuthGatePageState extends State<AuthGatePage> {
             child: Column(
               children: [
                 const Spacer(flex: 3),
-                Image.asset(
-                  'assets/wordmark-light.png',
-                  width: MediaQuery.of(context).size.width * 0.62,
-                  fit: BoxFit.contain,
+                // S-mark only (no full wordmark — cleaner on mobile).
+                SizedBox(
+                  width: 88,
+                  height: 88,
+                  child: CustomPaint(
+                    painter: _GateMarkPainter(),
+                  ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
                 const Text(
-                  'Help any computer or phone,\nfrom anywhere.',
+                  'Your computers, when you need them.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w600,
                     height: 1.35,
                   ),
@@ -293,4 +295,36 @@ class _AuthGatePageState extends State<AuthGatePage> {
       ),
     );
   }
+}
+
+/// Static S-mark (same geometry as splash animation, fully drawn).
+class _GateMarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.width / 100;
+    canvas.save();
+    canvas.scale(scale);
+    final gradient = const LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFF00BFE1), Color(0xFF0071FF)],
+    ).createShader(const Rect.fromLTWH(20, 10, 60, 80));
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round
+      ..shader = gradient;
+    final path = Path()
+      ..moveTo(50, 78)
+      ..cubicTo(72, 74, 70, 54, 50, 50)
+      ..cubicTo(30, 46, 28, 26, 50, 22);
+    canvas.drawPath(path, stroke);
+    final dot = Paint()..shader = gradient;
+    canvas.drawCircle(const Offset(50, 22), 6, dot);
+    canvas.drawCircle(const Offset(50, 78), 6, dot);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

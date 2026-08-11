@@ -188,7 +188,8 @@ class _OnboardingPageState extends State<OnboardingPage>
         title: const Text('Skip setup?'),
         content: const Text(
           'Without these permissions a supporter may not be able to see or '
-          'control this phone. You can grant them later from Settings.',
+          'help with this phone. You can finish later from the Share screen '
+          'tab (bottom of the app) — look for "Continue setup".',
         ),
         actions: [
           TextButton(
@@ -216,12 +217,12 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   static const _whys = [
     'So a supporter can see this screen during a session. '
-        'Android asks every time — that is normal.',
-    'So a supporter can tap and type for you when you ask for help. '
-        'Find ShamarrConnect in the list and turn it on.',
-    'So this phone stays reachable between sessions. '
-        'Allow ShamarrConnect to run in the background.',
-    'So you know when a session starts or a message arrives.',
+        'Android will show a system prompt — tap Allow.',
+    'So a supporter can tap and type when you ask for help. '
+        'In the list that opens, find ShamarrConnect and turn it ON.',
+    'So this phone stays online for help. '
+        'Allow ShamarrConnect to run in the background (Unrestricted).',
+    'So you get a clear alert when a help session starts.',
   ];
 
   static const _icons = [

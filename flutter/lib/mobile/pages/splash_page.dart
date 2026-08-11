@@ -88,27 +88,14 @@ class _SplashPageState extends State<SplashPage>
               animation: _controller,
               builder: (context, _) {
                 final t = _controller.value;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      height: 120,
-                      child: CustomPaint(
-                        painter: _MarkPainter(progress: t, pulse: t),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Opacity(
-                      opacity: Curves.easeOut
-                          .transform(((t - 0.35) / 0.65).clamp(0.0, 1.0)),
-                      child: Image.asset(
-                        'assets/wordmark-light.png',
-                        width: MediaQuery.of(context).size.width * 0.58,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ],
+                // Animation only — no wordmark under the mark (alignment
+                // looked off; S-curve alone is the brand moment).
+                return SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CustomPaint(
+                    painter: _MarkPainter(progress: t, pulse: t),
+                  ),
                 );
               },
             ),

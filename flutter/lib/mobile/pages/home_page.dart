@@ -57,6 +57,28 @@ class HomePageState extends State<HomePage> {
       _pages.addAll([ChatPage(type: ChatPageType.mobileMain), ServerPage()]);
     }
     _pages.add(SettingsPage());
+    // Non-tech path: land on "Share screen" (ID + permissions + accept
+    // connections) rather than the advanced Settings tab or empty Connection.
+    if (isAndroid) {
+      final shareIdx = _pages.indexWhere((p) => p is ServerPage);
+      if (shareIdx >= 0) {
+        final helpMode =
+            bind.mainGetLocalOption(key: 'get_help_mode') == 'Y';
+        final needSetup =
+            !gFFI.serverModel.mediaOk || !gFFI.serverModel.inputOk;
+        if (helpMode || needSetup || bind.isIncomingOnly()) {
+          _selectedIndex = shareIdx;
+        }
+      }
+    }
+  }
+
+  /// Jump to the Share screen tab (permissions + ID for incoming help).
+  void goToShareScreen() {
+    final i = _pages.indexWhere((p) => p is ServerPage);
+    if (i >= 0 && _selectedIndex != i) {
+      setState(() => _selectedIndex = i);
+    }
   }
 
   @override

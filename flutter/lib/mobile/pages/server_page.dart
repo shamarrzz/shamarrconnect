@@ -18,7 +18,8 @@ import 'onboarding_page.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
   @override
-  final title = translate("Share screen");
+  // Plain label for non-tech users (this is where ID + permissions live).
+  final title = "Share screen";
 
   @override
   final icon = const Icon(Icons.mobile_screen_share);
@@ -621,32 +622,38 @@ class _SetupHealthBannerState extends State<SetupHealthBanner>
   @override
   Widget build(BuildContext context) {
     final serverModel = Provider.of<ServerModel>(context);
-    final missing = <String>[
-      if (!serverModel.mediaOk) translate("Screen Capture"),
-      if (!serverModel.inputOk) translate("Input Control"),
-      if (!_batteryOk) translate("Background running"),
-      if (!_notifyOk) translate("Notifications"),
+    final plain = <String>[
+      if (!serverModel.mediaOk) 'screen sharing',
+      if (!serverModel.inputOk) 'remote touch / keyboard',
+      if (!_batteryOk) 'stay reachable in background',
+      if (!_notifyOk) 'alerts',
     ];
-    if (missing.isEmpty) return const SizedBox.shrink();
+    if (plain.isEmpty) return const SizedBox.shrink();
     return PaddingCard(
-      title: translate("Setup incomplete"),
+      title: 'Almost ready for help',
       titleIcon: const Icon(Icons.health_and_safety_outlined,
           color: Colors.orange),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${translate("Missing")}: ${missing.join(', ')}',
-            style: const TextStyle(fontSize: 12, color: MyTheme.darkGray),
-          ).marginOnly(bottom: 8),
+            'Still needed: ${plain.join(', ')}.\n'
+            'Tap below — we walk you through one step at a time. '
+            'You do not need the Settings tab for this.',
+            style: const TextStyle(fontSize: 13, color: MyTheme.darkGray, height: 1.35),
+          ).marginOnly(bottom: 10),
           ElevatedButton.icon(
-            icon: const Icon(Icons.tune),
+            icon: const Icon(Icons.arrow_forward),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0071FF),
+              minimumSize: const Size(double.infinity, 44),
+            ),
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => OnboardingPage(destination: (_) => HomePage()),
               ));
             },
-            label: Text(translate("Finish setup")),
+            label: const Text('Continue setup', style: TextStyle(fontSize: 16)),
           ),
         ],
       ),
