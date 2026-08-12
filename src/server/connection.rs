@@ -2599,6 +2599,8 @@ impl Connection {
             if self.authorized {
                 return true;
             }
+            // Capture before match on lr.union (which partially moves lr).
+            let trusted_peer_device = Self::is_trusted_peer_device(&lr);
             match lr.union {
                 Some(login_request::Union::FileTransfer(ft)) => {
                     if !Self::permission(
@@ -2749,7 +2751,7 @@ impl Connection {
                     lr.my_id
                 );
                 // Trusted device can skip account MFA re-prompt; recent-session alone cannot.
-                if Self::is_trusted_peer_device(&lr) {
+                if trusted_peer_device {
                     log::info!(
                         "same_account: trusted device skip MFA for {}",
                         lr.my_id
