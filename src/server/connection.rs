@@ -2749,7 +2749,7 @@ impl Connection {
                     lr.my_id
                 );
                 // Trusted device can skip account MFA re-prompt; recent-session alone cannot.
-                if Self::is_trusted_peer_device(lr) {
+                if Self::is_trusted_peer_device(&lr) {
                     log::info!(
                         "same_account: trusted device skip MFA for {}",
                         lr.my_id
