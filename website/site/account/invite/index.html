@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team invite · ShamarrConnect</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root{--brand:#2B5CE6;--brand-dk:#1E3FA8;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);
+    background:var(--bg);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+  a{color:var(--brand)}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px}
+  main{flex:1;max-width:440px;width:100%;margin:0 auto;padding:48px 24px}
+  h1{font-size:24px;letter-spacing:-.02em;margin-bottom:8px}
+  .sub{color:var(--muted);margin-bottom:22px;font-size:15px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;
+    box-shadow:0 10px 30px rgba(20,40,90,.05)}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px}
+  input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit}
+  .btn{display:inline-flex;width:100%;justify-content:center;background:var(--brand);color:#fff;
+    font-weight:700;font-size:14.5px;padding:12px;border-radius:11px;border:0;cursor:pointer;margin-top:16px}
+  .btn:hover{background:var(--brand-dk)}
+  .btn[disabled]{opacity:.6}
+  .msg{margin-top:14px;padding:10px 12px;border-radius:10px;font-size:13.5px;display:none}
+  .msg.err{display:block;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+  .msg.ok{display:block;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+  .hint{font-size:13px;color:var(--muted);margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <a href="/" aria-label="ShamarrConnect home"><img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect"></a>
+</header>
+<main>
+  <h1>Join a team</h1>
+  <p class="sub" id="sub">Checking invite…</p>
+  <div class="card" id="card">
+    <div id="body"><p style="color:var(--muted)">Loading…</p></div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <p class="hint"><a href="/account/">Account</a> · <a href="/account/team/">Team</a></p>
+</main>
+<script>
+(function(){
+  var API = "https://api.shamarrconnect.com";
+  var params = new URLSearchParams(location.search);
+  var tokenInvite = params.get("token") || "";
+  var $ = function(id){ return document.getElementById(id); };
+
+  function sessionToken(){ return sessionStorage.getItem("sc_token"); }
+  function setSession(t){ t ? sessionStorage.setItem("sc_token", t) : sessionStorage.removeItem("sc_token"); }
+
+  function showErr(m){ $("msg").textContent = m; $("msg").className = "msg err"; }
+  function showOk(m){ $("msg").textContent = m; $("msg").className = "msg ok"; }
+
+  if (!tokenInvite){
+    $("sub").textContent = "This invite link is missing a token.";
+    $("body").innerHTML = "<p>Ask your admin to send a new invite.</p>";
+    return;
+  }
+
+  fetch(API + "/api/org/invites/peek?token=" + encodeURIComponent(tokenInvite))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (!j.valid){
+        $("sub").textContent = "This invite is invalid or expired.";
+        $("body").innerHTML = "<p>Ask your team admin for a new invite link.</p>";
+        return;
+      }
+      $("sub").textContent = "You're invited to join " + j.org_name + " as " + j.role + ".";
+      renderForm(j);
+    })
+    .catch(function(){
+      $("sub").textContent = "Could not reach the server.";
+      $("body").innerHTML = "<p>Try again in a moment.</p>";
+    });
+
+  function renderForm(inv){
+    $("body").innerHTML =
+      "<p style='font-size:14px;margin-bottom:8px'>Sign in with <strong>"+esc(inv.email)+"</strong> to accept.</p>"+
+      "<form id='f'>"+
+      "<label>Email</label><input id='email' type='email' value='"+esc(inv.email)+"' required>"+
+      "<label>Password</label><input id='password' type='password' autocomplete='current-password' required>"+
+      "<div id='mfa-row' hidden><label>Two-step code</label><input id='code' inputmode='numeric'></div>"+
+      "<button class='btn' id='btn' type='submit'>Sign in &amp; join team</button>"+
+      "</form>"+
+      "<p class='hint' style='margin-top:14px'>No account yet? Ask your admin to create one, or use the same email after they enable self-serve signup.</p>";
+
+    var mfaSecret = null;
+    $("f").addEventListener("submit", function(ev){
+      ev.preventDefault();
+      var email = $("email").value.trim(), pw = $("password").value;
+      var body = mfaSecret
+        ? { username: email, type: "tfa_code", tfaCode: $("code").value.trim(), verificationCode: $("code").value.trim(), secret: mfaSecret }
+        : { username: email, password: pw, type: "account" };
+      var btn = $("btn"); btn.disabled = true;
+      fetch(API + "/api/login", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) })
+        .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+        .then(function(res){
+          if (res.ok && res.j.access_token){
+            setSession(res.j.access_token);
+            return accept();
+          }
+          if (res.j.tfa_type === "tfa_check" && res.j.secret){
+            mfaSecret = res.j.secret;
+            $("mfa-row").hidden = false;
+            $("code").focus();
+            return;
+          }
+          throw new Error(res.j.error || "Sign in failed");
+        })
+        .catch(function(e){ showErr(e.message); })
+        .finally(function(){ btn.disabled = false; });
+    });
+
+    // Already signed in with matching session?
+    if (sessionToken()){
+      accept().catch(function(){ /* form still available */ });
+    }
+  }
+
+  function accept(){
+    return fetch(API + "/api/org/invites/accept", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + sessionToken()
+      },
+      body: JSON.stringify({ token: tokenInvite })
+    }).then(function(r){
+      return r.json().then(function(j){
+        if (!r.ok) throw new Error(j.error || "Could not accept invite");
+        showOk("You're on the team. Redirecting…");
+        setTimeout(function(){ location.href = "/account/team/"; }, 800);
+      });
+    }).catch(function(e){
+      if (e.message && e.message.indexOf("different email") >= 0) showErr(e.message);
+      else if (e.message && e.message !== "unauthorized") showErr(e.message);
+      throw e;
+    });
+  }
+
+  function esc(s){
+    return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  }
+})();
+</script>
+</body>
+</html>

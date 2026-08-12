@@ -109,8 +109,9 @@ class _AccountMfaCardState extends State<AccountMfaCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Protects signing into your ShamarrConnect account (password + authenticator). '
-              'This is different from Security → 2FA, which protects remote connections to this PC.',
+              'Required on all accounts. Protects ShamarrConnect sign-in (password + authenticator). '
+              'Remote reconnects also re-check 2FA unless the peer is a trusted device. '
+              'Different from Security → device 2FA on this machine.',
               style: TextStyle(
                 fontSize: 12.5,
                 color: Theme.of(context).textTheme.bodySmall?.color,
@@ -121,14 +122,14 @@ class _AccountMfaCardState extends State<AccountMfaCard> {
               children: [
                 Icon(
                   on ? Icons.verified_user : Icons.shield_outlined,
-                  color: on ? Colors.green : Theme.of(context).disabledColor,
+                  color: on ? Colors.green : Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     on
-                        ? 'Account MFA is on — login requires an authenticator code.'
-                        : 'Account MFA is off — password alone can sign in.',
+                        ? 'Account MFA is on — authenticator required at login.'
+                        : 'Account MFA is off — enable it (required for all accounts).',
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -352,7 +353,13 @@ Future<bool?> showAccountMfaEnableDialog(BuildContext context) async {
             title: translate('Verification code'),
             errorText: error,
             autoSubmit: false,
-            onChanged: () => setState(() => error = null),
+            // Avoid rebuild-on-keystroke (Android keyboard shake).
+            onChanged: () {
+              if (error != null) {
+                error = null;
+                setState(() {});
+              }
+            },
           ),
           if (busy) const LinearProgressIndicator(),
         ],
@@ -475,7 +482,12 @@ Future<bool?> showAccountMfaDisableDialog(BuildContext context) async {
             title: 'Authenticator or recovery code',
             errorText: error,
             autoSubmit: false,
-            onChanged: () => setState(() => error = null),
+            onChanged: () {
+              if (error != null) {
+                error = null;
+                setState(() {});
+              }
+            },
           ),
           if (busy) const LinearProgressIndicator(),
         ],

@@ -20,15 +20,18 @@
   h1,h2,h3{text-wrap:balance}
   a:focus-visible,.btn:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
   a{color:inherit}
-  .top{background:#fff;border-bottom:1px solid var(--line);padding:15px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
-  .brand{display:flex;align-items:center;text-decoration:none}
-  .brand .wordmark{height:30px;width:auto;display:block}
-  .nav{display:flex;gap:22px;align-items:center;font-size:14px}
-  .nav a{color:var(--muted);text-decoration:none}
-  .nav a:hover{color:var(--brand)}
-  .nav .cta{color:#fff;background:var(--brand);padding:9px 16px;border-radius:10px;font-weight:700}
-  .nav .cta:hover{background:var(--brand-dk)}
-  @media(max-width:640px){.nav a:not(.cta){display:none}}
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:20;max-width:100%}
+  .top-inner{width:100%;max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0}
+  .brand{display:flex;align-items:center;text-decoration:none;flex:0 0 auto}
+  .brand .mark{width:36px;height:36px;display:block;flex:none;border-radius:9px}
+  .brand .wordmark{display:none!important}
+  .nav{display:flex;gap:6px;align-items:center;font-size:13.5px;flex-wrap:nowrap;min-width:0}
+  .nav a{color:var(--muted);text-decoration:none;font-weight:600;padding:8px 10px;border-radius:8px;white-space:nowrap}
+  .nav a:hover{color:var(--brand);background:#F8FAFF}
+  .nav .cta{color:#fff;background:var(--brand);padding:8px 14px;border-radius:10px;font-weight:700}
+  .nav .cta:hover{background:var(--brand-dk);color:#fff}
+  @media(max-width:900px){.nav a:not(.cta){display:none}}
+  @media(max-width:1366px){.nav{gap:2px}.nav a{padding:8px 8px;font-size:13px}}
 
   .hero{text-align:center;padding:54px 24px 10px}
   .hero h1{font-size:34px;letter-spacing:-.02em;margin-bottom:10px}
@@ -106,15 +109,18 @@
 </head>
 <body>
   <header class="top">
-    <a class="brand" href="/" aria-label="ShamarrConnect home">
-      <img class="wordmark" src="/wordmark.svg" width="264" height="30" alt="ShamarrConnect">
-    </a>
-    <nav class="nav">
-      <a href="/#features">Features</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/download">Download</a>
-      <a class="cta" href="/download">Get started</a>
-    </nav>
+    <div class="top-inner">
+      <a class="brand" href="/" aria-label="ShamarrConnect home">
+        <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect">
+      </a>
+      <nav class="nav">
+        <a href="/#features">Features</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/download">Download</a>
+        <a href="/account">Account</a>
+        <a class="cta" href="/download">Get started</a>
+      </nav>
+    </div>
   </header>
 
   <section class="hero">
@@ -162,7 +168,7 @@
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited connections at once</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Two-step sign-in</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Synced address book</li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Activity history<span class="s">soon</span></li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Activity history</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
         </ul>
       </div>
@@ -178,8 +184,8 @@
           <li class="head">Everything in Pro, plus</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 10 users</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 150 saved devices</li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Manage your team in the browser<span class="s">soon</span></li>
-          <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Choose who can do what<span class="s">soon</span></li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Manage your team in the browser</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Owner, admin &amp; member roles</li>
           <li class="soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Sign in with a company account<span class="s">soon</span></li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
         </ul>
@@ -213,7 +219,7 @@
     </div>
   </div>
 
-  <div class="note"><div class="inner">Features marked <strong style="color:#7A5C09">soon</strong> are on our roadmap and not yet generally available. Paid plans include a 14-day money-back guarantee.</div></div>
+  <div class="note"><div class="inner">Features marked <strong style="color:#7A5C09">soon</strong> are on the roadmap (company SSO, advanced permission flags, shared team address book). Team browser invites and owner/admin/member roles are live at <a href="/account/team/" style="color:var(--brand);font-weight:600">/account/team</a>. Paid plans include a 14-day money-back guarantee.</div></div>
 
   <section class="how">
     <h2>From sign-up to connected in minutes</h2>
@@ -248,11 +254,12 @@
   </section>
 
   <footer>
-    <span>© 2026 ShamarrConnect</span>
-    <span style="display:flex;gap:18px">
+    <span>© 2026 ShamarrConnect · Powered by RustDesk</span>
+    <span style="display:flex;gap:18px;flex-wrap:wrap">
       <a href="/">Home</a>
       <a href="/pricing">Pricing</a>
       <a href="/download">Download</a>
+      <a href="/account">Account</a>
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
       <a href="/refund">Refunds</a>

@@ -234,11 +234,22 @@ class UserModel {
       resp = await http.post(uri,
           headers: headers, body: body == null ? null : jsonEncode(body));
     }
-    final Map<String, dynamic> data;
-    try {
-      data = jsonDecode(decode_http_response(resp));
-    } catch (_) {
-      throw RequestException(resp.statusCode, 'Invalid server response');
+    final raw = decode_http_response(resp).trim();
+    Map<String, dynamic> data = {};
+    if (raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          data = decoded;
+        } else if (decoded is Map) {
+          data = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        if (resp.statusCode < 200 || resp.statusCode >= 300) {
+          throw RequestException(resp.statusCode, 'Invalid server response');
+        }
+        // Empty / non-JSON success body (e.g. password change → 200).
+      }
     }
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       throw RequestException(
@@ -278,6 +289,68 @@ class UserModel {
       'password': password,
       'code': code,
     });
+  }
+
+  /// Change account password. Optionally sign out other devices.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    bool revokeOtherDevices = false,
+  }) async {
+    final id = await bind.mainGetMyId();
+    final uuid = await bind.mainGetUuid();
+    await _mfaRequest('POST', '/api/user/password', body: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+      'revoke_other_devices': revokeOtherDevices,
+      'id': id,
+      'uuid': uuid,
+    });
+  }
+
+  /// List signed-in devices (device tokens) for this account.
+  Future<List<Map<String, dynamic>>> listSignedInDevices() async {
+    final data = await _mfaRequest('GET', '/api/user/devices');
+    final raw = data['devices'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// Revoke one device token by its row id.
+  Future<void> revokeDevice(String deviceTokenId) async {
+    final url = await bind.mainGetApiServer();
+    final headers = await _authJsonHeaders();
+    final resp = await http.delete(
+      Uri.parse('$url/api/user/device/$deviceTokenId'),
+      headers: headers,
+    );
+    if (resp.statusCode != 200 && resp.statusCode != 204) {
+      String msg = 'Failed to sign out device';
+      try {
+        final body = jsonDecode(decode_http_response(resp));
+        if (body is Map && body['error'] != null) {
+          msg = body['error'].toString();
+        }
+      } catch (_) {}
+      throw RequestException(resp.statusCode, msg);
+    }
+  }
+
+  /// Keep this device; sign out all others.
+  Future<int> revokeOtherDevices() async {
+    final id = await bind.mainGetMyId();
+    final uuid = await bind.mainGetUuid();
+    final data = await _mfaRequest('POST', '/api/user/devices/revoke-others', body: {
+      'id': id,
+      'uuid': uuid,
+    });
+    final n = data['revoked'];
+    if (n is int) return n;
+    if (n is num) return n.toInt();
+    return 0;
   }
 
   /// Generate a device enrollment code for the currently-logged-in account.

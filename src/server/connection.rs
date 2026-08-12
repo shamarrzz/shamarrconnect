@@ -1518,7 +1518,10 @@ impl Connection {
         if self.authorized {
             return true;
         }
-        if self.require_2fa.is_some() && !self.is_recent_session(true) && !self.from_switch {
+        // Strict 2FA: re-prompt on every connect unless this peer is already a
+        // trusted device (require_2fa cleared in handle_login_request_without_validation)
+        // or this is an in-session display switch. Recent-session alone does not skip 2FA.
+        if self.require_2fa.is_some() && !self.from_switch {
             self.require_2fa.as_ref().map(|totp| {
                 let bot = crate::auth_2fa::TelegramBot::get();
                 let bot = match bot {
@@ -2518,24 +2521,30 @@ impl Connection {
         )
     }
 
+    /// Whether this peer was previously marked trusted (and is still within TTL).
+    fn is_trusted_peer_device(lr: &LoginRequest) -> bool {
+        if lr.hwid.is_empty() || !Self::enable_trusted_devices() {
+            return false;
+        }
+        let devices = Config::get_trusted_devices();
+        devices.iter().any(|d| {
+            !d.outdate()
+                && d.hwid == lr.hwid
+                && d.id == lr.my_id
+                && d.name == lr.my_name
+                && d.platform == lr.my_platform
+        })
+    }
+
     async fn handle_login_request_without_validation(&mut self, lr: &LoginRequest) {
         self.lr = lr.clone();
         self.peer_argb = crate::str2color(&format!("{}{}", &lr.my_id, &lr.my_platform), 0xff);
         if let Some(o) = lr.option.as_ref() {
             self.options_in_login = Some(o.clone());
         }
-        if self.require_2fa.is_some() && !lr.hwid.is_empty() && Self::enable_trusted_devices() {
-            let devices = Config::get_trusted_devices();
-            if let Some(device) = devices.iter().find(|d| d.hwid == lr.hwid) {
-                if !device.outdate()
-                    && device.id == lr.my_id
-                    && device.name == lr.my_name
-                    && device.platform == lr.my_platform
-                {
-                    log::info!("2FA bypassed by trusted devices");
-                    self.require_2fa = None;
-                }
-            }
+        if self.require_2fa.is_some() && Self::is_trusted_peer_device(lr) {
+            log::info!("2FA bypassed by trusted devices");
+            self.require_2fa = None;
         }
         self.video_ack_required = lr.video_ack_required;
     }
@@ -2739,9 +2748,13 @@ impl Connection {
                     lr.api_auth_token.len(),
                     lr.my_id
                 );
-                // Reconnect within session timeout after successful MFA → no re-prompt.
-                if self.is_recent_same_account_session() {
-                    log::info!("same_account: reconnect approved for {}", lr.my_id);
+                // Trusted device can skip account MFA re-prompt; recent-session alone cannot.
+                if Self::is_trusted_peer_device(lr) {
+                    log::info!(
+                        "same_account: trusted device skip MFA for {}",
+                        lr.my_id
+                    );
+                    raii::AuthedConnID::set_session_2fa(self.session_key());
                     #[cfg(target_os = "linux")]
                     self.linux_headless_handle.wait_desktop_cm_ready().await;
                     if !self.send_logon_response_and_keep_alive().await {
@@ -2756,7 +2769,6 @@ impl Connection {
                 {
                     SameAccountEval::Approve => {
                         log::info!("same-account auto-auth approved for {}", lr.my_id);
-                        // Mark session for reconnect without MFA re-prompt.
                         raii::AuthedConnID::set_session_2fa(self.session_key());
                         #[cfg(target_os = "linux")]
                         self.linux_headless_handle.wait_desktop_cm_ready().await;
@@ -2767,7 +2779,7 @@ impl Connection {
                         return true;
                     }
                     SameAccountEval::RequireAccountMfa => {
-                        // Every *new* same-account connect requires authenticator code.
+                        // Every reconnect requires authenticator unless trusted device.
                         self.pending_account_mfa = Some((
                             lr.api_auth_token.clone(),
                             lr.my_id.clone(),
@@ -2886,6 +2898,16 @@ impl Connection {
                     self.update_failure(failure, true, 1);
                     self.pending_account_mfa = None;
                     raii::AuthedConnID::set_session_2fa(self.session_key());
+                    // "Trust this device" on account-MFA prompt → skip MFA next reconnect.
+                    if !tfa.hwid.is_empty() && Self::enable_trusted_devices() {
+                        Config::add_trusted_device(TrustedDevice {
+                            hwid: tfa.hwid.clone(),
+                            time: hbb_common::get_time(),
+                            id: self.lr.my_id.clone(),
+                            name: self.lr.my_name.clone(),
+                            platform: self.lr.my_platform.clone(),
+                        });
+                    }
                     log::info!("same_account: account MFA ok — authorizing {}", my_id);
                     #[cfg(target_os = "linux")]
                     self.linux_headless_handle.wait_desktop_cm_ready().await;

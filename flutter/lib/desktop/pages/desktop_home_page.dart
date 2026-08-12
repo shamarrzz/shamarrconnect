@@ -82,11 +82,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final isOutgoingOnly = bind.isOutgoingOnly();
     final children = <Widget>[
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
-      if (bind.isCustomClient())
-        Align(
-          alignment: Alignment.center,
-          child: loadPowered(context),
-        ),
+      // Product mark only at top — "Powered by RustDesk" is footer (below).
       Align(
         alignment: Alignment.center,
         child: loadLogo(),
@@ -147,6 +143,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                     ),
                   ),
                 ),
+                // Fork credit — footer, not header.
+                if (bind.isCustomClient())
+                  Align(
+                    alignment: Alignment.center,
+                    child: loadPowered(context),
+                  ).marginOnly(bottom: 4),
                 // ShamarrConnect: always-visible account footer so login (and
                 // therefore persistent session) is a first-class action on the
                 // home screen, independent of the Settings tab.

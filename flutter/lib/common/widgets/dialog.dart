@@ -518,7 +518,8 @@ class Dialog2FaField extends ValidationField {
   String? validate() => isReady ? null : errMsg;
 }
 
-/// Six separate digit boxes for authenticator / TOTP codes.
+/// Six-digit TOTP entry: one real TextField (stable Android keyboard) + six
+/// visual boxes. Multi-field focus hopping was shaking the numeric keyboard.
 class _SixDigitPinField extends StatefulWidget {
   const _SixDigitPinField({
     required this.title,
@@ -542,20 +543,19 @@ class _SixDigitPinField extends StatefulWidget {
 
 class _SixDigitPinFieldState extends State<_SixDigitPinField> {
   static const int _len = 6;
-  late final List<TextEditingController> _boxes;
-  late final List<FocusNode> _nodes;
-  String _lastSynced = '';
+  final FocusNode _focus = FocusNode();
+  late final TextEditingController _input;
+  bool _syncing = false;
 
   @override
   void initState() {
     super.initState();
-    _boxes = List.generate(_len, (_) => TextEditingController());
-    _nodes = List.generate(_len, (_) => FocusNode());
-    _syncFromParent(widget.controller.text);
+    _input = TextEditingController(text: _digitsOnly(widget.controller.text));
     widget.controller.addListener(_onParentChanged);
+    _input.addListener(_onInputChanged);
     if (widget.autoFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _nodes[0].requestFocus();
+        if (mounted) _focus.requestFocus();
       });
     }
   }
@@ -563,129 +563,131 @@ class _SixDigitPinFieldState extends State<_SixDigitPinField> {
   @override
   void dispose() {
     widget.controller.removeListener(_onParentChanged);
-    for (final c in _boxes) {
-      c.dispose();
-    }
-    for (final n in _nodes) {
-      n.dispose();
-    }
+    _input.removeListener(_onInputChanged);
+    _input.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
+  String _digitsOnly(String raw) {
+    final d = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    return d.length > _len ? d.substring(0, _len) : d;
+  }
+
   void _onParentChanged() {
-    if (widget.controller.text == _lastSynced) return;
-    _syncFromParent(widget.controller.text);
+    if (_syncing) return;
+    final next = _digitsOnly(widget.controller.text);
+    if (_input.text != next) {
+      _syncing = true;
+      _input.value = TextEditingValue(
+        text: next,
+        selection: TextSelection.collapsed(offset: next.length),
+      );
+      _syncing = false;
+      if (mounted) setState(() {});
+    }
   }
 
-  void _syncFromParent(String raw) {
-    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
-    final clipped = digits.length > _len ? digits.substring(0, _len) : digits;
-    for (var i = 0; i < _len; i++) {
-      final ch = i < clipped.length ? clipped[i] : '';
-      if (_boxes[i].text != ch) {
-        _boxes[i].value = TextEditingValue(
-          text: ch,
-          selection: TextSelection.collapsed(offset: ch.length),
-        );
-      }
+  void _onInputChanged() {
+    if (_syncing) return;
+    final next = _digitsOnly(_input.text);
+    if (_input.text != next) {
+      _syncing = true;
+      _input.value = TextEditingValue(
+        text: next,
+        selection: TextSelection.collapsed(offset: next.length),
+      );
+      _syncing = false;
     }
-    _lastSynced = clipped;
-  }
-
-  void _pushToParent() {
-    final combined = _boxes.map((c) => c.text).join();
-    _lastSynced = combined;
-    if (widget.controller.text != combined) {
-      widget.controller.text = combined;
+    _syncing = true;
+    if (widget.controller.text != next) {
+      widget.controller.text = next;
     }
+    _syncing = false;
+    if (mounted) setState(() {});
     widget.onChanged?.call();
-    if (combined.length == _len &&
-        combined.codeUnits.every((e) => e >= 48 && e <= 57)) {
+    if (next.length == _len) {
       widget.readyCallback?.call();
     }
-  }
-
-  void _onBoxChanged(int index, String value) {
-    // Paste of full code into one box
-    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length > 1) {
-      final clipped = digits.length > _len ? digits.substring(0, _len) : digits;
-      for (var i = 0; i < _len; i++) {
-        _boxes[i].text = i < clipped.length ? clipped[i] : '';
-      }
-      _pushToParent();
-      final focusAt = clipped.length >= _len ? _len - 1 : clipped.length;
-      _nodes[focusAt].requestFocus();
-      return;
-    }
-    if (digits.isEmpty) {
-      _boxes[index].text = '';
-      _pushToParent();
-      return;
-    }
-    _boxes[index].text = digits[digits.length - 1];
-    _pushToParent();
-    if (index < _len - 1) {
-      _nodes[index + 1].requestFocus();
-    } else {
-      _nodes[index].unfocus();
-    }
-  }
-
-  KeyEventResult _onKey(int index, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey == LogicalKeyboardKey.backspace) {
-      if (_boxes[index].text.isEmpty && index > 0) {
-        _boxes[index - 1].text = '';
-        _nodes[index - 1].requestFocus();
-        _pushToParent();
-        return KeyEventResult.handled;
-      }
-    }
-    return KeyEventResult.ignored;
   }
 
   @override
   Widget build(BuildContext context) {
     final err = widget.errorText;
+    final text = _digitsOnly(_input.text);
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.title, style: Theme.of(context).textTheme.titleSmall)
             .marginOnly(bottom: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(_len, (i) {
-            return SizedBox(
-              width: 42,
-              child: Focus(
-                onKeyEvent: (node, event) => _onKey(i, event),
-                child: TextField(
-                  controller: _boxes[i],
-                  focusNode: _nodes[i],
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  // Allow paste of a full 6-digit code into any box.
-                  maxLength: 6,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                  ],
-                  decoration: InputDecoration(
-                    counterText: '',
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+        // Tap the visual row → keep the single field focused (keyboard stable).
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _focus.requestFocus(),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Invisible single field owns focus + IME (Android-safe).
+              Opacity(
+                opacity: 0.01,
+                child: SizedBox(
+                  height: 48,
+                  child: TextField(
+                    controller: _input,
+                    focusNode: _focus,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    maxLength: _len,
+                    autofillHints: const [AutofillHints.oneTimeCode],
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    style: const TextStyle(color: Colors.transparent),
+                    cursorColor: Colors.transparent,
+                    showCursor: false,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(_len),
+                    ],
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  onChanged: (v) => _onBoxChanged(i, v),
                 ),
               ),
-            );
-          }),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(_len, (i) {
+                  final ch = i < text.length ? text[i] : '';
+                  final focused =
+                      _focus.hasFocus && i == text.length.clamp(0, _len - 1);
+                  return Container(
+                    width: 42,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: focused
+                            ? scheme.primary
+                            : scheme.outline.withOpacity(0.55),
+                        width: focused ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      ch,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
         if (err != null && err.isNotEmpty)
           Padding(
@@ -693,7 +695,7 @@ class _SixDigitPinFieldState extends State<_SixDigitPinField> {
             child: Text(
               err,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
+                color: scheme.error,
                 fontSize: 12,
               ),
             ),
@@ -2395,19 +2397,26 @@ void change2fa({Function()? callback}) async {
       }
     }
 
+    final submitReady = false.obs;
     final codeField = Dialog2FaField(
       controller: controller,
       errorText: errorText,
-      onChanged: () => setState(() => errorText = null),
+      onChanged: () {
+        submitReady.value = controller.text
+                .replaceAll(RegExp(r'[^0-9]'), '')
+                .length ==
+            6;
+        if (errorText != null) {
+          errorText = null;
+          setState(() {});
+        }
+      },
       title: translate('Verification code'),
       autoSubmit: true,
       readyCallback: () {
         onVerify();
-        setState(() {});
       },
     );
-
-    getOnSubmit() => codeField.isReady ? onVerify : null;
 
     return CustomAlertDialog(
       title: Text(translate("enable-2fa-title")),
@@ -2434,7 +2443,8 @@ void change2fa({Function()? callback}) async {
       ),
       actions: [
         dialogButton("Cancel", onPressed: close, isOutline: true),
-        dialogButton("OK", onPressed: getOnSubmit()),
+        Obx(() => dialogButton("OK",
+            onPressed: submitReady.value ? onVerify : null)),
       ],
       onCancel: close,
     );
@@ -2461,12 +2471,14 @@ void enter2FaDialog(
           onCancel: closeConnection);
     }
 
-    late Dialog2FaField codeField;
-
-    codeField = Dialog2FaField(
+    final codeField = Dialog2FaField(
       controller: controller,
       title: translate('Verification code'),
-      onChanged: () => submitReady.value = codeField.isReady,
+      // Do not setState the dialog on every digit — only update Rx for the button.
+      onChanged: () => submitReady.value = controller.text
+              .replaceAll(RegExp(r'[^0-9]'), '')
+              .length ==
+          6,
     );
 
     final trustField = Obx(() => CheckboxListTile(

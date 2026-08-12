@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team · ShamarrConnect</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Invite teammates, manage seats, and see shared device usage on your ShamarrConnect Team plan.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root{
+    --brand:#2B5CE6;--brand-dk:#1E3FA8;--ink:#0F1B33;--muted:#5A6B85;
+    --line:#E6ECF5;--bg:#F8FAFF;--ok:#1D9E75;--err:#B91C1C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);
+    background:var(--bg);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+  a{color:var(--brand);text-decoration:none}
+  header{background:#fff;border-bottom:1px solid var(--line)}
+  header .bar{max-width:920px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header .nav{display:flex;gap:14px;font-size:13.5px}
+  header .nav a{color:var(--muted);font-weight:600}
+  header .nav a:hover,header .nav a.on{color:var(--brand)}
+  header .who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:10px}
+  header button{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  header button:hover{border-color:var(--brand);color:var(--brand)}
+  main{flex:1;max-width:920px;width:100%;margin:0 auto;padding:36px 24px 80px}
+  h1{font-size:26px;letter-spacing:-.02em;margin-bottom:6px}
+  h2{font-size:17px;margin:28px 0 12px}
+  .sub{color:var(--muted);margin-bottom:22px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;
+    box-shadow:0 10px 30px rgba(20,40,90,.05);margin-bottom:16px}
+  .meters{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.meters{grid-template-columns:1fr}}
+  .meter .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .meter .val{font-size:22px;font-weight:800;margin-top:4px}
+  .meter .bar{height:8px;background:#EAF0FF;border-radius:100px;margin-top:10px;overflow:hidden}
+  .meter .bar > i{display:block;height:100%;background:var(--brand);border-radius:100px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    padding:0 8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;background:#EAF0FF;color:#1E3FA8}
+  .badge.owner{background:#ECFDF5;color:#065F46}
+  .badge.admin{background:#EEF2FF;color:#3730A3}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;
+    font-weight:700;font-size:13.5px;padding:10px 16px;border-radius:10px;border:0;cursor:pointer}
+  .btn:hover{background:var(--brand-dk)}
+  .btn[disabled]{opacity:.55;cursor:default}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.danger{background:#fff;color:var(--err);border:1px solid #FECACA}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit}
+  .row{display:grid;grid-template-columns:1fr 140px auto;gap:10px;align-items:end}
+  @media(max-width:640px){.row{grid-template-columns:1fr}}
+  .msg{font-size:13.5px;padding:10px 14px;border-radius:10px;margin-top:12px;display:none}
+  .msg.ok{display:block;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+  .msg.err{display:block;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+  .empty{color:var(--muted);padding:12px 0;font-size:14px}
+  .note{font-size:13px;color:var(--muted);margin-top:10px}
+  .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-all}
+  .linkrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  footer{border-top:1px solid var(--line);padding:18px 24px;text-align:center;font-size:12.5px;color:var(--muted)}
+  #login-view,#no-team,#team-view{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a href="/" aria-label="ShamarrConnect home"><img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect"></a>
+    <nav class="nav">
+      <a href="/account/">Account</a>
+      <a class="on" href="/account/team/">Team</a>
+      <a href="/pricing/">Pricing</a>
+    </nav>
+    <div class="who" id="who" hidden>
+      <span id="who-email"></span>
+      <button type="button" id="signout">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="login-view">
+    <h1>Team</h1>
+    <p class="sub">Sign in to manage your ShamarrConnect team.</p>
+    <div class="card" style="max-width:420px">
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="password" style="margin-top:12px">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <div id="mfa-row" hidden>
+          <label for="code" style="margin-top:12px">Two-step code</label>
+          <input id="code" inputmode="numeric" autocomplete="one-time-code">
+        </div>
+        <button class="btn" style="width:100%;margin-top:16px" id="login-btn" type="submit">Sign in</button>
+        <div class="msg err" id="login-err"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="no-team">
+    <h1>No team yet</h1>
+    <p class="sub">Team management is for accounts on the Team plan (or invited members).</p>
+    <div class="card">
+      <p>If you just upgraded to Team, create your team workspace:</p>
+      <button class="btn" type="button" id="create-team" style="margin-top:14px">Create my team</button>
+      <div class="msg err" id="create-err"></div>
+      <p class="note">Need Team? <a href="/pricing/">See pricing</a> · Personal devices live on <a href="/account/">your account</a>.</p>
+    </div>
+  </div>
+
+  <div id="team-view">
+    <h1 id="team-title">Team</h1>
+    <p class="sub" id="team-sub">Shared seats and devices for your group.</p>
+
+    <div class="card">
+      <div class="meters">
+        <div class="meter">
+          <div class="lbl">Seats</div>
+          <div class="val" id="m-seats">—</div>
+          <div class="bar"><i id="m-seats-bar" style="width:0%"></i></div>
+        </div>
+        <div class="meter">
+          <div class="lbl">Devices (shared pool)</div>
+          <div class="val" id="m-devices">—</div>
+          <div class="bar"><i id="m-devices-bar" style="width:0%"></i></div>
+        </div>
+      </div>
+      <p class="note" id="team-meta"></p>
+    </div>
+
+    <div class="card" id="rename-card" hidden>
+      <h2 style="margin:0 0 12px;font-size:15px">Team name</h2>
+      <div class="row">
+        <div>
+          <label for="team-name">Name</label>
+          <input id="team-name" maxlength="80">
+        </div>
+        <div></div>
+        <button class="btn" type="button" id="save-name">Save</button>
+      </div>
+      <div class="msg" id="rename-msg"></div>
+    </div>
+
+    <h2>Members</h2>
+    <div class="card">
+      <div id="members-table"><div class="empty">Loading…</div></div>
+      <button class="btn ghost danger sm" type="button" id="leave-team" style="margin-top:12px" hidden>Leave team</button>
+    </div>
+
+    <div id="admin-only">
+      <h2>Invite someone</h2>
+      <div class="card">
+        <div class="row">
+          <div>
+            <label for="inv-email">Email</label>
+            <input id="inv-email" type="email" placeholder="colleague@company.com">
+          </div>
+          <div>
+            <label for="inv-role">Role</label>
+            <select id="inv-role">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="btn" type="button" id="inv-send">Email invite</button>
+        </div>
+        <div class="msg" id="inv-msg"></div>
+        <p class="note">We email them a secure link. They sign in with <strong>that same email</strong> and accept. Seats include pending invites. You can still copy the link if mail fails.</p>
+      </div>
+
+      <h2>Pending invites</h2>
+      <div class="card" id="invites-table"><div class="empty">None</div></div>
+    </div>
+
+    <h2>Recent team activity</h2>
+    <div class="card" id="activity"><div class="empty">Loading…</div></div>
+  </div>
+</main>
+
+<footer>ShamarrConnect · <a href="/account/">Account</a> · <a href="/privacy/">Privacy</a></footer>
+
+<script>
+(function(){
+  var API = "https://api.shamarrconnect.com";
+  var $ = function(id){ return document.getElementById(id); };
+  var mfaSecret = null, myRole = "", myUserId = "";
+
+  function token(){ return sessionStorage.getItem("sc_token"); }
+  function setToken(t){ t ? sessionStorage.setItem("sc_token", t) : sessionStorage.removeItem("sc_token"); }
+  function esc(s){ var d=document.createElement("div"); d.textContent=s==null?"":String(s); return d.innerHTML; }
+
+  function api(path, opts){
+    opts = opts || {};
+    var headers = Object.assign({ "Authorization": "Bearer " + token() }, opts.headers || {});
+    if (opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+    return fetch(API + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined
+    }).then(function(r){
+      if (r.status === 401){ showLogin("Please sign in again."); throw new Error("unauthorized"); }
+      if (r.status === 204) return {};
+      return r.text().then(function(t){
+        var j = {};
+        if (t) { try { j = JSON.parse(t); } catch(_) { j = { error: t }; } }
+        if (!r.ok) throw new Error((j && j.error) || ("HTTP " + r.status));
+        return j;
+      });
+    });
+  }
+
+  function showLogin(msg){
+    $("login-view").style.display = "block";
+    $("no-team").style.display = "none";
+    $("team-view").style.display = "none";
+    $("who").hidden = true;
+    if (msg){ $("login-err").textContent = msg; $("login-err").className = "msg err"; }
+  }
+  function showNoTeam(){
+    $("login-view").style.display = "none";
+    $("no-team").style.display = "block";
+    $("team-view").style.display = "none";
+    $("who").hidden = false;
+  }
+  function showTeam(){
+    $("login-view").style.display = "none";
+    $("no-team").style.display = "none";
+    $("team-view").style.display = "block";
+    $("who").hidden = false;
+  }
+
+  function pct(used, limit){
+    if (!limit) return 0;
+    return Math.min(100, Math.round((used / limit) * 100));
+  }
+
+  function load(){
+    api("/api/currentUser", { method: "POST", body: { id: "", uuid: "" } })
+      .then(function(u){
+        $("who-email").textContent = u.email || u.name || "";
+        myUserId = ""; // not in payload as id
+      }).catch(function(){});
+
+    api("/api/org").then(function(v){
+      if (!v.org){ showNoTeam(); return; }
+      showTeam();
+      renderOrg(v.org);
+      var isAdmin = v.org.my_role === "owner" || v.org.my_role === "admin";
+      $("admin-only").style.display = isAdmin ? "" : "none";
+      $("rename-card").hidden = !isAdmin;
+      $("leave-team").hidden = v.org.my_role === "owner";
+      myRole = v.org.my_role;
+      $("team-name").value = v.org.name || "";
+      return Promise.all([
+        api("/api/org/members").then(renderMembers),
+        isAdmin ? api("/api/org/invites").then(renderInvites) : Promise.resolve(),
+        api("/api/org/activity?limit=40").then(renderActivity)
+      ]);
+    }).catch(function(e){
+      if (e.message !== "unauthorized") showLogin(e.message);
+    });
+  }
+
+  function renderOrg(o){
+    $("team-title").textContent = o.name || "Team";
+    $("team-sub").textContent = "Your role: " + o.my_role + " · plan " + (o.plan || "team");
+    $("m-seats").textContent = o.seats_used + " / " + o.seat_limit +
+      (o.invites_pending ? " (+" + o.invites_pending + " invites)" : "");
+    $("m-devices").textContent = o.devices_used + " / " + o.device_limit;
+    $("m-seats-bar").style.width = pct(o.seats_used + (o.invites_pending||0), o.seat_limit) + "%";
+    $("m-devices-bar").style.width = pct(o.devices_used, o.device_limit) + "%";
+    $("team-meta").textContent = o.plan_expires_at
+      ? "Plan active · expires " + o.plan_expires_at
+      : "Plan active";
+  }
+
+  function renderMembers(v){
+    var list = v.members || [];
+    if (!list.length){ $("members-table").innerHTML = '<div class="empty">No members</div>'; return; }
+    var canManage = myRole === "owner" || myRole === "admin";
+    $("members-table").innerHTML = "<table><thead><tr><th>Person</th><th>Role</th><th></th></tr></thead><tbody>" +
+      list.map(function(m){
+        var badge = "badge" + (m.role === "owner" ? " owner" : m.role === "admin" ? " admin" : "");
+        var actions = "";
+        if (canManage && m.role !== "owner"){
+          if (m.role === "member"){
+            actions += '<button class="btn ghost sm" data-role="admin" data-uid="'+esc(m.user_id)+'">Make admin</button> ';
+          } else if (m.role === "admin"){
+            actions += '<button class="btn ghost sm" data-role="member" data-uid="'+esc(m.user_id)+'">Make member</button> ';
+          }
+          actions += '<button class="btn danger sm" data-remove="'+esc(m.user_id)+'">Remove</button>';
+        }
+        return "<tr><td><div style='font-weight:650'>"+esc(m.display_name||m.email)+"</div>"+
+          "<div style='font-size:12.5px;color:var(--muted)'>"+esc(m.email)+"</div></td>"+
+          "<td><span class='"+badge+"'>"+esc(m.role)+"</span></td>"+
+          "<td style='text-align:right'>"+actions+"</td></tr>";
+      }).join("") + "</tbody></table>";
+
+    $("members-table").querySelectorAll("[data-remove]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        if (!confirm("Remove this person from the team?")) return;
+        api("/api/org/members/" + encodeURIComponent(btn.getAttribute("data-remove")), { method: "DELETE" })
+          .then(load).catch(function(e){ alert(e.message); });
+      });
+    });
+    $("members-table").querySelectorAll("[data-role]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        api("/api/org/members/" + encodeURIComponent(btn.getAttribute("data-uid")), {
+          method: "PATCH",
+          body: { role: btn.getAttribute("data-role") }
+        }).then(load).catch(function(e){ alert(e.message); });
+      });
+    });
+  }
+
+  function renderInvites(v){
+    var list = v.invites || [];
+    if (!list.length){ $("invites-table").innerHTML = '<div class="empty">No pending invites</div>'; return; }
+    $("invites-table").innerHTML = "<table><thead><tr><th>Email</th><th>Role</th><th>Actions</th></tr></thead><tbody>" +
+      list.map(function(i){
+        return "<tr><td>"+esc(i.email)+"</td><td><span class='badge'>"+esc(i.role)+"</span></td>"+
+          "<td><div class='linkrow'>"+
+          "<button class='btn sm' data-resend='"+esc(i.email)+"' data-url='"+esc(i.accept_url)+"' data-role='"+esc(i.role)+"'>Resend email</button> "+
+          "<button class='btn ghost sm' data-copy='"+esc(i.accept_url)+"'>Copy link</button> "+
+          "<button class='btn danger sm' data-rev='"+esc(i.id)+"'>Cancel</button>"+
+          "</div></td></tr>";
+      }).join("") + "</tbody></table>";
+
+    $("invites-table").querySelectorAll("[data-copy]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        navigator.clipboard.writeText(btn.getAttribute("data-copy")).then(function(){
+          btn.textContent = "Copied";
+        }).catch(function(){ prompt("Copy link:", btn.getAttribute("data-copy")); });
+      });
+    });
+    $("invites-table").querySelectorAll("[data-resend]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        btn.disabled = true;
+        sendInviteEmail({
+          email: btn.getAttribute("data-resend"),
+          accept_url: btn.getAttribute("data-url"),
+          role: btn.getAttribute("data-role")
+        }, $("team-title").textContent).then(function(mail){
+          btn.disabled = false;
+          if (mail.ok && mail.body && mail.body.ok){
+            btn.textContent = "Sent";
+          } else {
+            alert((mail.body && mail.body.error) || "Email failed — use Copy link");
+            btn.textContent = "Resend email";
+          }
+        }).catch(function(){ btn.disabled = false; btn.textContent = "Resend email"; });
+      });
+    });
+    $("invites-table").querySelectorAll("[data-rev]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        api("/api/org/invites/" + encodeURIComponent(btn.getAttribute("data-rev")), { method: "DELETE" })
+          .then(load).catch(function(e){ alert(e.message); });
+      });
+    });
+  }
+
+  function renderActivity(v){
+    var evs = v.events || [];
+    if (!evs.length){ $("activity").innerHTML = '<div class="empty">No team activity yet</div>'; return; }
+    $("activity").innerHTML = evs.map(function(e){
+      return "<div style='display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px'>"+
+        "<div style='flex:1'><strong>"+esc(e.email)+"</strong> · "+esc(e.kind)+
+        (e.detail ? " — "+esc(e.detail) : "")+"</div>"+
+        "<div style='color:var(--muted);font-size:12px;white-space:nowrap'>"+esc(e.at)+"</div></div>";
+    }).join("");
+  }
+
+  $("login-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var email = $("email").value.trim(), pw = $("password").value;
+    var body = mfaSecret
+      ? { username: email, type: "tfa_code", tfaCode: $("code").value.trim(), verificationCode: $("code").value.trim(), secret: mfaSecret }
+      : { username: email, password: pw, type: "account" };
+    var btn = $("login-btn"); btn.disabled = true;
+    $("login-err").className = "msg"; $("login-err").style.display = "none";
+    fetch(API + "/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res){
+        if (res.ok && res.j.access_token){ setToken(res.j.access_token); mfaSecret = null; load(); return; }
+        if (res.j.tfa_type === "tfa_check" && res.j.secret){
+          mfaSecret = res.j.secret; $("mfa-row").hidden = false; $("code").focus(); return;
+        }
+        throw new Error(res.j.error || "Sign in failed");
+      })
+      .catch(function(e){ $("login-err").textContent = e.message; $("login-err").className = "msg err"; })
+      .finally(function(){ btn.disabled = false; });
+  });
+
+  $("signout").addEventListener("click", function(){ setToken(null); showLogin(); });
+
+  $("create-team").addEventListener("click", function(){
+    $("create-err").className = "msg";
+    api("/api/org/create-from-plan", { method: "POST", body: {} })
+      .then(load)
+      .catch(function(e){ $("create-err").textContent = e.message; $("create-err").className = "msg err"; });
+  });
+
+  $("save-name").addEventListener("click", function(){
+    api("/api/org", { method: "PATCH", body: { name: $("team-name").value } })
+      .then(function(){ $("rename-msg").textContent = "Saved"; $("rename-msg").className = "msg ok"; load(); })
+      .catch(function(e){ $("rename-msg").textContent = e.message; $("rename-msg").className = "msg err"; });
+  });
+
+  function sendInviteEmail(j, orgName){
+    // Pages Function → Brevo (same rail as waitlist). Failures keep the link usable.
+    return fetch("/api/team/send-invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token()
+      },
+      body: JSON.stringify({
+        email: j.email,
+        accept_url: j.accept_url,
+        org_name: orgName || "your team",
+        role: j.role || "member",
+        inviter_email: $("who-email").textContent || ""
+      })
+    }).then(function(r){ return r.json().then(function(body){ return { ok: r.ok, body: body }; }); });
+  }
+
+  $("inv-send").addEventListener("click", function(){
+    $("inv-msg").className = "msg";
+    var email = $("inv-email").value.trim();
+    var role = $("inv-role").value;
+    var btn = $("inv-send");
+    btn.disabled = true;
+    var orgName = $("team-title").textContent || "Team";
+    api("/api/org/invites", {
+      method: "POST",
+      body: { email: email, role: role }
+    }).then(function(j){
+      return sendInviteEmail(j, orgName).then(function(mail){
+        if (mail.ok && mail.body && mail.body.ok){
+          $("inv-msg").innerHTML =
+            "Invite emailed to <strong>"+esc(j.email)+"</strong>. " +
+            "They should sign in with that address and open the link in the email. " +
+            "You can still copy the link: <span class='mono'>"+esc(j.accept_url)+"</span>";
+          $("inv-msg").className = "msg ok";
+        } else {
+          var why = (mail.body && mail.body.error) || "email failed";
+          $("inv-msg").innerHTML =
+            "Invite created, but email did not send ("+esc(why)+"). " +
+            "Copy and share this link:<br><span class='mono'>"+esc(j.accept_url)+"</span>";
+          $("inv-msg").className = "msg err";
+        }
+        $("inv-email").value = "";
+        load();
+      });
+    }).catch(function(e){
+      $("inv-msg").textContent = e.message; $("inv-msg").className = "msg err";
+    }).finally(function(){ btn.disabled = false; });
+  });
+
+  $("leave-team").addEventListener("click", function(){
+    if (!confirm("Leave this team? You will lose access to shared seats.")) return;
+    api("/api/org/leave", { method: "POST", body: {} }).then(load).catch(function(e){ alert(e.message); });
+  });
+
+  if (token()) load(); else showLogin();
+})();
+</script>
+</body>
+</html>

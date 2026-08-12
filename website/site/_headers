@@ -6,6 +6,18 @@
   Permissions-Policy: geolocation=(), microphone=(), camera=()
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.shamarrconnect.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 
+# Brand assets change often during launch — short cache + revalidate
+/wordmark.png
+  Cache-Control: public, max-age=300, must-revalidate
+/wordmark-2x.png
+  Cache-Control: public, max-age=300, must-revalidate
+/wordmark.svg
+  Cache-Control: public, max-age=300, must-revalidate
+/wordmark-light.png
+  Cache-Control: public, max-age=300, must-revalidate
+/logo-mark.svg
+  Cache-Control: public, max-age=300, must-revalidate
+
 /admin/get/ShamarrConnect.exe
   Content-Type: application/octet-stream
   Content-Disposition: attachment; filename="ShamarrConnect.exe"

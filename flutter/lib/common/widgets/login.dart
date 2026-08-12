@@ -10,6 +10,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../common.dart';
+import './account_mfa.dart';
 import './dialog.dart';
 
 const kOpSvgList = [
@@ -504,6 +505,8 @@ Future<bool?> loginDialog({String initialMode = 'login'}) async {
               try {
                 await gFFI.userModel.refreshCurrentUser();
                 await gFFI.groupModel.pull(quiet: true);
+                // Strict policy: nudge MFA setup if not yet enabled.
+                await maybePromptAccountMfaSetup();
               } catch (_) {}
             });
             return;
@@ -954,8 +957,10 @@ Future<bool?> verificationCodeDialog(
     UserPayload? user, String? secret, bool isEmailVerification) async {
   var isInProgress = false;
   String? errorText;
-
   final code = TextEditingController();
+  // Avoid setState on every keystroke (shaky Android keyboard). Use Rx for
+  // Verify button enablement; only rebuild dialog on error / progress.
+  final submitReady = false.obs;
 
   final res = await gFFI.dialogManager.show<bool>((setState, close, context) {
     void onVerify() async {
@@ -1019,26 +1024,31 @@ Future<bool?> verificationCodeDialog(
       setState(() => isInProgress = false);
     }
 
+    void onCodeChanged() {
+      final d = code.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+      submitReady.value = !isInProgress && d.length == 6;
+      // Clear error without rebuilding the pin field tree every digit.
+      if (errorText != null) {
+        errorText = null;
+        setState(() {});
+      }
+    }
+
     // TOTP (account MFA): 6 pin boxes. Email path keeps the longer text field.
     final ValidationField codeField = isEmailVerification
         ? DialogEmailCodeField(
             controller: code,
             errorText: errorText,
             readyCallback: null, // explicit Verify only
-            onChanged: () => setState(() => errorText = null),
+            onChanged: onCodeChanged,
           )
         : Dialog2FaField(
             controller: code,
             errorText: errorText,
             autoSubmit: false,
             readyCallback: null,
-            onChanged: () => setState(() => errorText = null),
+            onChanged: onCodeChanged,
           );
-
-    bool canSubmit() {
-      final d = code.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
-      return !isInProgress && d.length == 6;
-    }
 
     return CustomAlertDialog(
         title: Text(isEmailVerification
@@ -1066,11 +1076,13 @@ Future<bool?> verificationCodeDialog(
           ],
         ),
         onCancel: close,
-        onSubmit: canSubmit() ? onVerify : null,
+        onSubmit: () {
+          if (submitReady.value && !isInProgress) onVerify();
+        },
         actions: [
           dialogButton("Cancel", onPressed: close, isOutline: true),
-          dialogButton("Verify",
-              onPressed: canSubmit() ? onVerify : null),
+          Obx(() => dialogButton("Verify",
+              onPressed: (submitReady.value && !isInProgress) ? onVerify : null)),
         ]);
   });
   // For verification code, desktop update other models in login dialog, mobile need to close login dialog first,
@@ -1080,6 +1092,42 @@ Future<bool?> verificationCodeDialog(
   }
 
   return res;
+}
+
+/// After password login without MFA, nudge (strict policy) to enable authenticator.
+Future<void> maybePromptAccountMfaSetup() async {
+  if (gFFI.userModel.userName.value.isEmpty) return;
+  try {
+    final on = await gFFI.userModel.mfaStatus();
+    if (on) return;
+  } catch (_) {
+    return;
+  }
+  await gFFI.dialogManager.show<void>((setState, close, context) {
+    return CustomAlertDialog(
+      title: const Text('Account MFA required'),
+      contentBoxConstraints: const BoxConstraints(minWidth: 320, maxWidth: 400),
+      content: const Text(
+        'ShamarrConnect requires authenticator MFA on every account. '
+        'Enable it now so sign-in and reconnections stay protected '
+        '(unless a device is marked trusted for remote 2FA).',
+        style: TextStyle(fontSize: 13.5),
+      ),
+      actions: [
+        dialogButton('Later', onPressed: close, isOutline: true),
+        dialogButton('Enable MFA', onPressed: () async {
+          close();
+          // Wait a tick so this dialog is gone before the setup dialog opens.
+          await Future.delayed(const Duration(milliseconds: 50));
+          final ctx = globalKey.currentContext;
+          if (ctx != null) {
+            await showAccountMfaEnableDialog(ctx);
+          }
+        }),
+      ],
+      onCancel: close,
+    );
+  });
 }
 
 void logOutConfirmDialog() {

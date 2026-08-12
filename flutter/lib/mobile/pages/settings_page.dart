@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common.dart';
+import '../../common/hbbs/hbbs.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/account_mfa.dart';
 import '../../common/widgets/login.dart';
@@ -280,20 +281,8 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
     Provider.of<FfiModel>(context);
     final outgoingOnly = bind.isOutgoingOnly();
     final incomingOnly = bind.isIncomingOnly();
-    final customClientSection = CustomSettingsSection(
-        child: Column(
-      children: [
-        if (bind.isCustomClient())
-          Align(
-            alignment: Alignment.center,
-            child: loadPowered(context),
-          ),
-        Align(
-          alignment: Alignment.center,
-          child: loadLogo(),
-        )
-      ],
-    ));
+    // No header logo/wordmark (was hard to see and not needed).
+    // "Powered by RustDesk" stays as a footer under About.
     final List<AbstractSettingsTile> enhancementsTiles = [];
     final enable2fa = bind.mainHasValid2FaSync();
     final List<AbstractSettingsTile> tfaTiles = [
@@ -340,7 +329,9 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(translate('Enable trusted devices')),
-              Text('* ${translate('enable-trusted-devices-tip')}',
+              Text(
+                  '* Skip 2FA on reconnect only for devices you mark trusted. '
+                  'Every other reconnect re-prompts for a code.',
                   style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
@@ -713,9 +704,9 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
     final disabledSettings = bind.isDisableSettings();
     final hideSecuritySettings =
         bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) == 'Y';
+    final loggedIn = gFFI.userModel.userName.value.isNotEmpty;
     final settings = SettingsList(
       sections: [
-        customClientSection,
         if (!bind.isDisableAccount())
           SettingsSection(
             title: Text(translate('Account')),
@@ -743,11 +734,39 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                   }
                 },
               ),
+              if (loggedIn)
+                SettingsTile(
+                  title: Text('Change password'),
+                  leading: Icon(Icons.password_outlined),
+                  onPressed: (context) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const _ChangePasswordPage(),
+                      ),
+                    );
+                  },
+                ),
+              if (loggedIn)
+                SettingsTile(
+                  title: Text('Signed-in devices'),
+                  description: Text('See and sign out other phones and computers'),
+                  leading: Icon(Icons.devices_outlined),
+                  onPressed: (context) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const _SignedInDevicesPage(),
+                      ),
+                    );
+                  },
+                ),
               // Account MFA (sign-in). Device 2FA remains under Security section.
               SettingsTile(
                 title: Text('Account MFA (sign-in)'),
                 description: Text(
-                    'Authenticator for login — not device remote-session 2FA'),
+                    'Required on all accounts. Authenticator at login; '
+                    'reconnects re-prompt unless trusted device.'),
                 leading: Icon(Icons.shield_outlined),
                 onPressed: (context) async {
                   if (gFFI.userModel.userName.value.isEmpty) {
@@ -1047,6 +1066,14 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
             )
           ],
         ),
+        // Fork credit — footer (not header); AGPL attribution.
+        if (bind.isCustomClient())
+          CustomSettingsSection(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              child: Center(child: loadPowered(context)),
+            ),
+          ),
       ],
     );
     return settings;
@@ -1184,6 +1211,350 @@ class ScanButton extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Account → Change password (POST /api/user/password).
+class _ChangePasswordPage extends StatefulWidget {
+  const _ChangePasswordPage();
+
+  @override
+  State<_ChangePasswordPage> createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<_ChangePasswordPage> {
+  final _current = TextEditingController();
+  final _next = TextEditingController();
+  final _confirm = TextEditingController();
+  var _obscure = true;
+  var _revokeOthers = false;
+  var _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _next.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final cur = _current.text;
+    final next = _next.text;
+    final conf = _confirm.text;
+    if (cur.isEmpty) {
+      setState(() => _error = 'Current password is required');
+      return;
+    }
+    if (next.length < 8) {
+      setState(() => _error = 'New password must be at least 8 characters');
+      return;
+    }
+    if (next != conf) {
+      setState(() => _error = 'New passwords do not match');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await gFFI.userModel.changePassword(
+        currentPassword: cur,
+        newPassword: next,
+        revokeOtherDevices: _revokeOthers,
+      );
+      if (!mounted) return;
+      BotToast.showText(text: 'Password updated');
+      Navigator.pop(context);
+    } on RequestException catch (e) {
+      setState(() => _error = e.cause.isNotEmpty ? e.cause : 'Request failed');
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios),
+        ),
+        title: const Text('Change password'),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Update the password for your ShamarrConnect account. '
+            'Devices stay signed in unless you choose to sign them out.',
+            style: TextStyle(fontSize: 13.5),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _current,
+            obscureText: _obscure,
+            decoration: InputDecoration(
+              labelText: 'Current password',
+              suffixIcon: IconButton(
+                icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _next,
+            obscureText: _obscure,
+            decoration: const InputDecoration(labelText: 'New password'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _confirm,
+            obscureText: _obscure,
+            decoration: const InputDecoration(labelText: 'Confirm new password'),
+          ),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('Sign out other devices'),
+            subtitle: const Text(
+              'Revoke sessions on other phones and computers',
+              style: TextStyle(fontSize: 12),
+            ),
+            value: _revokeOthers,
+            onChanged: _busy
+                ? null
+                : (v) => setState(() => _revokeOthers = v == true),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ],
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Update password'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Account → Signed-in devices (GET/DELETE /api/user/devices).
+class _SignedInDevicesPage extends StatefulWidget {
+  const _SignedInDevicesPage();
+
+  @override
+  State<_SignedInDevicesPage> createState() => _SignedInDevicesPageState();
+}
+
+class _SignedInDevicesPageState extends State<_SignedInDevicesPage> {
+  List<Map<String, dynamic>> _devices = [];
+  var _loading = true;
+  String? _error;
+  String? _myId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      _myId = await bind.mainGetMyId();
+      final list = await gFFI.userModel.listSignedInDevices();
+      if (!mounted) return;
+      setState(() {
+        _devices = list;
+        _loading = false;
+      });
+    } on RequestException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.cause.isNotEmpty ? e.cause : 'Failed to load devices';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _revokeOne(Map<String, dynamic> d) async {
+    final id = (d['id'] ?? '').toString();
+    if (id.isEmpty) return;
+    final name = (d['device_name'] ?? d['device_id'] ?? 'device').toString();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out device?'),
+        content: Text('Sign out "$name"? It will need to log in again.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign out')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await gFFI.userModel.revokeDevice(id);
+      BotToast.showText(text: 'Device signed out');
+      await _load();
+    } on RequestException catch (e) {
+      BotToast.showText(text: e.cause);
+    } catch (e) {
+      BotToast.showText(text: e.toString());
+    }
+  }
+
+  Future<void> _revokeOthers() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out other devices?'),
+        content: const Text(
+          'Keep this phone signed in and revoke all other sessions.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign out others')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final n = await gFFI.userModel.revokeOtherDevices();
+      BotToast.showText(text: n == 0 ? 'No other devices' : 'Signed out $n device(s)');
+      await _load();
+    } on RequestException catch (e) {
+      BotToast.showText(text: e.cause);
+    } catch (e) {
+      BotToast.showText(text: e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios),
+        ),
+        title: const Text('Signed-in devices'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: _loading ? null : _load,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!),
+                      TextButton(onPressed: _load, child: const Text('Retry')),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                        child: Text(
+                          'Phones and computers signed into your account. '
+                          'Sign out a device you do not recognize.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ),
+                      if (_devices.isEmpty)
+                        const ListTile(
+                          title: Text('No signed-in devices found'),
+                        ),
+                      ..._devices.map((d) {
+                        final name = (d['device_name'] ?? '').toString().trim();
+                        final deviceId = (d['device_id'] ?? '').toString();
+                        final os = (d['device_os'] ?? '').toString();
+                        final last = (d['last_seen'] ?? '').toString();
+                        final isThis = _myId != null &&
+                            _myId!.isNotEmpty &&
+                            deviceId == _myId;
+                        final title = name.isNotEmpty
+                            ? name
+                            : (deviceId.isNotEmpty ? deviceId : 'Unknown device');
+                        return ListTile(
+                          leading: Icon(
+                            os.toLowerCase().contains('android') ||
+                                    os.toLowerCase().contains('ios')
+                                ? Icons.phone_android
+                                : Icons.computer,
+                          ),
+                          title: Text(title),
+                          subtitle: Text([
+                            if (os.isNotEmpty) os,
+                            if (deviceId.isNotEmpty) 'ID $deviceId',
+                            if (last.isNotEmpty) 'Last seen $last',
+                            if (isThis) 'This device',
+                          ].join(' · ')),
+                          trailing: isThis
+                              ? const Chip(label: Text('This device', style: TextStyle(fontSize: 11)))
+                              : IconButton(
+                                  icon: const Icon(Icons.logout),
+                                  tooltip: 'Sign out',
+                                  onPressed: () => _revokeOne(d),
+                                ),
+                        );
+                      }),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: OutlinedButton.icon(
+                          onPressed: _devices.length <= 1 ? null : _revokeOthers,
+                          icon: const Icon(Icons.devices_other),
+                          label: const Text('Sign out all other devices'),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
     );
   }
 }

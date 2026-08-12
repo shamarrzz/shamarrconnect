@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Your account · ShamarrConnect</title>
 <meta name="robots" content="noindex">
-<meta name="description" content="Sign in to see your computers and account activity.">
+<meta name="description" content="See online computers, signed-in sessions, and activity on your ShamarrConnect account.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
   :root{
     --brand:#2B5CE6;--brand2:#5B7BF0;--brand-dk:#1E3FA8;
     --ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF;
-    --ok:#1D9E75;--off:#9AA7BC;
+    --ok:#1D9E75;--off:#9AA7BC;--warn:#B45309;--warnbg:#FFF7E6;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -21,55 +21,84 @@
   :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
 
   header{background:#fff;border-bottom:1px solid var(--line)}
-  header .bar{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
-  header .who{margin-left:auto;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:14px}
-  header .who button{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;
+  header .bar{max-width:880px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header .nav{display:flex;gap:16px;align-items:center;font-size:13.5px;color:var(--muted)}
+  header .nav a{color:var(--muted);font-weight:600}
+  header .nav a:hover{color:var(--brand)}
+  header .who{margin-left:auto;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:12px}
+  header .who button,.btn-ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;
     font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
-  header .who button:hover{border-color:var(--brand);color:var(--brand)}
+  header .who button:hover,.btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
 
-  main{flex:1;max-width:760px;width:100%;margin:0 auto;padding:40px 24px 80px}
+  main{flex:1;max-width:880px;width:100%;margin:0 auto;padding:36px 24px 80px}
   h1{font-size:26px;letter-spacing:-.02em;line-height:1.2;text-wrap:balance;margin-bottom:8px}
-  h2{font-size:17px;letter-spacing:-.01em;margin:34px 0 12px}
-  .sub{color:var(--muted);font-size:15px;margin-bottom:26px}
+  h2{font-size:17px;letter-spacing:-.01em;margin:32px 0 12px}
+  .sub{color:var(--muted);font-size:15px;margin-bottom:22px}
 
-  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;
     box-shadow:0 10px 30px rgba(20,40,90,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
   label{display:block;font-size:13.5px;font-weight:600;margin:14px 0 6px}
   input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:15px;
     font-family:inherit;color:var(--ink);background:#fff}
   input:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px rgba(43,92,230,.15)}
   .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;
     font-weight:700;font-size:14.5px;padding:12px 20px;border-radius:11px;border:0;cursor:pointer;
-    width:100%;margin-top:20px;transition:background .15s}
+    transition:background .15s}
   .btn:hover{background:var(--brand-dk)}
   .btn[disabled]{opacity:.6;cursor:default}
+  .btn.block{width:100%;margin-top:16px}
+  .btn.sm{padding:7px 12px;font-size:12.5px;border-radius:8px}
+  .btn.danger{background:#fff;color:#B91C1C;border:1px solid #FECACA}
+  .btn.danger:hover{background:#FEF2F2}
   .err{background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:10px;
-    padding:10px 14px;font-size:13.5px;margin-top:16px;display:none}
+    padding:10px 14px;font-size:13.5px;margin-top:14px;display:none}
+  .okmsg{background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;border-radius:10px;
+    padding:10px 14px;font-size:13.5px;margin-top:14px;display:none}
   .hint{font-size:13px;color:var(--muted);margin-top:18px;text-align:center}
 
-  .dev{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line)}
-  .dev:last-child{border-bottom:0}
+  .stat{display:flex;flex-direction:column;gap:4px}
+  .stat .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .stat .val{font-size:16px;font-weight:700}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+    border-radius:100px;padding:4px 10px}
+  .pill.on{background:#ECFDF5;color:#065F46}
+  .pill.off{background:#F1F5F9;color:var(--muted)}
+  .pill.warn{background:var(--warnbg);color:var(--warn)}
+
+  .dev,.sess,.act{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+  .dev:last-child,.sess:last-child,.act:last-child{border-bottom:0}
   .dot{width:10px;height:10px;border-radius:50%;flex:none}
   .dot.on{background:var(--ok);box-shadow:0 0 0 4px rgba(29,158,117,.15)}
   .dot.off{background:var(--off)}
-  .dev .nm{font-weight:650;font-size:15px}
-  .dev .meta{font-size:13px;color:var(--muted)}
-  .dev .state{margin-left:auto;font-size:12.5px;font-weight:650}
-  .dev .state.on{color:var(--ok)}
-  .dev .state.off{color:var(--muted)}
-  .empty{color:var(--muted);font-size:14px;padding:18px 4px}
-
-  .act{display:flex;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:14px}
-  .act:last-child{border-bottom:0}
+  .nm{font-weight:650;font-size:15px}
+  .meta{font-size:13px;color:var(--muted)}
+  .state{margin-left:auto;font-size:12.5px;font-weight:650;white-space:nowrap}
+  .state.on{color:var(--ok)}
+  .state.off{color:var(--muted)}
+  .empty{color:var(--muted);font-size:14px;padding:14px 2px}
   .act .when{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap;padding-left:12px}
   .note{font-size:13px;color:var(--muted);margin-top:10px}
+  .sec-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  .check{display:flex;align-items:center;gap:8px;font-size:13.5px;margin-top:12px}
+  .check input{width:auto}
+  .headrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:32px 0 12px}
+  .headrow h2{margin:0}
   footer{border-top:1px solid var(--line);padding:20px 24px;text-align:center;font-size:12.5px;color:var(--muted)}
 </style>
 </head>
 <body>
 <header>
   <div class="bar">
-    <a href="/" aria-label="ShamarrConnect home"><img src="/wordmark.svg" width="264" height="30" alt="ShamarrConnect" style="display:block"></a>
+    <a href="/" aria-label="ShamarrConnect home"><img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect"></a>
+    <nav class="nav">
+      <a href="/pricing">Pricing</a>
+      <a href="/download">Download</a>
+      <a href="/account">Account</a>
+      <a href="/account/team/">Team</a>
+    </nav>
     <div class="who" id="who" hidden>
       <span id="who-email"></span>
       <button id="signout" type="button">Sign out</button>
@@ -81,8 +110,8 @@
   <!-- Signed out -->
   <section id="view-login">
     <h1>Sign in to your account</h1>
-    <p class="sub">See which of your computers are online and what has been happening on your account.</p>
-    <div class="card">
+    <p class="sub">See which computers are online, manage signed-in sessions, and review activity history.</p>
+    <div class="card" style="max-width:440px">
       <form id="login-form" novalidate>
         <label for="email">Email</label>
         <input id="email" type="email" autocomplete="username" required>
@@ -92,7 +121,7 @@
           <label for="code">Two-step code</label>
           <input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from your app">
         </div>
-        <button class="btn" id="login-btn" type="submit">Sign in</button>
+        <button class="btn block" id="login-btn" type="submit">Sign in</button>
         <div class="err" id="login-err"></div>
       </form>
     </div>
@@ -101,19 +130,67 @@
 
   <!-- Console -->
   <section id="view-console" hidden>
-    <h1>Your computers</h1>
-    <p class="sub">Computers signed in with your account. This updates itself every 30 seconds.</p>
+    <h1>Your account</h1>
+    <p class="sub">Live view of computers, sessions, and what has happened on this account.</p>
+
+    <div class="card" id="overview">
+      <div class="grid2">
+        <div class="stat"><span class="lbl">Signed in as</span><span class="val" id="ov-email">—</span></div>
+        <div class="stat"><span class="lbl">Plan</span><span class="val" id="ov-plan">—</span></div>
+        <div class="stat"><span class="lbl">Two-step sign-in</span><span class="val" id="ov-mfa">—</span></div>
+        <div class="stat"><span class="lbl">Plan renews / ends</span><span class="val" id="ov-exp">—</span></div>
+      </div>
+      <div id="ov-team" class="note" style="margin-top:14px;display:none"></div>
+      <p class="note" style="margin-top:14px">Open the ShamarrConnect app on each computer and sign in with this email so it appears below.</p>
+    </div>
+
+    <div class="headrow">
+      <h2>Online computers</h2>
+      <button class="btn-ghost" type="button" id="refresh-all">Refresh</button>
+    </div>
     <div class="card" id="devices"><div class="empty">Checking…</div></div>
 
     <div id="peers-wrap" hidden>
-      <h2>Saved devices</h2>
+      <h2>Saved devices (address book)</h2>
       <div class="card" id="peers"></div>
-      <p class="note">Online status shows for devices signed in with your account. For other saved devices,
-        the app shows their status directly.</p>
+      <p class="note">Online status shows when a saved peer is also signed into this account.</p>
     </div>
 
+    <div class="headrow">
+      <h2>Signed-in sessions</h2>
+      <button class="btn sm danger" type="button" id="revoke-others">Sign out all app sessions</button>
+    </div>
+    <div class="card" id="sessions"><div class="empty">Loading…</div></div>
+    <p class="note">These are phones and computers currently signed into your account (device tokens). Signing one out forces it to log in again.</p>
+
     <h2>Recent activity</h2>
-    <div class="card" id="activity"><div class="empty">Nothing yet — activity will show here.</div></div>
+    <div class="card" id="activity"><div class="empty">Nothing yet — activity will show here after you sign in on devices, change security settings, or make a payment.</div></div>
+
+    <h2>Security</h2>
+    <div class="card">
+      <div class="stat" style="margin-bottom:14px">
+        <span class="lbl">Password</span>
+        <span class="val" style="font-size:14px;font-weight:500;color:var(--muted)">Change the password for this account</span>
+      </div>
+      <form id="pw-form">
+        <label for="pw-cur">Current password</label>
+        <input id="pw-cur" type="password" autocomplete="current-password" required>
+        <label for="pw-new">New password</label>
+        <input id="pw-new" type="password" autocomplete="new-password" minlength="8" required>
+        <label for="pw-conf">Confirm new password</label>
+        <input id="pw-conf" type="password" autocomplete="new-password" minlength="8" required>
+        <label class="check"><input type="checkbox" id="pw-revoke"> Also sign out other sessions</label>
+        <button class="btn block" id="pw-btn" type="submit">Update password</button>
+        <div class="err" id="pw-err"></div>
+        <div class="okmsg" id="pw-ok"></div>
+      </form>
+      <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+      <div class="stat">
+        <span class="lbl">Two-step sign-in (authenticator)</span>
+        <span class="val" id="sec-mfa" style="font-size:14.5px">—</span>
+      </div>
+      <p class="note">Turn two-step sign-in on or off in the ShamarrConnect app under <strong>Settings → Account → Account MFA</strong>. Remote reconnects also re-check 2FA unless a device is trusted.</p>
+    </div>
   </section>
 </main>
 
@@ -123,10 +200,11 @@
 (function(){
   var API = "https://api.shamarrconnect.com";
   var $ = function(id){ return document.getElementById(id); };
-  var mfaSecret = null, pollTimer = null;
+  var mfaSecret = null, pollTimer = null, profileEmail = "";
 
   function token(){ return sessionStorage.getItem("sc_token"); }
   function setToken(t){ t ? sessionStorage.setItem("sc_token", t) : sessionStorage.removeItem("sc_token"); }
+  function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
 
   function showLogin(msg){
     $("view-console").hidden = true; $("who").hidden = true;
@@ -137,14 +215,20 @@
   function showConsole(email){
     $("view-login").hidden = true;
     $("view-console").hidden = false; $("who").hidden = false;
-    $("who-email").textContent = email || "";
+    if (email) {
+      profileEmail = email;
+      $("who-email").textContent = email;
+      $("ov-email").textContent = email;
+    }
     refresh();
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(function(){ if (!document.hidden) refresh(); }, 30000);
   }
 
   function relTime(s){
-    var d = new Date(s.replace(" ", "T") + "Z");
+    if (!s) return "—";
+    var d = new Date(String(s).replace(" ", "T") + (String(s).indexOf("Z") >= 0 ? "" : "Z"));
+    if (isNaN(d.getTime())) return String(s);
     var sec = Math.max(0, (Date.now() - d.getTime()) / 1000);
     if (sec < 45) return "just now";
     if (sec < 3600) return Math.round(sec/60) + " min ago";
@@ -157,17 +241,25 @@
     var k = (s||"").toLowerCase();
     return m[k] || (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
   }
-  function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+  function prettyPlan(p){
+    var k = (p || "free").toLowerCase();
+    if (k === "solo" || k === "pro") return "Pro";
+    if (k === "team") return "Team";
+    if (k === "enterprise") return "Enterprise";
+    if (k === "free" || !k) return "Free";
+    return p;
+  }
 
   var PHRASES = {
-    login: function(d){ return "Signed in — " + d; },
+    login: function(d){ return "Signed in" + (d ? " — " + d : ""); },
     account_created: function(){ return "Account created"; },
-    device_removed: function(d){ return "Device removed — " + d; },
-    devices_signed_out_others: function(d){ return "Signed out other devices (" + d + ")"; },
-    device_joined: function(d){ return "New device joined — " + d; },
-    payment: function(d){ return "Payment received — " + d; },
+    device_removed: function(d){ return "Session signed out" + (d ? " — " + d : ""); },
+    devices_signed_out_others: function(d){ return "Signed out other sessions" + (d ? " (" + d + ")" : ""); },
+    device_joined: function(d){ return "New device joined" + (d ? " — " + d : ""); },
+    payment: function(d){ return "Payment received" + (d ? " — " + d : ""); },
     mfa_enabled: function(){ return "Two-step sign-in turned on"; },
-    mfa_disabled: function(){ return "Two-step sign-in turned off"; }
+    mfa_disabled: function(){ return "Two-step sign-in turned off"; },
+    password_changed: function(d){ return "Password changed" + (d ? " — " + d : ""); }
   };
   function phrase(ev){
     var f = PHRASES[ev.kind];
@@ -175,18 +267,65 @@
     return f ? f(d) : (ev.kind + (d ? " — " + d : ""));
   }
 
-  function api(path){
-    return fetch(API + path, { headers: { "Authorization": "Bearer " + token() } })
-      .then(function(r){
-        if (r.status === 401){ showLogin("Please sign in again."); throw new Error("unauthorized"); }
-        if (!r.ok) throw new Error("http " + r.status);
-        return r.json();
+  function api(path, opts){
+    opts = opts || {};
+    var headers = Object.assign({ "Authorization": "Bearer " + token() }, opts.headers || {});
+    if (opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+    return fetch(API + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? (typeof opts.body === "string" ? opts.body : JSON.stringify(opts.body)) : undefined
+    }).then(function(r){
+      if (r.status === 401){ showLogin("Please sign in again."); throw new Error("unauthorized"); }
+      if (r.status === 204) return {};
+      return r.text().then(function(t){
+        var j = {};
+        if (t) { try { j = JSON.parse(t); } catch(_) { j = { error: t }; } }
+        if (!r.ok) throw new Error((j && j.error) || ("http " + r.status));
+        return j;
       });
+    });
   }
 
   function refresh(){
+    api("/api/currentUser", { method: "POST", body: { id: "", uuid: "" } })
+      .then(function(u){
+        var email = u.email || u.name || profileEmail || "";
+        profileEmail = email;
+        $("who-email").textContent = email;
+        $("ov-email").textContent = email || "—";
+        $("ov-plan").textContent = prettyPlan(u.plan);
+        $("ov-exp").textContent = u.plan_expires_at ? relTime(u.plan_expires_at) + " (" + u.plan_expires_at + ")" : (prettyPlan(u.plan) === "Free" ? "—" : "—");
+      }).catch(function(){});
+
+    api("/api/org").then(function(v){
+      var o = v && v.org;
+      var el = $("ov-team");
+      if (!o){ el.style.display = "none"; el.innerHTML = ""; return; }
+      el.style.display = "block";
+      el.innerHTML = "<strong>Team:</strong> " + esc(o.name) +
+        " · role " + esc(o.my_role) +
+        " · seats " + esc(o.seats_used) + "/" + esc(o.seat_limit) +
+        " · devices " + esc(o.devices_used) + "/" + esc(o.device_limit) +
+        " (shared pool). <a href=\"/account/team/\">Manage team →</a>";
+    }).catch(function(){});
+
+    api("/api/user/mfa/status").then(function(s){
+      var on = !!s.enabled;
+      $("ov-mfa").innerHTML = on
+        ? '<span class="pill on">On</span>'
+        : '<span class="pill warn">Off — enable in the app</span>';
+      $("sec-mfa").innerHTML = on
+        ? '<span class="pill on">Enabled</span>'
+        : '<span class="pill warn">Not enabled</span>';
+    }).catch(function(){
+      $("ov-mfa").textContent = "—";
+      $("sec-mfa").textContent = "—";
+    });
+
     api("/api/user/fleet").then(renderFleet).catch(function(){});
-    api("/api/user/activity?limit=30").then(renderActivity).catch(function(){});
+    api("/api/user/devices").then(renderSessions).catch(function(){});
+    api("/api/user/activity?limit=50").then(renderActivity).catch(function(){});
   }
 
   function renderFleet(v){
@@ -200,7 +339,9 @@
         var os = prettyOS(d.device_os);
         return '<div class="dev"><span class="dot ' + (on ? "on" : "off") + '"></span>' +
           '<div><div class="nm">' + esc(name) + '</div>' +
-          '<div class="meta">' + esc(os) + (os ? " · " : "") + (on ? "online now" : "last seen " + relTime(d.last_seen)) + '</div></div>' +
+          '<div class="meta">' + esc(os) + (os ? " · " : "") +
+          (d.device_id ? "ID " + esc(d.device_id) + " · " : "") +
+          (on ? "online now" : "last seen " + relTime(d.last_seen)) + '</div></div>' +
           '<span class="state ' + (on ? "on" : "off") + '">' + (on ? "Online" : "Offline") + '</span></div>';
       }).join("");
     }
@@ -221,10 +362,42 @@
     }
   }
 
+  function renderSessions(v){
+    var el = $("sessions"), list = v.devices || [];
+    if (!list.length){
+      el.innerHTML = '<div class="empty">No active sessions. Sign in from the app to register a session.</div>';
+      return;
+    }
+    el.innerHTML = list.map(function(d){
+      var name = d.device_name || d.device_id || "Session";
+      var os = prettyOS(d.device_os);
+      var id = d.id || "";
+      return '<div class="sess">' +
+        '<div><div class="nm">' + esc(name) + '</div>' +
+        '<div class="meta">' + esc(os) + (os ? " · " : "") +
+        "last seen " + relTime(d.last_seen) +
+        (d.device_id ? " · ID " + esc(d.device_id) : "") +
+        '</div></div>' +
+        (id
+          ? '<button class="btn sm danger" type="button" data-revoke="' + esc(id) + '">Sign out</button>'
+          : '') +
+        '</div>';
+    }).join("");
+    el.querySelectorAll("[data-revoke]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-revoke");
+        if (!confirm("Sign out this session? It will need to log in again.")) return;
+        api("/api/user/device/" + encodeURIComponent(id), { method: "DELETE" })
+          .then(function(){ refresh(); })
+          .catch(function(e){ alert(e.message || "Failed"); });
+      });
+    });
+  }
+
   function renderActivity(v){
     var el = $("activity"), evs = v.events || [];
     if (!evs.length){
-      el.innerHTML = '<div class="empty">Nothing yet — activity will show here.</div>';
+      el.innerHTML = '<div class="empty">Nothing yet — sign-ins, device changes, payments, and security updates will appear here.</div>';
       return;
     }
     el.innerHTML = evs.map(function(ev){
@@ -244,6 +417,7 @@
         var j = res.j;
         if (res.ok && j.access_token){
           setToken(j.access_token);
+          mfaSecret = null;
           showConsole(body.username);
           return;
         }
@@ -277,6 +451,52 @@
 
   $("signout").addEventListener("click", function(){
     setToken(null); mfaSecret = null; showLogin();
+  });
+
+  $("refresh-all").addEventListener("click", function(){ refresh(); });
+
+  $("revoke-others").addEventListener("click", function(){
+    if (!confirm("Sign out every other phone and computer? This browser session stays signed in.")) return;
+    // Web console has no device id — server revokes all tokens for the user when id empty is rejected.
+    // Use list + delete each, or call revoke-others with empty (will 400). Safer: list then delete all.
+    api("/api/user/devices").then(function(v){
+      var list = v.devices || [];
+      if (!list.length){ alert("No other sessions."); return; }
+      return Promise.all(list.map(function(d){
+        return api("/api/user/device/" + encodeURIComponent(d.id), { method: "DELETE" });
+      })).then(function(){ refresh(); });
+    }).catch(function(e){ alert(e.message || "Failed"); });
+  });
+
+  $("pw-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var cur = $("pw-cur").value, nw = $("pw-new").value, conf = $("pw-conf").value;
+    $("pw-err").style.display = "none"; $("pw-ok").style.display = "none";
+    if (nw.length < 8){
+      $("pw-err").textContent = "New password must be at least 8 characters.";
+      $("pw-err").style.display = "block"; return;
+    }
+    if (nw !== conf){
+      $("pw-err").textContent = "New passwords do not match.";
+      $("pw-err").style.display = "block"; return;
+    }
+    var btn = $("pw-btn"); btn.disabled = true;
+    api("/api/user/password", {
+      method: "POST",
+      body: {
+        current_password: cur,
+        new_password: nw,
+        revoke_other_devices: $("pw-revoke").checked
+      }
+    }).then(function(){
+      $("pw-ok").textContent = "Password updated.";
+      $("pw-ok").style.display = "block";
+      $("pw-form").reset();
+      refresh();
+    }).catch(function(e){
+      $("pw-err").textContent = e.message || "Could not update password.";
+      $("pw-err").style.display = "block";
+    }).finally(function(){ btn.disabled = false; });
   });
 
   if (token()) showConsole("");

@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bot_toast/bot_toast.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
+import 'package:flutter_hbb/common/hbbs/hbbs.dart';
 import 'package:flutter_hbb/common/widgets/audio_input.dart';
 import 'package:flutter_hbb/common/widgets/setting_widgets.dart';
 import 'package:flutter_hbb/consts.dart';
@@ -2043,7 +2045,22 @@ class _AccountState extends State<_Account> {
     return ListView(
       controller: scrollController,
       children: [
-        _Card(title: 'Account', children: [accountAction(), useInfo()]),
+        _Card(title: 'Account', children: [
+          accountAction(),
+          useInfo(),
+          Obx(() {
+            if (gFFI.userModel.userName.value.isEmpty) {
+              return const Offstage();
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Button('Change password', () => _showChangePasswordDialog(context)),
+                _Button('Signed-in devices', () => _showSignedInDevicesDialog(context)),
+              ],
+            );
+          }),
+        ]),
         // Account MFA (login) — not the same as Security → device 2FA.
         _Card(
           title: 'Account sign-in protection',
@@ -2063,6 +2080,229 @@ class _AccountState extends State<_Account> {
                   ? loginDialog()
                   : logOutConfirmDialog()
             }));
+  }
+
+  Future<void> _showChangePasswordDialog(BuildContext context) async {
+    final current = TextEditingController();
+    final next = TextEditingController();
+    final confirm = TextEditingController();
+    var obscure = true;
+    var revokeOthers = false;
+    var busy = false;
+    String? error;
+
+    await gFFI.dialogManager.show<void>((setState, close, ctx) {
+      Future<void> submit() async {
+        if (current.text.isEmpty) {
+          setState(() => error = 'Current password is required');
+          return;
+        }
+        if (next.text.length < 8) {
+          setState(() => error = 'New password must be at least 8 characters');
+          return;
+        }
+        if (next.text != confirm.text) {
+          setState(() => error = 'New passwords do not match');
+          return;
+        }
+        setState(() {
+          busy = true;
+          error = null;
+        });
+        try {
+          await gFFI.userModel.changePassword(
+            currentPassword: current.text,
+            newPassword: next.text,
+            revokeOtherDevices: revokeOthers,
+          );
+          BotToast.showText(text: 'Password updated');
+          close();
+        } on RequestException catch (e) {
+          setState(() {
+            busy = false;
+            error = e.cause;
+          });
+        } catch (e) {
+          setState(() {
+            busy = false;
+            error = e.toString();
+          });
+        }
+      }
+
+      return CustomAlertDialog(
+        title: const Text('Change password'),
+        contentBoxConstraints: const BoxConstraints(minWidth: 360, maxWidth: 440),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: current,
+              obscureText: obscure,
+              decoration: InputDecoration(
+                labelText: 'Current password',
+                suffixIcon: IconButton(
+                  icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => obscure = !obscure),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: next,
+              obscureText: obscure,
+              decoration: const InputDecoration(labelText: 'New password'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: confirm,
+              obscureText: obscure,
+              decoration: const InputDecoration(labelText: 'Confirm new password'),
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Sign out other devices'),
+              value: revokeOthers,
+              onChanged: busy
+                  ? null
+                  : (v) => setState(() => revokeOthers = v == true),
+            ),
+            if (error != null)
+              Text(error!, style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+          ],
+        ),
+        actions: [
+          dialogButton(translate('Cancel'), onPressed: close, isOutline: true),
+          dialogButton(translate('OK'), onPressed: busy ? null : submit),
+        ],
+        onCancel: close,
+      );
+    });
+  }
+
+  Future<void> _showSignedInDevicesDialog(BuildContext context) async {
+    var loading = true;
+    String? error;
+    List<Map<String, dynamic>> devices = [];
+    String myId = '';
+
+    Future<void> load(void Function(VoidCallback) setState) async {
+      setState(() {
+        loading = true;
+        error = null;
+      });
+      try {
+        myId = await bind.mainGetMyId();
+        devices = await gFFI.userModel.listSignedInDevices();
+        setState(() => loading = false);
+      } on RequestException catch (e) {
+        setState(() {
+          loading = false;
+          error = e.cause;
+        });
+      } catch (e) {
+        setState(() {
+          loading = false;
+          error = e.toString();
+        });
+      }
+    }
+
+    await gFFI.dialogManager.show<void>((setState, close, ctx) {
+      Future.microtask(() => load(setState));
+      return CustomAlertDialog(
+        title: const Text('Signed-in devices'),
+        contentBoxConstraints: const BoxConstraints(minWidth: 400, maxWidth: 520),
+        content: SizedBox(
+          width: 480,
+          height: 360,
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : error != null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(error!),
+                        TextButton(
+                            onPressed: () => load(setState),
+                            child: Text(translate('Retry'))),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: devices.isEmpty
+                              ? const Center(child: Text('No devices'))
+                              : ListView.builder(
+                                  itemCount: devices.length,
+                                  itemBuilder: (_, i) {
+                                    final d = devices[i];
+                                    final name =
+                                        (d['device_name'] ?? d['device_id'] ?? 'Device')
+                                            .toString();
+                                    final deviceId = (d['device_id'] ?? '').toString();
+                                    final os = (d['device_os'] ?? '').toString();
+                                    final last = (d['last_seen'] ?? '').toString();
+                                    final isThis =
+                                        myId.isNotEmpty && deviceId == myId;
+                                    final rowId = (d['id'] ?? '').toString();
+                                    return ListTile(
+                                      dense: true,
+                                      title: Text(name),
+                                      subtitle: Text([
+                                        if (os.isNotEmpty) os,
+                                        if (last.isNotEmpty) last,
+                                        if (isThis) 'This device',
+                                      ].join(' · ')),
+                                      trailing: isThis
+                                          ? null
+                                          : IconButton(
+                                              icon: const Icon(Icons.logout, size: 18),
+                                              onPressed: () async {
+                                                try {
+                                                  await gFFI.userModel
+                                                      .revokeDevice(rowId);
+                                                  BotToast.showText(
+                                                      text: 'Device signed out');
+                                                  await load(setState);
+                                                } on RequestException catch (e) {
+                                                  BotToast.showText(text: e.cause);
+                                                }
+                                              },
+                                            ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () async {
+                              try {
+                                final n = await gFFI.userModel.revokeOtherDevices();
+                                BotToast.showText(
+                                    text: n == 0
+                                        ? 'No other devices'
+                                        : 'Signed out $n device(s)');
+                                await load(setState);
+                              } on RequestException catch (e) {
+                                BotToast.showText(text: e.cause);
+                              }
+                            },
+                            child: const Text('Sign out all other devices'),
+                          ),
+                        ),
+                      ],
+                    ),
+        ),
+        actions: [
+          dialogButton(translate('OK'), onPressed: close),
+        ],
+        onCancel: close,
+      );
+    });
   }
 
   Widget useInfo() {

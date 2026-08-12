@@ -4,7 +4,8 @@
 
 const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 const SENDER = { name: "ShamarrConnect", email: "hello@shamarrconnect.com" };
-const WORDMARK = "https://shamarrconnect.com/wordmark-2x.png";
+// Header uses S-mark only (full wordmark raster had compositing issues).
+const WORDMARK = "https://shamarrconnect.com/logo-mark.svg";
 
 async function sendBrevo(env, msg) {
   if (!env.BREVO_API_KEY) {
@@ -99,4 +100,44 @@ export async function sendWaitlistEmails(env, ctx, email, region) {
   ];
   if (ctx && ctx.waitUntil) ctx.waitUntil(Promise.all(tasks));
   else await Promise.all(tasks);
+}
+
+// ── Team invite ──────────────────────────────────────────────────────────
+// Accept link points at /account/invite/?token=… — recipient signs in with
+// the invited email and joins the org.
+export function teamInviteEmail({
+  toEmail,
+  orgName,
+  role,
+  inviterEmail,
+  acceptUrl,
+}) {
+  const roleLabel = role === "admin" ? "admin" : "member";
+  const safeOrg = String(orgName || "a ShamarrConnect team");
+  const safeInviter = String(inviterEmail || "A teammate");
+  const html = shell(`You're invited to ${safeOrg} on ShamarrConnect`, `
+    <h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;letter-spacing:-0.02em;color:#0F1B33;">You're invited to join ${safeOrg}</h1>
+    <p style="margin:0 0 14px;"><strong>${safeInviter}</strong> invited you to their ShamarrConnect team as a <strong>${roleLabel}</strong>.</p>
+    <p style="margin:0 0 14px;">Sign in with <strong>${toEmail}</strong> (the same address this email was sent to), then open the button below to accept.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 6px;"><tr><td style="background:#2B5CE6;border-radius:12px;">
+      <a href="${acceptUrl}" style="display:inline-block;padding:12px 24px;color:#FFFFFF;font-weight:600;font-size:15px;text-decoration:none;">Accept invite</a>
+    </td></tr></table>
+    <p style="margin:18px 0 0;font-size:13px;color:#5A6B85;">If the button does not work, paste this link into your browser:<br>
+      <a href="${acceptUrl}" style="color:#2B5CE6;word-break:break-all;">${acceptUrl}</a></p>
+    <p style="margin:14px 0 0;font-size:13px;color:#5A6B85;">Need an account first? Create one with <strong>${toEmail}</strong> in the ShamarrConnect app or ask your admin to create it, then open the link again. This invite expires in 7 days. If you did not expect this, you can ignore the email.</p>`);
+  const text =
+    `You're invited to join ${safeOrg} on ShamarrConnect\n\n` +
+    `${safeInviter} invited you as ${roleLabel}.\n\n` +
+    `Sign in with ${toEmail}, then open:\n${acceptUrl}\n\n` +
+    `Invite expires in 7 days.`;
+  return {
+    to: [{ email: toEmail }],
+    subject: `Join ${safeOrg} on ShamarrConnect`,
+    htmlContent: html,
+    textContent: text,
+  };
+}
+
+export async function sendTeamInvite(env, payload) {
+  return sendBrevo(env, teamInviteEmail(payload));
 }
