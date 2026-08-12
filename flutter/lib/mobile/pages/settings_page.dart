@@ -20,6 +20,7 @@ import '../../common/widgets/login.dart';
 import '../../consts.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
+import '../../models/user_model.dart';
 import '../widgets/deploy_dialog.dart';
 import '../widgets/dialog.dart';
 import 'home_page.dart';
@@ -714,7 +715,12 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
               SettingsTile(
                 title: Obx(() => Text(gFFI.userModel.userName.value.isEmpty
                     ? translate('Login')
-                    : '${translate('Logout')} (${gFFI.userModel.accountLabelWithHandle})')),
+                    : translate('Logout'))),
+                description: Obx(() {
+                  final label = gFFI.userModel.accountLabelWithHandle;
+                  if (label.isEmpty) return const SizedBox.shrink();
+                  return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+                }),
                 leading: Obx(() {
                   final avatar = bind.mainResolveAvatarUrl(
                       avatar: gFFI.userModel.avatar.value);
@@ -1370,6 +1376,7 @@ class _SignedInDevicesPageState extends State<_SignedInDevicesPage> {
   var _loading = true;
   String? _error;
   String? _myId;
+  String? _myUuid;
 
   @override
   void initState() {
@@ -1384,6 +1391,7 @@ class _SignedInDevicesPageState extends State<_SignedInDevicesPage> {
     });
     try {
       _myId = await bind.mainGetMyId();
+      _myUuid = await UserModel.accountDeviceUuid();
       final list = await gFFI.userModel.listSignedInDevices();
       if (!mounted) return;
       setState(() {
@@ -1511,11 +1519,15 @@ class _SignedInDevicesPageState extends State<_SignedInDevicesPage> {
                       ..._devices.map((d) {
                         final name = (d['device_name'] ?? '').toString().trim();
                         final deviceId = (d['device_id'] ?? '').toString();
+                        final deviceUuid = (d['device_uuid'] ?? '').toString();
                         final os = (d['device_os'] ?? '').toString();
                         final last = (d['last_seen'] ?? '').toString();
-                        final isThis = _myId != null &&
-                            _myId!.isNotEmpty &&
-                            deviceId == _myId;
+                        final isThis = (_myUuid != null &&
+                                _myUuid!.isNotEmpty &&
+                                deviceUuid == _myUuid) ||
+                            (_myId != null &&
+                                _myId!.isNotEmpty &&
+                                deviceId == _myId);
                         final title = name.isNotEmpty
                             ? name
                             : (deviceId.isNotEmpty ? deviceId : 'Unknown device');

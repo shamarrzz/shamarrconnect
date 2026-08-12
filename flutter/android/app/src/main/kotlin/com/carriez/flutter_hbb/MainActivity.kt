@@ -9,6 +9,7 @@ package com.carriez.flutter_hbb
 
 import ffi.FFI
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,7 @@ import android.content.ClipboardManager
 import android.os.Bundle
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
 import android.media.MediaCodecInfo
@@ -265,6 +267,20 @@ class MainActivity : FlutterActivity() {
                         }
                     } else {
                         result.success(null)
+                    }
+                }
+                // Stable SSAID for account device dedupe (survives app reinstall).
+                "get_android_id" -> {
+                    try {
+                        @SuppressLint("HardwareIds")
+                        val id = Settings.Secure.getString(
+                            contentResolver,
+                            Settings.Secure.ANDROID_ID
+                        ) ?: ""
+                        result.success(id)
+                    } catch (e: Exception) {
+                        Log.e(logTag, "get_android_id: ${e.message}")
+                        result.success("")
                     }
                 }
                 "on_voice_call_started" -> {

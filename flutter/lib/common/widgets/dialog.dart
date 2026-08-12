@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:bot_toast/bot_toast.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/shared_state.dart';
@@ -518,8 +519,11 @@ class Dialog2FaField extends ValidationField {
   String? validate() => isReady ? null : errMsg;
 }
 
-/// Six-digit TOTP entry: one real TextField (stable Android keyboard) + six
-/// visual boxes. Multi-field focus hopping was shaking the numeric keyboard.
+/// Six-digit TOTP entry.
+///
+/// **Android:** one plain numeric field (no digit boxes). Stacked boxes + a
+/// near-invisible field still caused IME focus/glitch issues for slow OTP entry.
+/// **Other platforms:** single real field with visual boxes (no multi-focus hop).
 class _SixDigitPinField extends StatefulWidget {
   const _SixDigitPinField({
     required this.title,
@@ -546,6 +550,10 @@ class _SixDigitPinFieldState extends State<_SixDigitPinField> {
   final FocusNode _focus = FocusNode();
   late final TextEditingController _input;
   bool _syncing = false;
+
+  /// Plain single field on Android — most reliable for system OTP / slow typing.
+  bool get _androidSimple =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   @override
   void initState() {
@@ -611,84 +619,126 @@ class _SixDigitPinFieldState extends State<_SixDigitPinField> {
     }
   }
 
+  Widget _androidField(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return TextField(
+      controller: _input,
+      focusNode: _focus,
+      keyboardType: TextInputType.number,
+      textInputAction: TextInputAction.done,
+      maxLength: _len,
+      autofillHints: const [AutofillHints.oneTimeCode],
+      enableSuggestions: false,
+      autocorrect: false,
+      style: const TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 10,
+      ),
+      textAlign: TextAlign.center,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(_len),
+      ],
+      decoration: InputDecoration(
+        counterText: '',
+        hintText: '••••••',
+        hintStyle: TextStyle(
+          letterSpacing: 10,
+          color: scheme.outline.withOpacity(0.45),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: scheme.primary, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _boxedField(BuildContext context) {
+    final text = _digitsOnly(_input.text);
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _focus.requestFocus(),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Opacity(
+            opacity: 0.01,
+            child: SizedBox(
+              height: 48,
+              child: TextField(
+                controller: _input,
+                focusNode: _focus,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                maxLength: _len,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                enableSuggestions: false,
+                autocorrect: false,
+                style: const TextStyle(color: Colors.transparent),
+                cursorColor: Colors.transparent,
+                showCursor: false,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(_len),
+                ],
+                decoration: const InputDecoration(
+                  counterText: '',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(_len, (i) {
+              final ch = i < text.length ? text[i] : '';
+              final focused =
+                  _focus.hasFocus && i == text.length.clamp(0, _len - 1);
+              return Container(
+                width: 42,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: focused
+                        ? scheme.primary
+                        : scheme.outline.withOpacity(0.55),
+                    width: focused ? 2 : 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  ch,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final err = widget.errorText;
-    final text = _digitsOnly(_input.text);
     final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.title, style: Theme.of(context).textTheme.titleSmall)
             .marginOnly(bottom: 10),
-        // Tap the visual row → keep the single field focused (keyboard stable).
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _focus.requestFocus(),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Invisible single field owns focus + IME (Android-safe).
-              Opacity(
-                opacity: 0.01,
-                child: SizedBox(
-                  height: 48,
-                  child: TextField(
-                    controller: _input,
-                    focusNode: _focus,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    maxLength: _len,
-                    autofillHints: const [AutofillHints.oneTimeCode],
-                    enableSuggestions: false,
-                    autocorrect: false,
-                    style: const TextStyle(color: Colors.transparent),
-                    cursorColor: Colors.transparent,
-                    showCursor: false,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(_len),
-                    ],
-                    decoration: const InputDecoration(
-                      counterText: '',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(_len, (i) {
-                  final ch = i < text.length ? text[i] : '';
-                  final focused =
-                      _focus.hasFocus && i == text.length.clamp(0, _len - 1);
-                  return Container(
-                    width: 42,
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: focused
-                            ? scheme.primary
-                            : scheme.outline.withOpacity(0.55),
-                        width: focused ? 2 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      ch,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          ),
-        ),
+        if (_androidSimple) _androidField(context) else _boxedField(context),
         if (err != null && err.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),

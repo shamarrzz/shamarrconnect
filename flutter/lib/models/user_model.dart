@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
 import 'package:flutter_hbb/models/ab_model.dart';
 import 'package:get/get.dart';
@@ -23,16 +24,51 @@ class UserModel {
   bool get isLogin => userName.isNotEmpty;
   String get displayNameOrUserName =>
       displayName.value.trim().isEmpty ? userName.value : displayName.value;
+  /// Single-line account label for Settings (avoid "name (@email)" doubling).
   String get accountLabelWithHandle {
     final username = userName.value.trim();
     if (username.isEmpty) {
       return '';
     }
     final preferred = displayName.value.trim();
+    // SC accounts use email as `name` — show the email once.
+    if (username.contains('@')) {
+      if (preferred.isEmpty ||
+          preferred.toLowerCase() == username.toLowerCase() ||
+          username.toLowerCase().startsWith('${preferred.toLowerCase()}@')) {
+        return username;
+      }
+      return '$preferred · $username';
+    }
     if (preferred.isEmpty || preferred == username) {
       return username;
     }
     return '$preferred (@$username)';
+  }
+
+  /// Email-only when available (for neat Settings description).
+  String get accountEmailLabel {
+    final u = userName.value.trim();
+    if (u.contains('@')) return u;
+    return u;
+  }
+
+  /// Stable device identity for account device slots (survives reinstall).
+  /// Android: `android:<ANDROID_ID>`. Else RustDesk machine uuid.
+  static Future<String> accountDeviceUuid() async {
+    if (isAndroid) {
+      try {
+        final id = await const MethodChannel('mChannel')
+            .invokeMethod<String>('get_android_id');
+        final s = (id ?? '').trim();
+        if (s.isNotEmpty && s != 'null') {
+          return 'android:$s';
+        }
+      } catch (e) {
+        debugPrint('accountDeviceUuid android id: $e');
+      }
+    }
+    return bind.mainGetUuid();
   }
 
   WeakReference<FFI> parent;
@@ -59,7 +95,7 @@ class UserModel {
     final url = await bind.mainGetApiServer();
     final body = {
       'id': await bind.mainGetMyId(),
-      'uuid': await bind.mainGetUuid()
+      'uuid': await accountDeviceUuid(),
     };
     if (refreshingUser) return;
     try {
@@ -166,7 +202,7 @@ class UserModel {
           .post(Uri.parse('$url/api/logout'),
               body: jsonEncode({
                 'id': await bind.mainGetMyId(),
-                'uuid': await bind.mainGetUuid(),
+                'uuid': await accountDeviceUuid(),
               }),
               headers: authHeaders)
           .timeout(Duration(seconds: 2));
@@ -298,7 +334,7 @@ class UserModel {
     bool revokeOtherDevices = false,
   }) async {
     final id = await bind.mainGetMyId();
-    final uuid = await bind.mainGetUuid();
+    final uuid = await accountDeviceUuid();
     await _mfaRequest('POST', '/api/user/password', body: {
       'current_password': currentPassword,
       'new_password': newPassword,
@@ -342,7 +378,7 @@ class UserModel {
   /// Keep this device; sign out all others.
   Future<int> revokeOtherDevices() async {
     final id = await bind.mainGetMyId();
-    final uuid = await bind.mainGetUuid();
+    final uuid = await accountDeviceUuid();
     final data = await _mfaRequest('POST', '/api/user/devices/revoke-others', body: {
       'id': id,
       'uuid': uuid,

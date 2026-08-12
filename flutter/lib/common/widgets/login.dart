@@ -570,7 +570,7 @@ Future<bool?> loginDialog({String initialMode = 'login'}) async {
             username: username.text,
             password: password.text,
             id: await bind.mainGetMyId(),
-            uuid: await bind.mainGetUuid(),
+            uuid: await UserModel.accountDeviceUuid(),
             autoLogin: true,
             type: HttpType.kAuthReqTypeAccount));
         await handleLoginResponse(resp, true, close);
@@ -608,7 +608,7 @@ Future<bool?> loginDialog({String initialMode = 'login'}) async {
           email: username.text,
           password: password.text,
           id: await bind.mainGetMyId(),
-          uuid: await bind.mainGetUuid(),
+          uuid: await UserModel.accountDeviceUuid(),
         );
         justRegistered = true;
         await handleLoginResponse(resp, true, close);
@@ -633,7 +633,7 @@ Future<bool?> loginDialog({String initialMode = 'login'}) async {
         final resp = await gFFI.userModel.enrollClaim(
           code: code,
           id: await bind.mainGetMyId(),
-          uuid: await bind.mainGetUuid(),
+          uuid: await UserModel.accountDeviceUuid(),
         );
         await handleLoginResponse(resp, true, close);
       } on RequestException catch (err) {
@@ -983,7 +983,7 @@ Future<bool?> verificationCodeDialog(
             secret: secret,
             username: user?.name,
             id: await bind.mainGetMyId(),
-            uuid: await bind.mainGetUuid(),
+            uuid: await UserModel.accountDeviceUuid(),
             autoLogin: true,
             type: isEmailVerification
                 ? HttpType.kAuthReqTypeEmailCode

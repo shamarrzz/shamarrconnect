@@ -2071,15 +2071,17 @@ class _AccountState extends State<_Account> {
   }
 
   Widget accountAction() {
-    return Obx(() => _Button(
-        gFFI.userModel.userName.value.isEmpty
-            ? 'Login'
-            : '${translate('Logout')} (${gFFI.userModel.accountLabelWithHandle})',
-        () => {
-              gFFI.userModel.userName.value.isEmpty
-                  ? loginDialog()
-                  : logOutConfirmDialog()
-            }));
+    return Obx(() {
+      final empty = gFFI.userModel.userName.value.isEmpty;
+      final label = gFFI.userModel.accountLabelWithHandle;
+      // One email line — avoid "Logout (name (@email))" doubling.
+      final title = empty
+          ? 'Login'
+          : (label.isEmpty ? translate('Logout') : '${translate('Logout')} · $label');
+      return _Button(title, () => {
+            empty ? loginDialog() : logOutConfirmDialog()
+          });
+    });
   }
 
   Future<void> _showChangePasswordDialog(BuildContext context) async {
@@ -2451,15 +2453,16 @@ class _PluginState extends State<_Plugin> {
   }
 
   Widget accountAction() {
-    return Obx(() => _Button(
-        gFFI.userModel.userName.value.isEmpty
-            ? 'Login'
-            : '${translate('Logout')} (${gFFI.userModel.accountLabelWithHandle})',
-        () => {
-              gFFI.userModel.userName.value.isEmpty
-                  ? loginDialog()
-                  : logOutConfirmDialog()
-            }));
+    return Obx(() {
+      final empty = gFFI.userModel.userName.value.isEmpty;
+      final label = gFFI.userModel.accountLabelWithHandle;
+      final title = empty
+          ? 'Login'
+          : (label.isEmpty ? translate('Logout') : '${translate('Logout')} · $label');
+      return _Button(title, () => {
+            empty ? loginDialog() : logOutConfirmDialog()
+          });
+    });
   }
 }
 
