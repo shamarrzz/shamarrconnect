@@ -77,8 +77,42 @@ fn install_android_deps() {
     println!("cargo:rustc-link-lib=OpenSLES");
 }
 
+fn stamp_release_tag() {
+    // ShamarrConnect: cargo:rerun so CI's VERSION (the git tag) is baked in.
+    println!("cargo:rerun-if-env-changed=SC_RELEASE_TAG");
+    println!("cargo:rerun-if-env-changed=VERSION");
+    let tag = ["SC_RELEASE_TAG", "VERSION"]
+        .iter()
+        .find_map(|k| std::env::var(k).ok().filter(|s| s.contains("-sc")));
+    let tag = tag.unwrap_or_else(|| "1.4.9".to_string());
+    let path = std::path::Path::new("src/version.rs");
+    let mut body = std::fs::read_to_string(path).unwrap_or_default();
+    let line = format!("pub const RELEASE_TAG: &str = \"{tag}\";\n");
+    if body.contains("pub const RELEASE_TAG:") {
+        let mut out = String::new();
+        for l in body.lines() {
+            if l.starts_with("pub const RELEASE_TAG:") {
+                out.push_str(&line);
+            } else {
+                out.push_str(l);
+                out.push('\n');
+            }
+        }
+        body = out;
+    } else if let Some(idx) = body.find("pub const VERSION:") {
+        if let Some(nl) = body[idx..].find('\n') {
+            let insert_at = idx + nl + 1;
+            body.insert_str(insert_at, &line);
+        }
+    } else {
+        body.push_str(&line);
+    }
+    let _ = std::fs::write(path, body);
+}
+
 fn main() {
     hbb_common::gen_version();
+    stamp_release_tag();
     install_android_deps();
     #[cfg(all(windows, feature = "inline"))]
     build_manifest();

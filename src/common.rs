@@ -940,13 +940,45 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
-    if is_custom_client() {
-        return;
-    }
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
     if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
         std::thread::spawn(move || allow_err!(do_check_software_update()));
     }
+}
+
+/// Rank ShamarrConnect tags: `1.4.9-sc10` > `1.4.9-sc5` > `1.4.9`.
+/// Tails like `latest` (no semver) rank as 0 so they never look newer.
+pub fn sc_release_rank(v: &str) -> i64 {
+    let v = v.trim().trim_start_matches('v');
+    let mut parts = v.split('-');
+    let semver = parts.next().unwrap_or("");
+    let mut n = 0i64;
+    let mut last = 0i64;
+    let mut saw_digit = false;
+    for x in semver.split('.') {
+        last = match x.parse::<i64>() {
+            Ok(n) => {
+                saw_digit = true;
+                n
+            }
+            Err(_) => 0,
+        };
+        n = n * 1000 + last;
+    }
+    if !saw_digit {
+        return 0;
+    }
+    n -= last;
+    n += last * 10;
+    if let Some(suffix) = parts.next() {
+        let patch = suffix
+            .strip_prefix("sc")
+            .unwrap_or(suffix)
+            .parse::<i64>()
+            .unwrap_or(0);
+        n += patch;
+    }
+    n
 }
 
 // ShamarrConnect: version checks go to our own API, never api.rustdesk.com.
@@ -985,7 +1017,7 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     let response_url = resp.url;
     let latest_release_version = response_url.rsplit('/').next().unwrap_or_default();
 
-    if get_version_number(&latest_release_version) > get_version_number(crate::VERSION) {
+    if sc_release_rank(latest_release_version) > sc_release_rank(crate::RELEASE_TAG) {
         #[cfg(feature = "flutter")]
         {
             let mut m = HashMap::new();
@@ -3047,5 +3079,15 @@ mod tests {
         let combined_mask = MOUSE_TYPE_DOWN | ((MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT) << 3);
         assert_eq!(combined_mask & MOUSE_TYPE_MASK, MOUSE_TYPE_DOWN);
         assert_eq!(combined_mask >> 3, MOUSE_BUTTON_LEFT | MOUSE_BUTTON_RIGHT);
+    }
+
+    #[test]
+    fn sc_release_rank_orders_tags() {
+        use super::sc_release_rank;
+        assert!(sc_release_rank("1.4.9-sc10") > sc_release_rank("1.4.9-sc5"));
+        assert!(sc_release_rank("1.4.9-sc5") > sc_release_rank("1.4.9"));
+        assert!(sc_release_rank("1.4.9") > sc_release_rank("1.4.8-sc9"));
+        assert_eq!(sc_release_rank("latest"), 0);
+        assert_eq!(sc_release_rank(""), 0);
     }
 }
