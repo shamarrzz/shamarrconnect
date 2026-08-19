@@ -82,7 +82,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final isOutgoingOnly = bind.isOutgoingOnly();
     final children = <Widget>[
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
-      // Product mark only at top — "Powered by RustDesk" is footer (below).
+      // S-mark only — no ShamarrCo wordmark. Fork credit is the footer.
       Align(
         alignment: Alignment.center,
         child: loadLogo(),

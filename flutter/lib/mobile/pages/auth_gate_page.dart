@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../common/widgets/login.dart';
+import '../../common/widgets/s_mark.dart';
 import '../../models/platform_model.dart';
 import '../../utils/http_service.dart' as http;
 import 'get_help_page.dart';
@@ -219,13 +220,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
               children: [
                 const Spacer(flex: 3),
                 // S-mark only (no full wordmark — cleaner on mobile).
-                SizedBox(
-                  width: 88,
-                  height: 88,
-                  child: CustomPaint(
-                    painter: _GateMarkPainter(),
-                  ),
-                ),
+                const SMark(size: 88),
                 const SizedBox(height: 20),
                 const Text(
                   'Your computers, when you need them.',
@@ -295,36 +290,4 @@ class _AuthGatePageState extends State<AuthGatePage> {
       ),
     );
   }
-}
-
-/// Static S-mark (same geometry as splash animation, fully drawn).
-class _GateMarkPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.width / 100;
-    canvas.save();
-    canvas.scale(scale);
-    final gradient = const LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [Color(0xFF00BFE1), Color(0xFF0071FF)],
-    ).createShader(const Rect.fromLTWH(20, 10, 60, 80));
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round
-      ..shader = gradient;
-    final path = Path()
-      ..moveTo(50, 78)
-      ..cubicTo(72, 74, 70, 54, 50, 50)
-      ..cubicTo(30, 46, 28, 26, 50, 22);
-    canvas.drawPath(path, stroke);
-    final dot = Paint()..shader = gradient;
-    canvas.drawCircle(const Offset(50, 22), 6, dot);
-    canvas.drawCircle(const Offset(50, 78), 6, dot);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

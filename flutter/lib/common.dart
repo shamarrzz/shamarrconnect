@@ -30,6 +30,7 @@ import 'package:window_size/window_size.dart' as window_size;
 
 import '../consts.dart';
 import 'common/widgets/overlay.dart';
+import 'common/widgets/s_mark.dart';
 import 'mobile/pages/file_manager_page.dart';
 import 'mobile/pages/remote_page.dart';
 import 'mobile/pages/view_camera_page.dart';
@@ -3714,23 +3715,10 @@ Widget loadPowered(BuildContext context) {
   ).marginOnly(top: 6);
 }
 
-// max 300 x 60
-// Prefer logo.png; fall back to wordmark.png (logo.png is not always shipped).
+// Desktop home sidebar mark. S-curve only — the old wordmark.png was the
+// incomplete "ShamarrCo" SVG. Do not put ShamarrDesk here.
 Widget loadLogo() {
-  return Container(
-    constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
-    child: Image.asset(
-      'assets/logo.png',
-      fit: BoxFit.contain,
-      errorBuilder: (ctx, error, stackTrace) {
-        return Image.asset(
-          'assets/wordmark.png',
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-        );
-      },
-    ),
-  ).marginOnly(left: 12, right: 12, top: 12);
+  return const SMark(size: 56).marginOnly(left: 12, right: 12, top: 16);
 }
 
 Widget loadIcon(double size) {
