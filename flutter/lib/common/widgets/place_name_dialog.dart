@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 
 import '../../common.dart';
 import '../../models/platform_model.dart';
-import './dialog.dart';
 
 const kPlaceNameChips = ['Office', 'Shop', 'Home', 'Workshop', 'Phone'];
 

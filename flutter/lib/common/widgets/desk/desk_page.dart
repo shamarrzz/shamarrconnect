@@ -560,9 +560,10 @@ class _DeskPageState extends State<DeskPage> {
   void _connectById(BuildContext context) {
     showDialog<void>(
       context: context,
-      builder: (ctx) => Dialog(
+      builder: (ctx) => AlertDialog(
+        contentPadding: EdgeInsets.zero,
         insetPadding: const EdgeInsets.all(24),
-        child: SizedBox(
+        content: SizedBox(
           width: 720,
           height: 520,
           child: Column(

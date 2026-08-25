@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../common.dart';
 import '../../common/widgets/desk/desk_page.dart';
 import '../../models/platform_model.dart';
 import 'connection_page.dart';
