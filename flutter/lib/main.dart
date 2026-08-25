@@ -23,6 +23,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'common.dart';
+import 'common/widgets/place_name_dialog.dart';
 import 'consts.dart';
 import 'mobile/pages/home_page.dart';
 import 'mobile/pages/server_page.dart';
@@ -145,7 +146,7 @@ void runMainApp(bool startService) async {
     bind.pluginListReload();
   }
   await Future.wait([gFFI.abModel.loadCache(), gFFI.groupModel.loadCache()]);
-  gFFI.userModel.refreshCurrentUser();
+  _refreshUserAndMaybeName();
   runApp(App());
 
   bool? alwaysOnTop;
@@ -185,9 +186,16 @@ void runMobileApp() async {
   if (isAndroid) platformFFI.syncAndroidServiceAppDirConfigPath();
   draggablePositions.load();
   await Future.wait([gFFI.abModel.loadCache(), gFFI.groupModel.loadCache()]);
-  gFFI.userModel.refreshCurrentUser();
+  _refreshUserAndMaybeName();
   runApp(App());
   await initUniLinks();
+}
+
+void _refreshUserAndMaybeName() {
+  gFFI.userModel.refreshCurrentUser().then((_) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    await maybePromptPlaceNameAfterLogin();
+  });
 }
 
 void runMultiWindow(

@@ -236,6 +236,12 @@ async fn start_hbbs_sync_async() {
                 v["id"] = json!(id);
                 v["uuid"] = json!(crate::encode64(hbb_common::get_uuid()));
                 v["ver"] = json!(hbb_common::get_version_number(crate::VERSION));
+                let stopped = config::option2bool(
+                    "stop-service",
+                    &Config::get_option("stop-service"),
+                );
+                v["ready"] = json!(!stopped);
+                v["reason"] = json!(if stopped { "service_stopped" } else { "ok" });
                 if !conns.is_empty() {
                     v["conns"] = json!(conns);
                 }

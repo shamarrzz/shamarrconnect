@@ -16,6 +16,7 @@ import 'package:flutter_hbb/desktop/pages/desktop_tab_page.dart';
 import 'package:flutter_hbb/desktop/widgets/remote_toolbar.dart';
 import 'package:flutter_hbb/mobile/widgets/dialog.dart';
 import 'package:flutter_hbb/models/platform_model.dart';
+import 'package:flutter_hbb/models/fleet_model.dart';
 import 'package:flutter_hbb/models/printer_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
@@ -2246,7 +2247,10 @@ class _AccountState extends State<_Account> {
                                             .toString();
                                     final deviceId = (d['device_id'] ?? '').toString();
                                     final os = (d['device_os'] ?? '').toString();
-                                    final last = (d['last_seen'] ?? '').toString();
+                                    final lastRaw = (d['last_seen'] ?? '').toString();
+                                    final last = lastRaw.isEmpty
+                                        ? ''
+                                        : formatLastSeen(parseApiTime(lastRaw));
                                     final isThis =
                                         myId.isNotEmpty && deviceId == myId;
                                     final rowId = (d['id'] ?? '').toString();
@@ -2255,7 +2259,7 @@ class _AccountState extends State<_Account> {
                                       title: Text(name),
                                       subtitle: Text([
                                         if (os.isNotEmpty) os,
-                                        if (last.isNotEmpty) last,
+                                        if (last.isNotEmpty) 'Last seen $last',
                                         if (isThis) 'This device',
                                       ].join(' · ')),
                                       trailing: isThis

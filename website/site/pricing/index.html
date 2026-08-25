@@ -6,6 +6,7 @@
 <title>Pricing · ShamarrConnect</title>
 <meta name="description" content="Simple plans for personal and team remote desktop. Pay only for what you need.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/fonts.css">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="shortcut icon" href="/favicon.ico">
@@ -16,7 +17,7 @@
     --ok:#16A34A;--okbg:#E7F7EE;--okln:#BCE7CE
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   h1,h2,h3{text-wrap:balance}
   a:focus-visible,.btn:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
   a{color:inherit}
@@ -276,11 +277,11 @@
              pro_y: '',
              team_m: '',
              team_y: '' },
-      /* NGN local rail — replace with live local checkout pages. */
-      ngn: { pro_m: 'https://paystack.shop/pay/z3uscbtejd',
-             pro_y: 'https://paystack.shop/pay/9oh5xxufm1',
-             team_m: 'https://paystack.shop/pay/p-7i4q30ku',
-             team_y: 'https://paystack.shop/pay/dde0xb0pif' }
+      /* NGN local rail — Paystack LIVE pages (2026-08-17). */
+      ngn: { pro_m: 'https://paystack.shop/pay/68-8n6dbf4',
+             pro_y: 'https://paystack.shop/pay/2a9t7274r8',
+             team_m: 'https://paystack.shop/pay/z8vxgj5ts4',
+             team_y: 'https://paystack.shop/pay/yczq5gqo5q' }
     };
     // window.SC_REGION from edge: ng → NGN display/links, else USD.
     // No manual country selector on purpose.

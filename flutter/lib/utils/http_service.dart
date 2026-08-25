@@ -6,7 +6,7 @@ import '../models/platform_model.dart';
 import 'package:flutter_hbb/common.dart';
 export 'package:http/http.dart' show Response;
 
-enum HttpMethod { get, post, put, delete }
+enum HttpMethod { get, post, put, patch, delete }
 
 class HttpService {
   Future<http.Response> sendRequest(
@@ -65,8 +65,9 @@ class HttpService {
       case HttpMethod.delete:
         response = await http.delete(url, headers: headers, body: body);
         break;
-      default:
-        throw Exception('Unsupported HTTP method');
+      case HttpMethod.patch:
+        response = await http.patch(url, headers: headers, body: body);
+        break;
     }
 
     return response;
@@ -123,4 +124,10 @@ Future<http.Response> delete(Uri url,
     {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
   return await HttpService()
       .sendRequest(url, HttpMethod.delete, body: body, headers: headers);
+}
+
+Future<http.Response> patch(Uri url,
+    {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
+  return await HttpService()
+      .sendRequest(url, HttpMethod.patch, body: body, headers: headers);
 }

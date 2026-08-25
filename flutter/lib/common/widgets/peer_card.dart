@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../../common.dart';
+import 'place_name_dialog.dart';
 import '../../common/formatter/id_formatter.dart';
 import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
@@ -761,6 +762,25 @@ abstract class BasePeerCard extends StatelessWidget {
       ),
       proc: () async {
         String oldName = await _getAlias(id);
+        final onFleet =
+            gFFI.fleetModel.devices.any((d) => d.deviceId == id);
+        if (onFleet) {
+          final newName = await showPlaceNameDialog(
+              initial: looksLikeFactoryName(oldName) ? '' : oldName);
+          if (newName != null &&
+              newName.trim().isNotEmpty &&
+              newName.trim() != oldName) {
+            final trimmed = newName.trim();
+            await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
+            await bind.mainSetPeerAlias(id: id, alias: trimmed);
+            try {
+              await gFFI.abModel.changeAlias(id: id, alias: trimmed);
+            } catch (_) {}
+            showToast(translate('Successful'));
+            _update();
+          }
+          return;
+        }
         renameDialog(
             oldName: oldName,
             onSubmit: (String newName) async {

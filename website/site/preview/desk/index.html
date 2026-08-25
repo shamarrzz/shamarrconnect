@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desk preview · ShamarrConnect</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Clickable mock of ShamarrConnect: named computers, last seen, open from here.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/fonts.css">
+<link rel="stylesheet" href="/desk-mock.css">
+<style>
+  :root{
+    --brand:#2B5CE6;--brand-dark:#1E3FA8;--brand-soft:#EAF0FF;
+    --ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F4F6FB;
+    --bg-soft:#F8FAFF;--ok:#16A34A;--radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.5;
+    -webkit-font-smoothing:antialiased;min-height:100vh;
+  }
+  a{color:var(--brand);text-decoration:none}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+
+  .bar{
+    background:#fff;border-bottom:1px solid var(--line);
+    padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .bar .mark{width:32px;height:32px;border-radius:8px}
+  .bar .ttl{font-weight:750;letter-spacing:-.02em}
+  .bar .sub{font-size:13px;color:var(--muted)}
+  .bar .grow{flex:1}
+  .scenes{display:flex;flex-wrap:wrap;gap:6px}
+  .scenes button{
+    font:inherit;font-size:12.5px;font-weight:650;padding:6px 11px;border-radius:100px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;
+  }
+  .scenes button.on,.scenes button[aria-pressed="true"]{
+    background:#0A1737;color:#fff;border-color:#0A1737;
+  }
+
+  main{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  .note{font-size:14px;color:var(--muted);margin-bottom:18px;max-width:640px}
+  .app{
+    background:#fff;border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 18px 50px rgba(20,40,90,.08);overflow:hidden;
+  }
+  .titlebar{
+    display:flex;align-items:center;gap:7px;padding:13px 16px;
+    border-bottom:1px solid var(--line);background:var(--bg-soft);
+  }
+  .titlebar .tdot{width:11px;height:11px;border-radius:50%;background:#D4DCEA}
+  .titlebar .name{margin-left:8px;font-size:13px;font-weight:600;color:var(--muted)}
+  .stage{padding:18px 18px 16px;position:relative;min-height:420px}
+  .desk-grid{grid-template-columns:1fr 1fr}
+  .desk-grid.one{grid-template-columns:1fr 1fr}
+  .dcard{min-height:168px}
+  .status{
+    margin-top:16px;background:#0A1737;color:#E6ECFA;border-radius:12px;
+    padding:12px 16px;font-size:14px;font-weight:600;min-height:44px;
+  }
+  .legend{margin-top:22px;font-size:13px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+  @media(max-width:640px){
+    .desk-grid,.desk-grid.one{grid-template-columns:1fr}
+    .stage{min-height:0}
+  }
+</style>
+</head>
+<body>
+  <header class="bar">
+    <a href="/" aria-label="ShamarrConnect home"><img class="mark" src="/logo-mark.svg" width="32" height="32" alt=""></a>
+    <div>
+      <div class="ttl">Desk preview</div>
+      <div class="sub">Click like a user. This is the home screen, not an ID pad.</div>
+    </div>
+    <div class="grow"></div>
+    <div class="scenes" role="tablist" aria-label="Desk states">
+      <button type="button" data-scene="ready" aria-pressed="true">Ready desk</button>
+      <button type="button" data-scene="out">Signed out</button>
+      <button type="button" data-scene="battery">Phone asleep</button>
+      <button type="button" data-scene="setup">Needs setup</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="note">Your computers, named like places. Last seen like WhatsApp. Open one. ID lives under Share, not on the card.</p>
+
+    <div class="app" id="desk-app">
+      <div class="titlebar">
+        <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+        <span class="name">ShamarrConnect</span>
+      </div>
+      <div class="stage desk-stage">
+        <div class="desk-chrome">
+          <div class="brandish">
+            <img src="/logo-mark.svg" width="22" height="22" alt="">
+            Your computers
+          </div>
+          <span class="who" id="desk-who">you</span>
+        </div>
+        <div class="desk-grid" id="desk-grid"></div>
+        <div class="desk-foot">
+          <button class="desk-idlink" type="button" data-desk="connect-id">Connect by ID</button>
+          <span class="desk-credit">Powered by RustDesk</span>
+        </div>
+        <div class="desk-sheet" id="desk-sheet" hidden>
+          <div class="desk-panel" id="desk-panel" role="dialog" aria-modal="true"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="status" id="desk-status" aria-live="polite">Status updates as each computer checks in.</p>
+    <p class="legend"><b>Try:</b> Open Shop POS · Open Office PC (it explains first) · Share · Add a new computer · Connect by ID · switch states above.</p>
+  </main>
+  <script src="/desk-preview.js"></script>
+</body>
+</html>

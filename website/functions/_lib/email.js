@@ -33,7 +33,7 @@ function shell(preheader, bodyHtml) {
 <body style="margin:0;padding:0;background:#F8FAFF;">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFF;"><tr><td align="center" style="padding:32px 16px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E6ECF5;border-radius:16px;overflow:hidden;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0F1B33;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E6ECF5;border-radius:16px;overflow:hidden;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;color:#0F1B33;">
   <tr><td style="padding:28px 32px 20px;border-bottom:1px solid #E6ECF5;">
     <img src="${WORDMARK}" width="220" height="25" alt="ShamarrConnect" style="display:block;height:25px;width:220px;">
   </td></tr>

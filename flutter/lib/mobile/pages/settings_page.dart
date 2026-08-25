@@ -21,6 +21,7 @@ import '../../consts.dart';
 import '../../models/model.dart';
 import '../../models/platform_model.dart';
 import '../../models/user_model.dart';
+import '../../models/fleet_model.dart';
 import '../widgets/deploy_dialog.dart';
 import '../widgets/dialog.dart';
 import 'home_page.dart';
@@ -1518,7 +1519,10 @@ class _SignedInDevicesPageState extends State<_SignedInDevicesPage> {
                         final deviceId = (d['device_id'] ?? '').toString();
                         final deviceUuid = (d['device_uuid'] ?? '').toString();
                         final os = (d['device_os'] ?? '').toString();
-                        final last = (d['last_seen'] ?? '').toString();
+                        final lastRaw = (d['last_seen'] ?? '').toString();
+                        final last = lastRaw.isEmpty
+                            ? ''
+                            : formatLastSeen(parseApiTime(lastRaw));
                         final isThis = (_myUuid != null &&
                                 _myUuid!.isNotEmpty &&
                                 deviceUuid == _myUuid) ||

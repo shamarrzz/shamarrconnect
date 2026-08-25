@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../common.dart';
 import './account_mfa.dart';
 import './dialog.dart';
+import './place_name_dialog.dart';
 
 const kOpSvgList = [
   'github',
@@ -892,6 +893,7 @@ Future<bool?> loginDialog({String initialMode = 'login'}) async {
 
   if (res == true) {
     await UserModel.updateOtherModels();
+    await maybePromptPlaceNameAfterLogin();
     if (justRegistered) {
       final code = await gFFI.userModel.enrollGenerate();
       if (code != null && code.isNotEmpty) {

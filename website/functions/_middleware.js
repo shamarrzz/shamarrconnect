@@ -45,7 +45,8 @@ const CLOSED_PAGE = `<!DOCTYPE html>
 <style>
   :root{--brand:#2B5CE6;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);
+  @font-face{font-family:Inter;src:url("/fonts/InterVariable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+  body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);
     min-height:100vh;display:grid;place-items:center;text-align:center;
     background:radial-gradient(1000px 500px at 50% -10%, #F1F0FF 0%, transparent 60%),linear-gradient(180deg,#F6F9FF,#FFFFFF)}
   .box{padding:40px 28px;max-width:560px}

@@ -163,6 +163,7 @@ class UserModel {
       await gFFI.abModel.reset();
       await gFFI.groupModel.reset();
     }
+    gFFI.fleetModel.stop();
     userName.value = '';
     displayName.value = '';
     avatar.value = '';
@@ -173,6 +174,7 @@ class UserModel {
     displayName.value = user.displayName;
     avatar.value = user.avatar;
     isAdmin.value = user.isAdmin;
+    gFFI.fleetModel.start();
     final encoded = jsonEncode(user);
     // Local (UI process) + shared Config via IPC so the Windows service
     // (same-account auto-auth) can read the logged-in account.

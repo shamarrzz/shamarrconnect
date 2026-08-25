@@ -13,8 +13,14 @@ class OnboardingPage extends StatefulWidget {
   /// Where to go when the flow finishes (or is skipped).
   final WidgetBuilder destination;
 
-  const OnboardingPage({Key? key, required this.destination})
-      : super(key: key);
+  const OnboardingPage({
+    Key? key,
+    required this.destination,
+    this.popOnDone = false,
+  }) : super(key: key);
+
+  /// When opened on top of Home / Get Help, pop back instead of replacing.
+  final bool popOnDone;
 
   /// True once the user has seen the flow (regardless of grants).
   static bool get done =>
@@ -173,6 +179,10 @@ class _OnboardingPageState extends State<OnboardingPage>
     _finishing = true;
     await OnboardingPage.markDone();
     if (!mounted) return;
+    if (widget.popOnDone && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
     Navigator.of(context).pushReplacement(PageRouteBuilder(
       transitionDuration: const Duration(milliseconds: 280),
       pageBuilder: (_, __, ___) => widget.destination(context),
@@ -188,8 +198,8 @@ class _OnboardingPageState extends State<OnboardingPage>
         title: const Text('Skip setup?'),
         content: const Text(
           'Without these permissions a supporter may not be able to see or '
-          'help with this phone. You can finish later from the Share screen '
-          'tab (bottom of the app) — look for "Continue setup".',
+          'help with this phone. You can finish later from Computers. '
+          'Look for Continue setup.',
         ),
         actions: [
           TextButton(

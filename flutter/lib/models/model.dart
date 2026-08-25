@@ -22,6 +22,7 @@ import 'package:flutter_hbb/models/peer_tab_model.dart';
 import 'package:flutter_hbb/models/printer_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/user_model.dart';
+import 'package:flutter_hbb/models/fleet_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/models/desktop_render_texture.dart';
 import 'package:flutter_hbb/models/terminal_model.dart';
@@ -3616,6 +3617,7 @@ class FFI {
   late final AbModel abModel; // global
   late final GroupModel groupModel; // global
   late final UserModel userModel; // global
+  late final FleetModel fleetModel; // global
   late final PeerTabModel peerTabModel; // global
   late final QualityMonitorModel qualityMonitorModel; // session
   late final RecordingModel recordingModel; // session
@@ -3643,6 +3645,7 @@ class FFI {
     chatModel = ChatModel(WeakReference(this));
     fileModel = FileModel(WeakReference(this));
     userModel = UserModel(WeakReference(this));
+    fleetModel = FleetModel();
     peerTabModel = PeerTabModel(WeakReference(this));
     abModel = AbModel(WeakReference(this));
     groupModel = GroupModel(WeakReference(this));

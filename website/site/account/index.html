@@ -7,14 +7,17 @@
 <meta name="robots" content="noindex">
 <meta name="description" content="See online computers, signed-in sessions, and activity on your ShamarrConnect account.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/fonts.css">
+<link rel="stylesheet" href="/desk-mock.css">
 <style>
   :root{
     --brand:#2B5CE6;--brand2:#5B7BF0;--brand-dk:#1E3FA8;
     --ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg:#F8FAFF;
-    --ok:#1D9E75;--off:#9AA7BC;--warn:#B45309;--warnbg:#FFF7E6;
+    --ok:#16A34A;--off:#9AA7BC;--warn:#B45309;--warnbg:#FFF7E6;
+    --brand-dark:#1E3FA8;--bg-soft:#F8FAFF;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
     color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;
     text-rendering:optimizeLegibility;min-height:100vh;display:flex;flex-direction:column}
   a{color:var(--brand);text-decoration:none}
@@ -86,6 +89,12 @@
   .check input{width:auto}
   .headrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:32px 0 12px}
   .headrow h2{margin:0}
+  .desk-wrap{position:relative;padding:16px}
+  .desk-wrap .desk-grid{margin:0}
+  .desk-wrap .dcard{cursor:default}
+  .desk-wrap .dcard.is-slot{cursor:pointer}
+  .desk-panel .actions a.act{text-decoration:none;color:#fff}
+  @media(max-width:640px){.desk-wrap .desk-grid{grid-template-columns:1fr}}
   footer{border-top:1px solid var(--line);padding:20px 24px;text-align:center;font-size:12.5px;color:var(--muted)}
 </style>
 </head>
@@ -141,19 +150,25 @@
         <div class="stat"><span class="lbl">Plan renews / ends</span><span class="val" id="ov-exp">—</span></div>
       </div>
       <div id="ov-team" class="note" style="margin-top:14px;display:none"></div>
-      <p class="note" style="margin-top:14px">Open the ShamarrConnect app on each computer and sign in with this email so it appears below.</p>
+      <p class="note" style="margin-top:14px">Open the ShamarrConnect app on each computer and sign in with this email so it appears on your desk.</p>
     </div>
 
     <div class="headrow">
-      <h2>Online computers</h2>
+      <h2>Your computers</h2>
       <button class="btn-ghost" type="button" id="refresh-all">Refresh</button>
     </div>
-    <div class="card" id="devices"><div class="empty">Checking…</div></div>
+    <div class="card desk-wrap desk-stage" id="desk-wrap">
+      <div class="desk-grid" id="desk-grid"><div class="empty">Checking…</div></div>
+      <div class="desk-sheet" id="desk-sheet" hidden>
+        <div class="desk-panel" id="desk-panel" role="dialog" aria-modal="true"></div>
+      </div>
+    </div>
+    <p class="note" id="desk-status">Status updates as each computer checks in.</p>
 
     <div id="peers-wrap" hidden>
-      <h2>Saved devices (address book)</h2>
+      <h2>Saved IDs</h2>
       <div class="card" id="peers"></div>
-      <p class="note">Online status shows when a saved peer is also signed into this account.</p>
+      <p class="note">These are saved IDs that are not signed into this account, so they stay off the desk.</p>
     </div>
 
     <div class="headrow">
@@ -222,19 +237,56 @@
     }
     refresh();
     if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(function(){ if (!document.hidden) refresh(); }, 30000);
+    pollTimer = setInterval(function(){ if (!document.hidden) refresh(); }, 15000);
   }
 
-  function relTime(s){
-    if (!s) return "—";
+  function parseApiDate(s){
+    if (!s) return null;
     var d = new Date(String(s).replace(" ", "T") + (String(s).indexOf("Z") >= 0 ? "" : "Z"));
-    if (isNaN(d.getTime())) return String(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function relTime(s){
+    var d = parseApiDate(s);
+    if (!d) return s ? String(s) : "";
     var sec = Math.max(0, (Date.now() - d.getTime()) / 1000);
     if (sec < 45) return "just now";
     if (sec < 3600) return Math.round(sec/60) + " min ago";
-    if (sec < 86400) return Math.round(sec/3600) + " h ago";
+    var now = new Date();
+    var sameDay = d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate();
+    if (sameDay){
+      if (d.getHours() < 12) return "this morning";
+      if (d.getHours() < 17) return "this afternoon";
+      return "this evening";
+    }
     var days = Math.round(sec/86400);
-    return days === 1 ? "yesterday" : days + " days ago";
+    return days <= 1 ? "yesterday" : days + " days ago";
+  }
+  function looksLikeFactoryName(name){
+    var n = (name || "").trim();
+    if (!n) return true;
+    var u = n.toUpperCase();
+    if (/^(DESKTOP-|LAPTOP-|WIN-|MACBOOK|IMAC|IPHONE|IPAD|PIXEL|SM-|GALAXY)/.test(u)) return true;
+    if (n.indexOf(".") >= 0 && n.indexOf(" ") < 0) return true;
+    if (/^[A-Z0-9_-]{8,}$/.test(u) && n.indexOf(" ") < 0) return true;
+    return false;
+  }
+  function placeName(d){
+    var n = (d.device_name || "").trim();
+    if (looksLikeFactoryName(n)) return "Computer";
+    return n;
+  }
+  function sentence(d){
+    if (d.reason === "battery") return "Can't reach it. The phone closed the app.";
+    if (d.reason === "permission") return "Almost ready. This computer still needs a permission.";
+    if (d.reason === "service_stopped" || d.reason === "app_closed")
+      return "Can't reach it. ShamarrConnect isn't open there.";
+    if (d.online && d.ready !== false) return "Online. You can open it.";
+    var seen = relTime(d.last_seen);
+    if (!seen) return "Not reachable right now.";
+    return "Last seen " + seen + ".";
+  }
+  function isStale(d){
+    return !d.online || d.ready === false;
   }
   function prettyOS(s){
     var m = { windows:"Windows", macos:"macOS", osx:"macOS", darwin:"macOS", linux:"Linux", android:"Android", ios:"iOS" };
@@ -249,6 +301,8 @@
     if (k === "free" || !k) return "Free";
     return p;
   }
+
+  var lastDevices = [];
 
   var PHRASES = {
     login: function(d){ return "Signed in" + (d ? " — " + d : ""); },
@@ -323,43 +377,88 @@
       $("sec-mfa").textContent = "—";
     });
 
-    api("/api/user/fleet").then(renderFleet).catch(function(){});
+    api("/api/user/fleet").then(function(v){ lastDevices = v.devices || []; renderFleet(v); }).catch(function(){});
     api("/api/user/devices").then(renderSessions).catch(function(){});
     api("/api/user/activity?limit=50").then(renderActivity).catch(function(){});
   }
 
   function renderFleet(v){
-    var el = $("devices"), ds = v.devices || [];
+    var el = $("desk-grid"), ds = v.devices || [];
+    var html = "";
     if (!ds.length){
-      el.innerHTML = '<div class="empty">No computers signed in yet. Open the app on each computer and sign in with this account — they will show up here.</div>';
+      html = '<div class="empty" style="grid-column:1/-1">No computers on this account yet. Open the ShamarrConnect app on a computer and sign in with this email.</div>';
     } else {
-      el.innerHTML = ds.map(function(d){
-        var on = !!d.online;
-        var name = d.device_name || ("Device " + d.device_id);
-        var os = prettyOS(d.device_os);
-        return '<div class="dev"><span class="dot ' + (on ? "on" : "off") + '"></span>' +
-          '<div><div class="nm">' + esc(name) + '</div>' +
-          '<div class="meta">' + esc(os) + (os ? " · " : "") +
-          (d.device_id ? "ID " + esc(d.device_id) + " · " : "") +
-          (on ? "online now" : "last seen " + relTime(d.last_seen)) + '</div></div>' +
-          '<span class="state ' + (on ? "on" : "off") + '">' + (on ? "Online" : "Offline") + '</span></div>';
+      html = ds.map(function(d){
+        var name = placeName(d);
+        var stale = isStale(d);
+        var light = (d.reason === "battery" || d.reason === "permission") ? "warn"
+          : (d.online && d.ready !== false) ? "awake" : "asleep";
+        var id = esc(d.device_id || "");
+        return '<div class="dcard" data-id="' + id + '">' +
+          '<div class="top"><span class="light ' + light + '"></span>' +
+          '<div class="names"><div class="place">' + esc(name) + '</div></div></div>' +
+          '<p class="sentence">' + esc(sentence(d)) + '</p>' +
+          '<button class="act' + (stale ? " ghost" : "") + '" type="button" data-open="' + id + '">Open</button>' +
+          '</div>';
       }).join("");
     }
-    var ps = v.peers || [];
-    $("peers-wrap").hidden = !ps.length;
-    if (ps.length){
-      $("peers").innerHTML = ps.map(function(p){
-        var name = p.alias || p.hostname || p.id;
-        var state, cls;
-        if (p.online === true){ state = "Online"; cls = "on"; }
-        else if (p.online === false){ state = "Offline"; cls = "off"; }
-        else { state = "—"; cls = "off"; }
-        return '<div class="dev"><span class="dot ' + cls + '"></span>' +
-          '<div><div class="nm">' + esc(name) + '</div>' +
-          '<div class="meta">' + esc(prettyOS(p.platform) || p.platform || "") + '</div></div>' +
-          '<span class="state ' + cls + '">' + state + '</span></div>';
-      }).join("");
+    html += '<button class="dcard is-slot" type="button" data-add="1">+ Add a new computer</button>';
+    el.innerHTML = html;
+    $("peers-wrap").hidden = true;
+  }
+
+  function closeSheet(){
+    var sh = $("desk-sheet");
+    if (sh) sh.hidden = true;
+  }
+  function openSheet(html){
+    $("desk-panel").innerHTML = html;
+    $("desk-sheet").hidden = false;
+  }
+  function openInAppSheet(d){
+    var name = placeName(d);
+    var body = isStale(d)
+      ? sentence(d) + " Open it from the ShamarrConnect app on a computer that can reach it."
+      : "Open the ShamarrConnect app and tap Open on " + name + ".";
+    openSheet(
+      "<h3>" + esc(name) + "</h3><p>" + esc(body) + "</p>" +
+      '<div class="actions">' +
+        '<a class="act" href="/download">Get the app</a>' +
+        '<button class="act ghost" type="button" data-close="1">Close</button>' +
+      "</div>"
+    );
+  }
+  function explainThenOpen(d){
+    var name = placeName(d);
+    var body = sentence(d) + " Open ShamarrConnect on that computer, or turn it on. Then you can open it from the app.";
+    if (d.reason === "battery"){
+      body = "The phone closed the app. Open ShamarrConnect there. On Samsung, set battery to Unrestricted so it stays reachable.";
     }
+    openSheet(
+      "<h3>" + esc(name) + "</h3><p>" + esc(body) + "</p>" +
+      '<div class="actions">' +
+        '<button class="act" type="button" data-try="' + esc(d.device_id || "") + '">Try anyway</button>' +
+        '<button class="act ghost" type="button" data-close="1">Close</button>' +
+      "</div>"
+    );
+  }
+  function addComputerSheet(){
+    openSheet("<h3>Add a new computer</h3><p>Getting a code…</p>");
+    api("/api/enroll/generate", { method: "POST", body: {} }).then(function(j){
+      var code = (j && j.code) || "";
+      openSheet(
+        "<h3>Add a new computer</h3>" +
+        "<p>On that computer, open ShamarrConnect and enter this code.</p>" +
+        '<div class="desk-secret"><div class="lbl">Code</div><div class="val">' + esc(code) + "</div></div>" +
+        "<p>Name it when it shows up: Office, Shop, Home.</p>" +
+        '<div class="actions"><button class="act ghost" type="button" data-close="1">Close</button></div>'
+      );
+    }).catch(function(e){
+      openSheet(
+        "<h3>Add a new computer</h3><p>" + esc(e.message || "Could not create a code.") + "</p>" +
+        '<div class="actions"><button class="act ghost" type="button" data-close="1">Close</button></div>'
+      );
+    });
   }
 
   function renderSessions(v){
@@ -454,6 +553,30 @@
   });
 
   $("refresh-all").addEventListener("click", function(){ refresh(); });
+
+  $("desk-wrap").addEventListener("click", function(e){
+    var t = e.target.closest("[data-open],[data-add],[data-close],[data-try]");
+    if (!t){
+      if (e.target.id === "desk-sheet") closeSheet();
+      return;
+    }
+    if (t.getAttribute("data-close")){ closeSheet(); return; }
+    if (t.getAttribute("data-add")){ addComputerSheet(); return; }
+    var tryId = t.getAttribute("data-try");
+    var openId = t.getAttribute("data-open") || tryId;
+    if (!openId) return;
+    var d = null;
+    for (var i = 0; i < lastDevices.length; i++){
+      if (lastDevices[i].device_id === openId){ d = lastDevices[i]; break; }
+    }
+    if (!d){ closeSheet(); return; }
+    if (tryId || !isStale(d)){
+      $("desk-status").textContent = tryId ? ("Trying " + placeName(d) + ".") : ("You're on " + placeName(d) + ".");
+      openInAppSheet(d);
+    } else {
+      explainThenOpen(d);
+    }
+  });
 
   $("revoke-others").addEventListener("click", function(){
     if (!confirm("Sign out every other phone and computer? This browser session stays signed in.")) return;

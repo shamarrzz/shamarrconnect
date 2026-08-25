@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShamarrConnect — remote desktop, hosted for you</title>
+<title>ShamarrConnect: remote desktop, hosted for you</title>
 <meta name="description" data-region="ng" content="Hosted remote desktop for your own devices. Private by design, monthly plans, free tier included.">
 <meta name="description" data-region="intl" content="Hosted remote desktop for your own devices. Private by design, monthly plans, free tier included.">
 <meta name="robots" content="noindex">
@@ -11,6 +11,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="shortcut icon" href="/favicon.ico">
+<link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts.css">
+<link rel="stylesheet" href="/desk-mock.css">
 <style>
   :root{
     --brand:#2B5CE6;
@@ -29,7 +32,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
   body{
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
     color:var(--ink);background:var(--bg);line-height:1.65;
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
   }
@@ -103,30 +106,21 @@
   .micro b{color:#E6ECFA}
   @media(max-width:820px){.hero-grid{grid-template-columns:1fr;padding:64px 0}.hero-art{order:-1}}
 
-  /* APP MOCK */
+  /* APP MOCK — desk of computers (not an ID pad) */
   .hero-art{position:relative;display:flex;justify-content:center}
   .hero-art::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;
     background:radial-gradient(circle,rgba(80,124,255,.4) 0%,transparent 65%);filter:blur(20px);pointer-events:none}
-  .window{position:relative;width:100%;max-width:440px;background:#fff;color:var(--ink);border:1px solid rgba(255,255,255,.4);
+  .window{position:relative;width:100%;max-width:500px;background:#fff;color:var(--ink);border:1px solid rgba(255,255,255,.4);
     border-radius:18px;box-shadow:0 40px 90px rgba(2,8,30,.55);overflow:hidden}
   .titlebar{display:flex;align-items:center;gap:7px;padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg-soft)}
   .titlebar .tdot{width:11px;height:11px;border-radius:50%;background:#D4DCEA}
-  .win-body{padding:24px}
-  .field-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
-  .idbox{display:flex;align-items:center;justify-content:space-between;background:var(--bg-soft);
-    border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:18px}
-  .idbox .id{font-size:24px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums}
-  .statuspill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ok)}
-  .connect-row{display:flex;gap:10px;margin-top:6px}
-  .connect-row input{flex:1;border:1px solid var(--line);border-radius:12px;padding:13px 15px;font-size:15px;color:var(--ink)}
-  .connect-row .go{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:0 20px;font-weight:600;font-size:15px;cursor:pointer}
-  .floatcard{position:absolute;left:-20px;bottom:-14px;background:#fff;color:var(--ink);border-radius:14px;
-    box-shadow:0 20px 50px rgba(2,8,30,.5);padding:13px 17px;display:flex;align-items:center;gap:11px;
-    border:1px solid rgba(255,255,255,.4);pointer-events:none}
-  .floatcard .fic{width:34px;height:34px;border-radius:9px;background:var(--brand-soft);display:grid;place-items:center;flex:none}
-  .floatcard .ft{font-size:13px;font-weight:700;line-height:1.3}
-  .floatcard .fs{font-size:12px;color:var(--muted)}
-  @media(max-width:820px){.floatcard{left:6px;bottom:-18px}}
+  .win-body{padding:16px 16px 14px}
+  .hero .dcard{min-height:132px;padding:12px 12px 10px}
+  .hero .desk-grid{gap:8px}
+  .hero .desk-live{font-size:12px;font-weight:650;color:var(--brand-dark);max-width:58%;text-align:right;line-height:1.3}
+  .hero .desk-sheet{inset:0;border-radius:18px;align-items:center;padding:18px}
+  .hero .window{overflow:hidden}
+  @media(max-width:820px){.window{max-width:100%}.hero .desk-live{max-width:50%}}
 
   /* FACT CHIPS (hero bottom) */
   .facts{position:relative;border-top:1px solid rgba(255,255,255,.12)}
@@ -249,8 +243,7 @@
   .disclaimer{max-width:620px}
 
   @media (prefers-reduced-motion: no-preference){
-    .window,.floatcard{animation:rise .7s ease both}
-    .floatcard{animation-delay:.18s}
+    .window{animation:rise .7s ease both}
     @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
     .titlebar .tdot{animation:dotglow 2.6s ease-in-out infinite}
     .titlebar .tdot:nth-child(2){animation-delay:.4s}
@@ -303,35 +296,63 @@
       </div>
 
       <div class="hero-art">
-        <div class="window">
+        <div class="window" id="desk-mock">
           <div class="titlebar">
             <span class="tdot"></span>
             <span class="tdot"></span>
             <span class="tdot"></span>
             <span style="margin-left:8px;font-size:13px;font-weight:600;color:var(--muted)">ShamarrConnect</span>
           </div>
-          <div class="win-body">
-            <div class="field-label">Your ID</div>
-            <div class="idbox">
-              <span class="id"><span data-region="ng">234 801 234</span><span data-region="intl">812 345 678</span></span>
-              <span class="statuspill">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="#16A34A"/><path d="m8 12 2.5 2.5L16 9" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                Ready
-              </span>
+          <div class="win-body desk-stage">
+            <div class="desk-chrome">
+              <div class="brandish">
+                <img src="/logo-mark.svg" width="22" height="22" alt="">
+                Your computers
+              </div>
+              <span class="who">you</span>
             </div>
-            <div class="field-label">Connect to a computer</div>
-            <div class="connect-row">
-              <input type="text" id="mock-partner" placeholder="Enter partner ID" aria-label="Partner ID" inputmode="numeric" autocomplete="off">
-              <button class="go" id="mock-connect">Connect</button>
+            <div class="desk-grid">
+              <div class="dcard is-this">
+                <div class="top">
+                  <span class="light awake" aria-hidden="true"></span>
+                  <div class="names">
+                    <div class="place">This computer <span class="badge">Here</span></div>
+                  </div>
+                  <svg class="os" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="8" height="8" rx="1" stroke="#5A6B85" stroke-width="1.6"/><rect x="13" y="5" width="8" height="8" rx="1" stroke="#5A6B85" stroke-width="1.6"/><rect x="3" y="15" width="8" height="5" rx="1" stroke="#5A6B85" stroke-width="1.6"/><rect x="13" y="15" width="8" height="5" rx="1" stroke="#5A6B85" stroke-width="1.6"/></svg>
+                </div>
+                <p class="sentence">This is the computer you're on.</p>
+                <button class="act share" type="button" data-desk="share">Share</button>
+              </div>
+              <div class="dcard">
+                <div class="top">
+                  <span class="light awake" aria-hidden="true"></span>
+                  <div class="names"><div class="place">Shop POS</div></div>
+                  <svg class="os" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="8" height="8" rx="1" stroke="#5A6B85" stroke-width="1.6"/><rect x="13" y="5" width="8" height="8" rx="1" stroke="#5A6B85" stroke-width="1.6"/><rect x="3" y="15" width="8" height="5" rx="1" stroke="#5A6B85" stroke-width="1.6"/><rect x="13" y="15" width="8" height="5" rx="1" stroke="#5A6B85" stroke-width="1.6"/></svg>
+                </div>
+                <p class="sentence">Online. You can open it.</p>
+                <button class="act" type="button" data-desk="sit-ready">Open</button>
+              </div>
+              <div class="dcard">
+                <div class="top">
+                  <span class="light asleep" aria-hidden="true"></span>
+                  <div class="names"><div class="place">Office PC</div></div>
+                  <svg class="os" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" stroke="#5A6B85" stroke-width="1.6"/><path d="M7 10l3 2-3 2M12 14h5" stroke="#5A6B85" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <p class="sentence">Last seen this morning.</p>
+                <button class="act ghost" type="button" data-desk="sit-stale">Open</button>
+              </div>
+              <button class="dcard is-slot" type="button" data-desk="add" aria-label="Add a new computer">
+                + Add a new computer
+              </button>
+            </div>
+            <div class="desk-foot">
+              <button class="desk-idlink" type="button" data-desk="connect-id">Connect by ID</button>
+              <span class="desk-live" id="fc-title">Shop POS is online</span>
             </div>
           </div>
-        </div>
-        <div class="floatcard" aria-hidden="true">
-          <span class="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
-          <span>
-            <span class="ft" id="fc-title">Connected to OFFICE-PC</span><br>
-            <span class="fs"><span id="fc-sub">Direct connection</span></span>
-          </span>
+          <div class="desk-sheet" id="desk-sheet" hidden>
+            <div class="desk-panel" id="desk-panel" role="dialog" aria-modal="true"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -351,7 +372,7 @@
   <div class="wrap">
     <div class="center">
       <h2>Made for how <span class="grad">you</span> work.</h2>
-      <p>One tool for personal use, small teams, and IT support — with billing that fits how you budget.</p>
+      <p>One tool for personal use, small teams, and IT support, with billing that fits how you budget.</p>
     </div>
     <div class="cards">
       <div class="card">
@@ -367,7 +388,7 @@
       <div class="card">
         <span class="tag">IT support &amp; freelancers</span>
         <h3>Help clients efficiently</h3>
-        <p>Connect to a client device with a nine-digit ID when they invite you. Manage every client from one account.</p>
+        <p>Open a client’s computer when they share it. Manage every client from one account.</p>
       </div>
       <div class="card">
         <span class="tag">Schools &amp; labs</span>
@@ -538,8 +559,8 @@
       </div>
       <div class="step">
         <div class="stepnum">3</div>
-        <h3>Connect</h3>
-        <p>Every device gets a nine-digit ID. Enter an ID to connect when both sides are set up for it.</p>
+        <h3>Open one</h3>
+        <p>Your computers show up with last seen, like WhatsApp. Tap one to open it.</p>
       </div>
     </div>
   </div>
@@ -644,26 +665,110 @@
 
 <script>
 (function(){
-  /* Hero mock: floatcard follows the typed partner ID; Connect leads to the
-     waitlist while signups are gated (repoint to signup at launch). */
-  var mp=document.getElementById('mock-partner'),mc=document.getElementById('mock-connect'),
-      fct=document.getElementById('fc-title'),fcs=document.getElementById('fc-sub');
-  if(mp&&mc&&fct&&fcs){
-    var DEF_T=fct.textContent,DEF_S=fcs.textContent;
-    function grp(v){return v.replace(/\D/g,'').slice(0,9).replace(/(\d{3})(?=\d)/g,'$1 ');}
-    mp.addEventListener('input',function(){
-      var g=grp(mp.value);
-      if(g){fct.textContent='Partner '+g;fcs.textContent='Ready to connect';}
-      else{fct.textContent=DEF_T;fcs.textContent=DEF_S;}
+  var root=document.getElementById('desk-mock');
+  var sheet=document.getElementById('desk-sheet');
+  var panel=document.getElementById('desk-panel');
+  var fct=document.getElementById('fc-title');
+  var idNg='234 801 234', idIntl='812 345 678';
+  var region=(window.SC_REGION||'intl');
+  var fakeId=region==='ng'?idNg:idIntl;
+
+  function waitlist(){
+    var smooth=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var wl=document.getElementById('waitlist');
+    if(!wl) return;
+    wl.scrollIntoView({behavior:smooth?'smooth':'auto'});
+    var em=document.querySelector('#waitlist-form input[type=email]');
+    if(em)setTimeout(function(){em.focus({preventScroll:true});},smooth?600:0);
+  }
+  function closeSheet(){
+    if(sheet) sheet.hidden=true;
+  }
+  function openSheet(html){
+    if(!panel||!sheet) return;
+    panel.innerHTML=html;
+    sheet.hidden=false;
+    var focus=panel.querySelector('button, input');
+    if(focus) focus.focus();
+  }
+  function explainOffice(){
+    openSheet(
+      '<h3>Office PC</h3>'+
+      '<p>Last seen this morning. Open ShamarrConnect on that computer, or turn it on. Then you can open it from here.</p>'+
+      '<div class="actions">'+
+        '<button class="act" type="button" data-desk="try">Try anyway</button>'+
+        '<button class="act ghost" type="button" data-desk="close">Close</button>'+
+      '</div>'
+    );
+  }
+  function shareSheet(){
+    openSheet(
+      '<h3>Share this computer</h3>'+
+      '<p>Only share these with someone you trust. A session starts after you accept it.</p>'+
+      '<div class="desk-secret"><div class="lbl">Your ID</div><div class="val">'+fakeId+'</div></div>'+
+      '<div class="desk-secret"><div class="lbl">One-time password</div><div class="val">k7p2n9</div></div>'+
+      '<div class="actions">'+
+        '<button class="act" type="button" data-desk="waitlist">Get the app</button>'+
+        '<button class="act ghost" type="button" data-desk="close">Close</button>'+
+      '</div>'
+    );
+  }
+  function connectId(){
+    openSheet(
+      '<h3>Connect by ID</h3>'+
+      '<p>For a computer that is not on your desk yet.</p>'+
+      '<div class="desk-idrow"><input id="desk-id-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Nine-digit ID" aria-label="Nine-digit ID"></div>'+
+      '<div class="actions">'+
+        '<button class="act" type="button" data-desk="waitlist">Connect</button>'+
+        '<button class="act ghost" type="button" data-desk="close">Close</button>'+
+      '</div>'
+    );
+  }
+  function addComputer(){
+    openSheet(
+      '<h3>Add a new computer</h3>'+
+      '<p>On that computer, open ShamarrConnect and enter this code.</p>'+
+      '<div class="desk-secret"><div class="lbl">Code</div><div class="val">K7P2N9</div></div>'+
+      '<p>Name it when it shows up: Office, Shop, Home.</p>'+
+      '<div class="actions">'+
+        '<button class="act" type="button" data-desk="waitlist">Get the app</button>'+
+        '<button class="act ghost" type="button" data-desk="close">Close</button>'+
+      '</div>'
+    );
+  }
+
+  if(root){
+    root.addEventListener('click',function(e){
+      var btn=e.target.closest('[data-desk]');
+      if(!btn) return;
+      var act=btn.getAttribute('data-desk');
+      if(act==='sit-ready'){
+        closeSheet();
+        if(fct) fct.textContent="You're on Shop POS";
+      } else if(act==='sit-stale'){
+        explainOffice();
+      } else if(act==='share'){
+        shareSheet();
+      } else if(act==='connect-id'){
+        connectId();
+      } else if(act==='add'){
+        addComputer();
+      } else if(act==='try'){
+        closeSheet();
+        if(fct) fct.textContent='Trying Office PC';
+      } else if(act==='close'){
+        closeSheet();
+      } else if(act==='waitlist'){
+        closeSheet();
+        waitlist();
+      }
     });
-    function go(){
-      var smooth=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      document.getElementById('waitlist').scrollIntoView({behavior:smooth?'smooth':'auto'});
-      var em=document.querySelector('#waitlist-form input[type=email]');
-      if(em)setTimeout(function(){em.focus({preventScroll:true});},smooth?600:0);
+    if(sheet){
+      sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); });
     }
-    mc.addEventListener('click',go);
-    mp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape') closeSheet();
+    });
   }
 
   var f=document.getElementById('waitlist-form'),m=document.getElementById('wlmsg');

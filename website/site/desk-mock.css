@@ -1,0 +1,126 @@
+/* ShamarrConnect desk mock — landing hero + /preview/desk
+   Copy deck is locked in the Desk design plan. Do not put IDs on the card face. */
+
+.desk-chrome{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:14px;
+}
+.desk-chrome .brandish{
+  display:flex;align-items:center;gap:8px;
+  font-weight:700;font-size:13.5px;color:var(--ink);letter-spacing:-.01em;
+}
+.desk-chrome .brandish img{width:22px;height:22px;border-radius:6px;flex:none}
+.desk-chrome .who{
+  font-size:12px;font-weight:600;color:var(--muted);
+  background:var(--bg-soft);border:1px solid var(--line);
+  padding:4px 10px;border-radius:100px;white-space:nowrap;
+}
+
+.desk-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.desk-grid.one{grid-template-columns:1fr}
+
+.dcard{
+  text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;
+  padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;
+  box-shadow:0 6px 16px rgba(20,40,90,.05);min-height:152px;
+  transition:border-color .15s, box-shadow .15s, transform .15s;
+}
+button.dcard{font:inherit;color:inherit;width:100%;cursor:default}
+.dcard:hover{border-color:#C5D4F5;box-shadow:0 10px 24px rgba(20,40,90,.1);transform:translateY(-1px)}
+.dcard.is-this{background:linear-gradient(180deg,#F7F9FF 0%,#fff 72%);border-color:#D5E0F7}
+.dcard.is-slot{
+  min-height:152px;border-style:dashed;background:repeating-linear-gradient(
+    -45deg, #fff, #fff 8px, #F8FAFF 8px, #F8FAFF 16px);
+  align-items:center;justify-content:center;text-align:center;color:var(--muted);
+  font-weight:650;font-size:13.5px;gap:6px;
+}
+.dcard.is-slot:hover{border-color:var(--brand);color:var(--brand)}
+.dcard .top{display:flex;align-items:flex-start;gap:8px}
+.dcard .light{
+  width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;
+}
+.dcard .light.awake{background:var(--ok);box-shadow:0 0 0 4px rgba(22,163,74,.16)}
+.dcard .light.asleep{background:#C4CDD8}
+.dcard .light.warn{background:#D97706;box-shadow:0 0 0 4px rgba(217,119,6,.16)}
+.dcard .names{min-width:0;flex:1}
+.dcard .place{font-weight:750;font-size:14.5px;letter-spacing:-.01em;line-height:1.25}
+.dcard .badge{
+  display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:#fff;background:#0A1737;
+  padding:2px 7px;border-radius:100px;margin-left:5px;vertical-align:middle;
+}
+.dcard .os{width:20px;height:20px;flex:none;opacity:.75;margin-top:1px}
+.dcard .sentence{font-size:12.5px;color:var(--muted);line-height:1.4;flex:1}
+.dcard .act{
+  display:inline-flex;align-items:center;justify-content:center;width:100%;
+  font-weight:700;font-size:13px;padding:8px 10px;border-radius:9px;border:0;cursor:pointer;
+  background:var(--brand);color:#fff;font-family:inherit;
+}
+.dcard .act:hover{background:var(--brand-dark)}
+.dcard .act.share,.dcard .act.ghost{
+  background:#fff;color:var(--ink);border:1px solid var(--line);
+}
+.dcard .act.share:hover,.dcard .act.ghost:hover{
+  border-color:var(--brand);color:var(--brand);background:#fff;
+}
+
+.desk-foot{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:12px;gap:8px;
+}
+.desk-idlink{
+  background:none;border:0;color:var(--muted);font-size:12.5px;font-weight:600;
+  cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:3px;
+  font-family:inherit;
+}
+.desk-idlink:hover{color:var(--brand)}
+.desk-credit{font-size:11px;color:#9AA7BC}
+
+.desk-stage{position:relative}
+.desk-sheet{
+  position:absolute;inset:0;background:rgba(15,27,51,.48);
+  display:flex;align-items:center;padding:16px;z-index:5;
+  border-radius:inherit;
+}
+.desk-sheet[hidden]{display:none !important}
+.desk-panel{
+  background:#fff;border-radius:14px;padding:16px 16px 14px;width:100%;
+  box-shadow:0 16px 40px rgba(2,8,30,.22);
+}
+.desk-panel h3{font-size:15.5px;margin:0 0 6px;letter-spacing:-.01em}
+.desk-panel p{font-size:13px;color:var(--muted);line-height:1.45;margin:0 0 12px}
+.desk-panel .actions{display:flex;gap:8px;flex-wrap:wrap}
+.desk-panel .actions .act{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;padding:8px 14px;border-radius:9px;border:0;
+  cursor:pointer;background:var(--brand);color:#fff;font-family:inherit;
+}
+.desk-panel .actions .act:hover{background:var(--brand-dark)}
+.desk-panel .actions .act.ghost{
+  background:#fff;color:var(--ink);border:1px solid var(--line);
+}
+.desk-panel .actions .act.ghost:hover{border-color:var(--brand);color:var(--brand)}
+.desk-secret{
+  background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;margin-bottom:8px;
+}
+.desk-secret .lbl{
+  font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+}
+.desk-secret .val{
+  font-size:18px;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums;
+  color:var(--ink);margin-top:2px;
+}
+.desk-idrow{display:flex;gap:8px;margin-bottom:12px}
+.desk-idrow input{
+  flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-size:15px;font-family:inherit;color:var(--ink);min-width:0;
+}
+.desk-idrow input:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px rgba(43,92,230,.15)}
+
+@media(max-width:520px){
+  .desk-grid{grid-template-columns:1fr}
+  .dcard{min-height:0}
+}
