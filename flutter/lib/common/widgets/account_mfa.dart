@@ -109,9 +109,8 @@ class _AccountMfaCardState extends State<AccountMfaCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Required on all accounts. Protects ShamarrConnect sign-in (password + authenticator). '
-              'Remote reconnects also re-check 2FA unless the peer is a trusted device. '
-              'Different from Security → device 2FA on this machine.',
+              'When you sign in to ShamarrConnect with email, require an authenticator code. '
+              'This is not the same as Security: requiring a code when someone connects to this computer.',
               style: TextStyle(
                 fontSize: 12.5,
                 color: Theme.of(context).textTheme.bodySmall?.color,

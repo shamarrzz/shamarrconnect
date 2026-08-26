@@ -31,18 +31,19 @@ import '../../common/widgets/account_mfa.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 
-const double _kTabWidth = 200;
-const double _kTabHeight = 42;
-const double _kCardFixedWidth = 540;
-const double _kCardLeftMargin = 15;
-const double _kContentHMargin = 15;
-const double _kContentHSubMargin = _kContentHMargin + 33;
+
+const double _kTabWidth = 220;
+const double _kTabHeight = 48;
+const double _kCardFixedWidth = 640;
+const double _kCardLeftMargin = 24;
+const double _kContentHMargin = 20;
+const double _kContentHSubMargin = _kContentHMargin + 28;
 const double _kCheckBoxLeftMargin = 10;
 const double _kRadioLeftMargin = 10;
-const double _kListViewBottomMargin = 15;
-const double _kTitleFontSize = 20;
-const double _kContentFontSize = 15;
-const Color _accentColor = MyTheme.accent;
+const double _kListViewBottomMargin = 24;
+const double _kTitleFontSize = 16;
+const double _kContentFontSize = 14;
+const Color _accentColor = Color(0xFF0A1737);
 const String _kSettingPageControllerTag = 'settingPageController';
 const String _kSettingPageTabKeyTag = 'settingPageTabKey';
 
@@ -320,41 +321,30 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   }
 
   Widget _header(BuildContext context) {
-    final settingsText = Text(
-      translate('Settings'),
-      textAlign: TextAlign.left,
-      style: const TextStyle(
-        color: _accentColor,
-        fontSize: _kTitleFontSize,
-        fontWeight: FontWeight.w400,
-      ),
-    );
-    return Row(
-      children: [
-        if (isWeb)
-          IconButton(
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-            },
-            icon: Icon(Icons.arrow_back),
-          ).marginOnly(left: 5),
-        if (isWeb)
-          SizedBox(
-            height: 62,
-            child: Align(
-              alignment: Alignment.center,
-              child: settingsText,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 16, 12),
+      child: Row(
+        children: [
+          if (isWeb)
+            IconButton(
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+              icon: const Icon(Icons.arrow_back),
             ),
-          ).marginOnly(left: 20),
-        if (!isWeb)
-          SizedBox(
-            height: 62,
-            child: settingsText,
-          ).marginOnly(left: 20, top: 10),
-        const Spacer(),
-      ],
+          Text(
+            translate('Settings'),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              letterSpacing: -0.2,
+              color: _accentColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -369,39 +359,49 @@ class _DesktopSettingPageState extends State<DesktopSettingPage>
   Widget _listItem({required _TabInfo tab}) {
     return Obx(() {
       bool selected = tab.key == selectedTab.value;
-      return SizedBox(
-        width: _kTabWidth,
-        height: _kTabHeight,
-        child: InkWell(
-          onTap: () {
-            if (selectedTab.value != tab.key) {
-              int index = DesktopSettingPage.tabKeys.indexOf(tab.key);
-              if (index == -1) {
-                return;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        child: Material(
+          color: selected ? const Color(0xFFEEF2F8) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () {
+              if (selectedTab.value != tab.key) {
+                int index = DesktopSettingPage.tabKeys.indexOf(tab.key);
+                if (index == -1) {
+                  return;
+                }
+                controller.jumpToPage(index);
               }
-              controller.jumpToPage(index);
-            }
-            selectedTab.value = tab.key;
-          },
-          child: Row(children: [
-            Container(
-              width: 4,
-              height: _kTabHeight * 0.7,
-              color: selected ? _accentColor : null,
-            ),
-            Icon(
-              selected ? tab.selected : tab.unselected,
-              color: selected ? _accentColor : null,
-              size: 20,
-            ).marginOnly(left: 13, right: 10),
-            Text(
-              translate(tab.label),
-              style: TextStyle(
+              selectedTab.value = tab.key;
+            },
+            child: SizedBox(
+              height: _kTabHeight,
+              child: Row(children: [
+                Container(
+                  width: 3,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: selected ? _accentColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Icon(
+                  selected ? tab.selected : tab.unselected,
                   color: selected ? _accentColor : null,
-                  fontWeight: FontWeight.w400,
-                  fontSize: _kContentFontSize),
+                  size: 20,
+                ).marginOnly(left: 12, right: 10),
+                Text(
+                  translate(tab.label),
+                  style: TextStyle(
+                      color: selected ? _accentColor : null,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: _kContentFontSize),
+                ),
+              ]),
             ),
-          ]),
+          ),
         ),
       );
     });
@@ -867,7 +867,9 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
               child: Column(children: [
                 permissions(context),
                 password(context),
-                _Card(title: '2FA', children: [tfa()]),
+                _Card(
+                    title: 'Approve connections to this computer',
+                    children: [tfa()]),
                 if (!isChangeIdDisabled())
                   _Card(title: 'ID', children: [changeId()]),
                 more(context),
@@ -909,7 +911,7 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
                       .marginOnly(right: 5),
                   Expanded(
                       child: Text(
-                    translate('enable-2fa-title'),
+                    'Require a code before someone connects to this computer',
                     style:
                         TextStyle(color: disabledTextColor(context, enabled)),
                   ))
@@ -920,8 +922,21 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
           onChanged(!has2fa.value);
         },
       ).marginOnly(left: _kCheckBoxLeftMargin);
+      final hint = Padding(
+        padding: const EdgeInsets.only(left: 18, top: 4, right: 12, bottom: 4),
+        child: Text(
+          'Stops a stranger with your ID from sitting at this computer. Separate from Account sign-in protection.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+        ),
+      );
       if (!has2fa.value) {
-        return tfa;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [tfa, hint],
+        );
       }
       updateBot() async {
         hasBot.value = bind.mainHasValidBotSync();
@@ -989,7 +1004,8 @@ class _SafetyState extends State<_Safety> with AutomaticKeepAliveClientMixin {
       ).marginOnly(left: 30);
 
       return Column(
-        children: [tfa, bot, trust],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [tfa, hint, bot, trust],
       );
     }
 
@@ -2053,18 +2069,27 @@ class _AccountState extends State<_Account> {
             if (gFFI.userModel.userName.value.isEmpty) {
               return const Offstage();
             }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _Button('Change password', () => _showChangePasswordDialog(context)),
-                _Button('Signed-in devices', () => _showSignedInDevicesDialog(context)),
-              ],
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => _showChangePasswordDialog(context),
+                    child: const Text('Change password'),
+                  ),
+                  OutlinedButton(
+                    onPressed: () => _showSignedInDevicesDialog(context),
+                    child: const Text('Signed-in devices'),
+                  ),
+                ],
+              ),
             );
           }),
         ]),
-        // Account MFA (login) — not the same as Security → device 2FA.
         _Card(
-          title: 'Account sign-in protection',
+          title: 'Sign-in protection (account)',
           children: const [AccountMfaCard()],
         ),
       ],
@@ -2213,8 +2238,12 @@ class _AccountState extends State<_Account> {
       }
     }
 
+    var started = false;
     await gFFI.dialogManager.show<void>((setState, close, ctx) {
-      Future.microtask(() => load(setState));
+      if (!started) {
+        started = true;
+        Future.microtask(() => load(setState));
+      }
       return CustomAlertDialog(
         title: const Text('Signed-in devices'),
         contentBoxConstraints: const BoxConstraints(minWidth: 400, maxWidth: 520),
@@ -2680,8 +2709,16 @@ class _AboutState extends State<_About> {
                     translate('Website'),
                     style: linkStyle,
                   ).marginSymmetric(vertical: 4.0)),
+              InkWell(
+                  onTap: () {
+                    launchUrlString('https://github.com/rustdesk/rustdesk');
+                  },
+                  child: const Text(
+                    'Powered by RustDesk',
+                    style: linkStyle,
+                  ).marginSymmetric(vertical: 4.0)),
               Container(
-                decoration: const BoxDecoration(color: Color(0xFF2c8cff)),
+                decoration: const BoxDecoration(color: Color(0xFF0A1737)),
                 padding:
                     const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
                 child: SelectionArea(
@@ -2749,7 +2786,7 @@ Widget _Card(
                     .map((e) => e.marginOnly(top: 4, right: _kContentHMargin)),
               ],
             ).marginOnly(bottom: 10),
-          ).marginOnly(left: _kCardLeftMargin, top: 15),
+          ).marginOnly(left: _kCardLeftMargin, top: 20, right: 24),
         ),
       ),
     ],

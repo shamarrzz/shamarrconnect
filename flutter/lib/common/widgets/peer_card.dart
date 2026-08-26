@@ -765,8 +765,7 @@ abstract class BasePeerCard extends StatelessWidget {
         final onFleet =
             gFFI.fleetModel.devices.any((d) => d.deviceId == id);
         if (onFleet) {
-          final newName = await showPlaceNameDialog(
-              initial: looksLikeFactoryName(oldName) ? '' : oldName);
+          final newName = await showPlaceNameDialog(initial: oldName);
           if (newName != null &&
               newName.trim().isNotEmpty &&
               newName.trim() != oldName) {

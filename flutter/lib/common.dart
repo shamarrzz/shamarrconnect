@@ -3699,7 +3699,7 @@ Widget loadPowered(BuildContext context) {
     cursor: SystemMouseCursors.click,
     child: GestureDetector(
       onTap: () {
-        launchUrl(Uri.parse('https://shamarrconnect.com'));
+        launchUrl(Uri.parse('https://github.com/rustdesk/rustdesk'));
       },
       child: Opacity(
           opacity: 0.5,

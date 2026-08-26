@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../../../common.dart';
+import '../../../consts.dart';
 import '../../../desktop/pages/connection_page.dart' as dconn;
 import '../../../desktop/pages/desktop_tab_page.dart';
 import '../../../models/fleet_model.dart';
@@ -41,9 +42,20 @@ class DeskPage extends StatefulWidget {
   State<DeskPage> createState() => _DeskPageState();
 }
 
+enum _DeskSort { online, name, lastSeen }
+
 class _DeskPageState extends State<DeskPage> {
   String _myId = '';
   String _status = '';
+  bool _listMode = false;
+  _DeskSort _sort = _DeskSort.online;
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -60,6 +72,128 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   bool get _outgoingOnly => bind.isOutgoingOnly();
+
+  String _thisName() {
+    for (final d in gFFI.fleetModel.devices) {
+      if (_myId.isNotEmpty &&
+          d.deviceId == _myId &&
+          d.deviceName.trim().isNotEmpty) {
+        return d.deviceName.trim();
+      }
+    }
+    final host = loginDeviceHostname();
+    if (host.isNotEmpty) return host;
+    return 'This computer';
+  }
+
+  String _localOs() {
+    if (isWindows) return kPeerPlatformWindows;
+    if (isMacOS) return kPeerPlatformMacOS;
+    if (isAndroid) return kPeerPlatformAndroid;
+    if (isIOS) return kPeerPlatformMacOS;
+    return kPeerPlatformLinux;
+  }
+
+  String _osKey(String raw) {
+    final k = raw.toLowerCase();
+    if (k.contains('win')) return kPeerPlatformWindows;
+    if (k.contains('mac') || k.contains('darwin') || k.contains('ios')) {
+      return kPeerPlatformMacOS;
+    }
+    if (k.contains('android')) return kPeerPlatformAndroid;
+    if (k.contains('linux')) return kPeerPlatformLinux;
+    return raw.isEmpty ? _localOs() : kPeerPlatformWindows;
+  }
+
+  Widget _osLogo(String os, {double size = 18}) {
+    return ColorFiltered(
+      colorFilter: const ColorFilter.mode(_navy, BlendMode.srcIn),
+      child: getPlatformImage(_osKey(os), size: size),
+    );
+  }
+
+  Future<void> _rename({String? deviceId, required String initial}) async {
+    if (!gFFI.userModel.isLogin) {
+      await loginDialog();
+      if (!gFFI.userModel.isLogin) return;
+    }
+    final name = await showPlaceNameDialog(initial: initial);
+    if (name == null || name.trim().isEmpty || !mounted) return;
+    final id = (deviceId == null || deviceId.isEmpty) ? _myId : deviceId;
+    if (id.isEmpty) return;
+    final trimmed = name.trim();
+    final ok = await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
+    if (ok) {
+      await bind.mainSetPeerAlias(id: id, alias: trimmed);
+      if (mounted) setState(() {});
+    } else {
+      showToast(translate('Failed'));
+    }
+  }
+
+  Widget _peerMore(BuildContext context, FleetDevice d) {
+    final android = _osKey(d.deviceOs) == kPeerPlatformAndroid;
+    final winPeer = _osKey(d.deviceOs) == kPeerPlatformWindows;
+    return PopupMenuButton<String>(
+      tooltip: 'More',
+      padding: EdgeInsets.zero,
+      icon: const Icon(Icons.more_vert, size: 18),
+      onSelected: (v) => _onPeerMore(context, d, v),
+      itemBuilder: (_) {
+        final items = <PopupMenuEntry<String>>[
+          PopupMenuItem(value: 'files', child: Text(translate('Transfer file'))),
+          PopupMenuItem(value: 'camera', child: Text(translate('View camera'))),
+          PopupMenuItem(
+              value: 'terminal',
+              child: Text('${translate('Terminal')} (beta)')),
+        ];
+        if (isDesktop && !android) {
+          items.add(PopupMenuItem(
+              value: 'tunnel', child: Text(translate('TCP tunneling'))));
+        }
+        if (isWindows && winPeer) {
+          items.add(PopupMenuItem(value: 'rdp', child: Text(translate('RDP'))));
+        }
+        if (isWindows) {
+          items.add(PopupMenuItem(
+              value: 'shortcut',
+              child: Text(translate('Create desktop shortcut'))));
+        }
+        items.add(const PopupMenuDivider());
+        items.add(
+            PopupMenuItem(value: 'rename', child: Text(translate('Rename'))));
+        return items;
+      },
+    );
+  }
+
+  Future<void> _onPeerMore(
+      BuildContext context, FleetDevice d, String v) async {
+    switch (v) {
+      case 'files':
+        await connect(context, d.deviceId, isFileTransfer: true);
+        break;
+      case 'camera':
+        await connect(context, d.deviceId, isViewCamera: true);
+        break;
+      case 'terminal':
+        await connect(context, d.deviceId, isTerminal: true);
+        break;
+      case 'tunnel':
+        await connect(context, d.deviceId, isTcpTunneling: true);
+        break;
+      case 'rdp':
+        await connect(context, d.deviceId, isRDP: true);
+        break;
+      case 'shortcut':
+        await bind.mainCreateShortcut(id: d.deviceId);
+        showToast(translate('Successful'));
+        break;
+      case 'rename':
+        await _rename(deviceId: d.deviceId, initial: _displayName(d));
+        break;
+    }
+  }
 
   RxBool get _svcStopped {
     try {
@@ -86,7 +220,7 @@ class _DeskPageState extends State<DeskPage> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: _grid(context, loggedIn, devices, stopped),
+                    child: _body(context, loggedIn, devices, stopped),
                   ),
                 ),
                 _foot(context),
@@ -101,19 +235,66 @@ class _DeskPageState extends State<DeskPage> {
   Widget _chrome(BuildContext context, bool loggedIn) {
     final muted = Theme.of(context).textTheme.bodySmall?.color;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 12, 4),
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 4),
       child: Row(
         children: [
           const SMark(size: 22),
           const SizedBox(width: 8),
           Text(
-            'Your computers',
+            'ShamarrConnect',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+                ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
           ),
-          const Spacer(),
+          if (!widget.helpMode) ...[
+            const SizedBox(width: 16),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280),
+                child: SizedBox(
+                  height: 36,
+                  child: TextField(
+                    controller: _search,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Search',
+                      prefixIcon: const Icon(Icons.search, size: 18),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            PopupMenuButton<_DeskSort>(
+              tooltip: 'Sort',
+              initialValue: _sort,
+              onSelected: (v) => setState(() => _sort = v),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: _DeskSort.online, child: Text('Online first')),
+                PopupMenuItem(value: _DeskSort.name, child: Text('Name')),
+                PopupMenuItem(value: _DeskSort.lastSeen, child: Text('Last seen')),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Icon(Icons.sort, size: 20, color: muted),
+              ),
+            ),
+            IconButton(
+              tooltip: _listMode ? 'Cards' : 'List',
+              onPressed: () => setState(() => _listMode = !_listMode),
+              icon: Icon(
+                _listMode ? Icons.grid_view : Icons.view_list,
+                size: 20,
+                color: muted,
+              ),
+            ),
+          ] else
+            const Spacer(),
           if (!widget.helpMode && loggedIn)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -157,30 +338,198 @@ class _DeskPageState extends State<DeskPage> {
     );
   }
 
-  Widget _grid(
+  String _displayName(FleetDevice d) {
+    final n = d.deviceName.trim();
+    return n.isEmpty ? 'Computer' : n;
+  }
+
+  bool _awake(FleetDevice d) => d.online && d.ready != false;
+
+  List<FleetDevice> _others(List<FleetDevice> devices) {
+    final q = _search.text.trim().toLowerCase();
+    var list = devices.where((d) {
+      if (_myId.isNotEmpty && d.deviceId == _myId) return false;
+      if (q.isEmpty) return true;
+      return _displayName(d).toLowerCase().contains(q);
+    }).toList();
+    list.sort((a, b) {
+      switch (_sort) {
+        case _DeskSort.online:
+          final c = (_awake(b) ? 1 : 0) - (_awake(a) ? 1 : 0);
+          if (c != 0) return c;
+          return _displayName(a).toLowerCase().compareTo(_displayName(b).toLowerCase());
+        case _DeskSort.name:
+          return _displayName(a).toLowerCase().compareTo(_displayName(b).toLowerCase());
+        case _DeskSort.lastSeen:
+          final at = a.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bt = b.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bt.compareTo(at);
+      }
+    });
+    return list;
+  }
+
+  Widget _body(
     BuildContext context,
     bool loggedIn,
     List<FleetDevice> devices,
     bool stopped,
   ) {
-    final cards = <Widget>[
-      _thisCard(context, stopped),
-    ];
-    if (loggedIn && !widget.helpMode) {
-      for (final d in devices) {
-        if (_myId.isNotEmpty && d.deviceId == _myId) continue;
-        cards.add(_placeCard(context, d));
-      }
-      cards.add(_addSlot(context));
+    final others = (loggedIn && !widget.helpMode) ? _others(devices) : <FleetDevice>[];
+    final q = _search.text.trim().toLowerCase();
+    final showThis = q.isEmpty ||
+        _thisName().toLowerCase().contains(q) ||
+        'this computer'.contains(q);
+    if (_listMode && !widget.helpMode) {
+      return _list(context, stopped, others, showThis, loggedIn);
     }
+    return _grid(context, stopped, others, showThis, loggedIn);
+  }
+
+  Widget _grid(
+    BuildContext context,
+    bool stopped,
+    List<FleetDevice> others,
+    bool showThis,
+    bool loggedIn,
+  ) {
+    final cards = <Widget>[
+      if (showThis) _thisCard(context, stopped),
+      for (final d in others) _placeCard(context, d),
+      if (loggedIn && !widget.helpMode && _search.text.trim().isEmpty)
+        _addSlot(context),
+    ];
+    if (cards.isEmpty) {
+      return const Center(child: Text('No computers match that search.'));
+    }
+    final w = MediaQuery.of(context).size.width;
+    final cols = (!isDesktop || w < 640)
+        ? 1
+        : w < 1000
+            ? 2
+            : 3;
     return GridView.count(
-      crossAxisCount: (!isDesktop || MediaQuery.of(context).size.width < 720)
-          ? 1
-          : 2,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.55,
+      crossAxisCount: cols,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.15,
       children: cards,
+    );
+  }
+
+  Widget _list(
+    BuildContext context,
+    bool stopped,
+    List<FleetDevice> others,
+    bool showThis,
+    bool loggedIn,
+  ) {
+    final rows = <Widget>[];
+    if (showThis) rows.add(_thisRow(context, stopped));
+    for (final d in others) {
+      rows.add(_placeRow(context, d));
+    }
+    if (loggedIn && !widget.helpMode && _search.text.trim().isEmpty) {
+      rows.add(ListTile(
+        leading: const Icon(Icons.add),
+        title: const Text('+ Add a new computer'),
+        onTap: _addNewComputer,
+      ));
+    }
+    if (rows.isEmpty) {
+      return const Center(child: Text('No computers match that search.'));
+    }
+    return ListView.separated(
+      itemCount: rows.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (_, i) => rows[i],
+    );
+  }
+
+  Widget _dot(bool awake, {bool warn = false}) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: warn
+            ? const Color(0xFFD97706)
+            : awake
+                ? const Color(0xFF16A34A)
+                : const Color(0xFFC4CDD8),
+      ),
+    );
+  }
+
+  Widget _thisRow(BuildContext context, bool stopped) {
+    final model = gFFI.serverModel;
+    final needSetup = isAndroid && (!model.mediaOk || !model.inputOk);
+    final sentence = stopped
+        ? 'This computer is not reachable until ShamarrConnect is open.'
+        : needSetup
+            ? 'Almost ready. This computer still needs a permission.'
+            : 'This is the computer you\'re on.';
+    return ListTile(
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _dot(!stopped && !needSetup, warn: stopped || needSetup),
+          const SizedBox(width: 8),
+          _osLogo(_localOs()),
+        ],
+      ),
+      title: Text(_thisName()),
+      subtitle: Text(sentence),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Rename',
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            onPressed: () => _rename(initial: _thisName()),
+          ),
+          if (!_outgoingOnly)
+            TextButton(
+              onPressed: needSetup
+                  ? (widget.onContinueSetup ?? () => _shareSheet(context))
+                  : () => _shareSheet(context),
+              child: Text(needSetup ? 'Continue setup' : 'Share'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeRow(BuildContext context, FleetDevice d) {
+    final stale = !_awake(d);
+    return ListTile(
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _dot(_awake(d),
+              warn: d.reason == 'battery' || d.reason == 'permission'),
+          const SizedBox(width: 8),
+          _osLogo(d.deviceOs),
+        ],
+      ),
+      title: Text(_displayName(d)),
+      subtitle: Text(_sentence(d)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Rename',
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            onPressed: () =>
+                _rename(deviceId: d.deviceId, initial: _displayName(d)),
+          ),
+          _peerMore(context, d),
+          TextButton(
+            onPressed: () => _open(context, d, stale),
+            child: const Text('Open'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -215,21 +564,20 @@ class _DeskPageState extends State<DeskPage> {
     }
     return _cardShell(
       context: context,
-      title: 'This computer',
+      title: _thisName(),
       badge: 'Here',
       awake: !stopped && !needSetup,
       warn: stopped || needSetup,
       sentence: sentence,
-      os: '',
+      os: _localOs(),
+      onRename: () => _rename(initial: _thisName()),
       child: action,
     );
   }
 
   Widget _placeCard(BuildContext context, FleetDevice d) {
-    final name = looksLikeFactoryName(d.deviceName)
-        ? 'Computer'
-        : (d.deviceName.trim().isEmpty ? 'Computer' : d.deviceName.trim());
-    final stale = !d.online || d.ready == false;
+    final name = _displayName(d);
+    final stale = !_awake(d);
     final sentence = _sentence(d);
     return _cardShell(
       context: context,
@@ -238,6 +586,8 @@ class _DeskPageState extends State<DeskPage> {
       warn: d.reason == 'battery' || d.reason == 'permission',
       sentence: sentence,
       os: d.deviceOs,
+      onRename: () => _rename(deviceId: d.deviceId, initial: name),
+      extra: _peerMore(context, d),
       child: _btn(
         context,
         'Open',
@@ -280,11 +630,13 @@ class _DeskPageState extends State<DeskPage> {
     bool warn = false,
     required String sentence,
     required String os,
+    VoidCallback? onRename,
+    Widget? extra,
     required Widget child,
   }) {
     final line = Theme.of(context).dividerColor;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.background,
         borderRadius: BorderRadius.circular(14),
@@ -314,7 +666,7 @@ class _DeskPageState extends State<DeskPage> {
                     TextSpan(
                       text: title,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14.5),
+                          fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                     if (badge.isNotEmpty)
                       WidgetSpan(
@@ -345,7 +697,16 @@ class _DeskPageState extends State<DeskPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(_osIcon(os), size: 18, color: Colors.grey),
+              if (onRename != null)
+                IconButton(
+                  tooltip: 'Rename',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  onPressed: onRename,
+                ),
+              if (extra != null) extra,
+              _osLogo(os),
             ],
           ),
           const SizedBox(height: 8),
@@ -353,8 +714,8 @@ class _DeskPageState extends State<DeskPage> {
             child: Text(
               sentence,
               style: TextStyle(
-                fontSize: 12.5,
-                height: 1.35,
+                fontSize: 12,
+                height: 1.3,
                 color: Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
@@ -417,7 +778,7 @@ class _DeskPageState extends State<DeskPage> {
                     fontSize: 12, fontWeight: FontWeight.w600, color: muted),
               ),
             )
-          else if (bind.isCustomClient())
+          else
             loadPowered(context),
         ],
       ),
@@ -443,9 +804,7 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   Future<void> _open(BuildContext context, FleetDevice d, bool stale) async {
-    final name = looksLikeFactoryName(d.deviceName)
-        ? 'Computer'
-        : d.deviceName.trim();
+    final name = _displayName(d);
     if (stale) {
       final go = await showDialog<bool>(
         context: context,
@@ -601,11 +960,4 @@ class _DeskPageState extends State<DeskPage> {
     }
   }
 
-  IconData _osIcon(String os) {
-    final k = os.toLowerCase();
-    if (k.contains('android') || k.contains('ios')) return Icons.phone_android;
-    if (k.contains('linux')) return Icons.terminal;
-    if (k.contains('mac')) return Icons.laptop_mac;
-    return Icons.laptop_windows;
-  }
 }

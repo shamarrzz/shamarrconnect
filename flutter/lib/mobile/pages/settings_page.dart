@@ -1067,17 +1067,15 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
               onPressed: (context) =>
                   launchUrlString('https://shamarrconnect.com/privacy'),
               leading: Icon(Icons.privacy_tip),
-            )
+            ),
+            SettingsTile(
+              title: const Text('Powered by RustDesk'),
+              onPressed: (context) =>
+                  launchUrlString('https://github.com/rustdesk/rustdesk'),
+              leading: const Icon(Icons.code),
+            ),
           ],
         ),
-        // Fork credit — footer (not header); AGPL attribution.
-        if (bind.isCustomClient())
-          CustomSettingsSection(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 24),
-              child: Center(child: loadPowered(context)),
-            ),
-          ),
       ],
     );
     return settings;

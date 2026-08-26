@@ -7,6 +7,7 @@ import '../../common.dart';
 import '../../models/platform_model.dart';
 
 const kPlaceNameChips = ['Office', 'Shop', 'Home', 'Workshop', 'Phone'];
+const _kPlaceNamedOpt = 'sc_place_named';
 
 Future<void>? _placeNameInFlight;
 
@@ -65,14 +66,12 @@ Future<String?> showPlaceNameDialog({String initial = ''}) async {
 
     Future<void> submit() async {
       final text = controller.text.trim();
-      final n = text.length;
-      if (n < 2 || n > 40) {
-        setState(() => error = 'Use 2 to 40 characters.');
+      if (text.isEmpty) {
+        close(null);
         return;
       }
-      if (looksLikeFactoryName(text, hostname: loginDeviceHostname())) {
-        setState(() =>
-            error = 'Pick a name you will recognise, like Shop or Office.');
+      if (text.length > 40) {
+        setState(() => error = 'Keep it under 40 characters.');
         return;
       }
       close(text);
@@ -86,7 +85,7 @@ Future<String?> showPlaceNameDialog({String initial = ''}) async {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'A name you will recognise. Not the computer\'s factory name.',
+            'Call it whatever you want. Suggestions below are optional.',
             style: TextStyle(fontSize: 13, height: 1.35),
           ),
           const SizedBox(height: 12),
@@ -119,6 +118,10 @@ Future<String?> showPlaceNameDialog({String initial = ''}) async {
         ],
       ),
       actions: [
+        dialogButton('Skip', isOutline: true, onPressed: () {
+          bind.mainSetLocalOption(key: _kPlaceNamedOpt, value: 'Y');
+          close(null);
+        }),
         dialogButton('Save', onPressed: () { submit(); }),
       ],
       onSubmit: () { submit(); },
@@ -137,6 +140,7 @@ Future<void> maybePromptPlaceNameAfterLogin() {
 
 Future<void> _runPlaceNamePrompt() async {
   try {
+    if (bind.mainGetLocalOption(key: _kPlaceNamedOpt) == 'Y') return;
     final token = bind.mainGetLocalOption(key: 'access_token');
     if (token.isEmpty) return;
     final id = await bind.mainGetMyId();
@@ -150,12 +154,13 @@ Future<void> _runPlaceNamePrompt() async {
       }
     }
     final hostname = loginDeviceHostname();
-    if (!looksLikeFactoryName(current, hostname: hostname) &&
-        current.trim().length >= 2) {
+    if (current.trim().isNotEmpty) {
+      await bind.mainSetLocalOption(key: _kPlaceNamedOpt, value: 'Y');
       return;
     }
-    final name = await showPlaceNameDialog(initial: '');
-    if (name == null || name.trim().length < 2) return;
+    final name = await showPlaceNameDialog(initial: hostname);
+    await bind.mainSetLocalOption(key: _kPlaceNamedOpt, value: 'Y');
+    if (name == null || name.trim().isEmpty) return;
     final trimmed = name.trim();
     await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
     await bind.mainSetPeerAlias(id: id, alias: trimmed);
