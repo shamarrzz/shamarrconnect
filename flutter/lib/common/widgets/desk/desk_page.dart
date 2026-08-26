@@ -8,12 +8,10 @@ import 'package:provider/provider.dart';
 import '../../../common.dart';
 import '../../../consts.dart';
 import '../../../desktop/pages/connection_page.dart' as dconn;
-import '../../../desktop/pages/desktop_tab_page.dart';
 import '../../../models/fleet_model.dart';
 import '../../../models/platform_model.dart';
 import '../../../models/server_model.dart';
 import '../../widgets/login.dart';
-import '../../widgets/shamarrdesk_mark.dart';
 import '../place_name_dialog.dart';
 import 'desk_memory.dart';
 
@@ -38,7 +36,7 @@ class DeskPage extends StatefulWidget {
   /// Incoming-only / Get Help: this computer only, Share is the job.
   final bool helpMode;
 
-  /// Desktop chrome Settings gear. Mobile hides this (Settings is a tab).
+  /// Kept so callers still compile. Settings lives on the window title bar.
   final bool showSettings;
 
   /// Mobile: push the Connection page. Desktop: in-window sheet.
@@ -64,13 +62,16 @@ class _DeskPageState extends State<DeskPage> {
   _DeskFilter _filter = _DeskFilter.all;
   /// Quiet attic. Not a pill on the glass. Search still finds them.
   bool _peekHidden = false;
+  bool _searchOpen = false;
   final _search = TextEditingController();
+  final _searchFocus = FocusNode();
   final Set<String> _favs = {};
   final Set<String> _hidden = {};
 
   @override
   void dispose() {
     _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -366,20 +367,29 @@ class _DeskPageState extends State<DeskPage> {
             final loggedIn = gFFI.userModel.isLogin;
             final devices = gFFI.fleetModel.devices.toList();
             final stopped = _svcStopped.value;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _chrome(context, loggedIn),
-                if (!widget.helpMode)
-                  _filterBar(context, devices, stopped),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                    child: _body(context, loggedIn, devices, stopped),
-                  ),
+            return CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.slash): _openSearch,
+                const SingleActivator(LogicalKeyboardKey.keyF, control: true):
+                    _openSearch,
+              },
+              child: Focus(
+                autofocus: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!widget.helpMode)
+                      _toolbar(context, loggedIn, devices, stopped),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: _body(context, loggedIn, devices, stopped),
+                      ),
+                    ),
+                    _foot(context, devices, stopped),
+                  ],
                 ),
-                _foot(context, devices, stopped),
-              ],
+              ),
             );
           });
         },
@@ -387,132 +397,15 @@ class _DeskPageState extends State<DeskPage> {
     );
   }
 
-  Widget _chrome(BuildContext context, bool loggedIn) {
-    final muted = Theme.of(context).textTheme.bodySmall?.color;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 8, 2),
-      child: Row(
-        children: [
-          const YourDeskMark(height: 22),
-          if (!widget.helpMode) ...[
-            const SizedBox(width: 16),
-            Expanded(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 280),
-                child: SizedBox(
-                  height: 36,
-                  child: TextField(
-                    controller: _search,
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      hintText: 'Search this desk',
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            PopupMenuButton<String>(
-              tooltip: 'Sort',
-              onSelected: (v) {
-                switch (v) {
-                  case 'online':
-                    setState(() => _sort = _DeskSort.online);
-                    break;
-                  case 'name':
-                    setState(() => _sort = _DeskSort.name);
-                    break;
-                  case 'seen':
-                    setState(() => _sort = _DeskSort.lastSeen);
-                    break;
-                  case 'peek':
-                    setState(() => _peekHidden = true);
-                    break;
-                  case 'unpeek':
-                    setState(() => _peekHidden = false);
-                    break;
-                }
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                    value: 'online', child: Text('Online first')),
-                const PopupMenuItem(value: 'name', child: Text('Name')),
-                const PopupMenuItem(value: 'seen', child: Text('Last seen')),
-                if (_hidden.isNotEmpty) const PopupMenuDivider(),
-                if (_hidden.isNotEmpty)
-                  PopupMenuItem(
-                    value: _peekHidden ? 'unpeek' : 'peek',
-                    child: Text(_peekHidden
-                        ? 'Back to the desk'
-                        : 'Show computers I hid'),
-                  ),
-              ],
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Icon(Icons.sort, size: 20, color: muted),
-              ),
-            ),
-            IconButton(
-              tooltip: _listMode ? 'Cards' : 'List',
-              onPressed: () => setState(() => _listMode = !_listMode),
-              icon: Icon(
-                _listMode ? Icons.grid_view : Icons.view_list,
-                size: 20,
-                color: muted,
-              ),
-            ),
-          ] else
-            const Spacer(),
-          if (!widget.helpMode && loggedIn)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).dividerColor),
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text(
-                gFFI.userModel.displayNameOrUserName,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: muted),
-              ),
-            )
-          else if (!widget.helpMode)
-            TextButton(
-              onPressed: () => loginDialog(),
-              child: Text(translate('Login')),
-            ),
-          if (widget.showSettings)
-            IconButton(
-              tooltip: translate('Settings'),
-              onPressed: DesktopTabPage.onAddSetting,
-              icon: Icon(Icons.settings, size: 20, color: muted),
-            ),
-          if (widget.showSettings && loggedIn)
-            PopupMenuButton<String>(
-              tooltip: translate('Logout'),
-              icon: Icon(Icons.expand_more, size: 20, color: muted),
-              onSelected: (v) async {
-                if (v == 'logout') gFFI.userModel.logOut();
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'logout',
-                  child: Text(translate('Logout')),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
+  void _openSearch() {
+    setState(() => _searchOpen = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocus.requestFocus();
+    });
   }
 
-  Widget _filterBar(
-      BuildContext context, List<FleetDevice> devices, bool stopped) {
+  Widget _toolbar(BuildContext context, bool loggedIn,
+      List<FleetDevice> devices, bool stopped) {
     final others = devices.where((d) => d.deviceId != _myId).toList();
     final allN = others.where((d) => !_hidden.contains(d.deviceId)).length;
     final starN = others
@@ -546,7 +439,7 @@ class _DeskPageState extends State<DeskPage> {
       );
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
       child: Row(
         children: [
           Expanded(
@@ -560,16 +453,149 @@ class _DeskPageState extends State<DeskPage> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            onlineN == 1 ? '1 online' : '$onlineN online',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          _searchBox(muted),
+          PopupMenuButton<String>(
+            tooltip: 'Sort',
+            onSelected: (v) {
+              switch (v) {
+                case 'online':
+                  setState(() => _sort = _DeskSort.online);
+                  break;
+                case 'name':
+                  setState(() => _sort = _DeskSort.name);
+                  break;
+                case 'seen':
+                  setState(() => _sort = _DeskSort.lastSeen);
+                  break;
+                case 'peek':
+                  setState(() => _peekHidden = true);
+                  break;
+                case 'unpeek':
+                  setState(() => _peekHidden = false);
+                  break;
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                  value: 'online', child: Text('Online first')),
+              const PopupMenuItem(value: 'name', child: Text('Name')),
+              const PopupMenuItem(value: 'seen', child: Text('Last seen')),
+              if (_hidden.isNotEmpty) const PopupMenuDivider(),
+              if (_hidden.isNotEmpty)
+                PopupMenuItem(
+                  value: _peekHidden ? 'unpeek' : 'peek',
+                  child: Text(_peekHidden
+                      ? 'Back to the desk'
+                      : 'Show computers I hid'),
+                ),
+            ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(Icons.sort, size: 20, color: muted),
+            ),
+          ),
+          IconButton(
+            tooltip: _listMode ? 'Cards' : 'List',
+            onPressed: () => setState(() => _listMode = !_listMode),
+            icon: Icon(
+              _listMode ? Icons.grid_view : Icons.view_list,
+              size: 20,
               color: muted,
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(
+              onlineN == 1 ? '1 online' : '$onlineN online',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: muted,
+              ),
+            ),
+          ),
+          _account(loggedIn, muted),
         ],
+      ),
+    );
+  }
+
+  Widget _searchBox(Color? muted) {
+    final open = _searchOpen || _search.text.isNotEmpty;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      width: open ? 188 : 36,
+      height: 32,
+      margin: const EdgeInsets.only(right: 2),
+      child: open
+          ? TextField(
+              controller: _search,
+              focusNode: _searchFocus,
+              onChanged: (_) => setState(() {}),
+              onTapOutside: (_) {
+                if (_search.text.isEmpty && mounted) {
+                  setState(() => _searchOpen = false);
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Search',
+                prefixIcon: const Icon(Icons.search, size: 16),
+                suffixIcon: IconButton(
+                  tooltip: 'Clear',
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.close, size: 16),
+                  onPressed: () {
+                    _search.clear();
+                    setState(() => _searchOpen = false);
+                  },
+                ),
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            )
+          : IconButton(
+              tooltip: 'Search this desk',
+              padding: EdgeInsets.zero,
+              onPressed: _openSearch,
+              icon: Icon(Icons.search, size: 20, color: muted),
+            ),
+    );
+  }
+
+  Widget _account(bool loggedIn, Color? muted) {
+    if (!loggedIn) {
+      return TextButton(
+        onPressed: () => loginDialog(),
+        child: Text(translate('Login')),
+      );
+    }
+    return PopupMenuButton<String>(
+      tooltip: gFFI.userModel.displayNameOrUserName,
+      onSelected: (v) async {
+        if (v == 'logout') gFFI.userModel.logOut();
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'logout',
+          child: Text(translate('Logout')),
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Text(
+          gFFI.userModel.displayNameOrUserName,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: muted,
+          ),
+        ),
       ),
     );
   }
