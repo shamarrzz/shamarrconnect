@@ -127,8 +127,8 @@ class _AccountMfaCardState extends State<AccountMfaCard> {
                 Expanded(
                   child: Text(
                     on
-                        ? 'Account MFA is on — authenticator required at login.'
-                        : 'Account MFA is off — enable it (required for all accounts).',
+                        ? 'Account MFA is on. Authenticator required at login.'
+                        : 'Account MFA is off. Enable it (required for all accounts).',
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -211,7 +211,7 @@ class _AccountMfaSettingsTileState extends State<AccountMfaSettingsTile> {
           : _loading
               ? '…'
               : _enabled == true
-                  ? 'On — authenticator required at login'
+                  ? 'On. Authenticator required at login'
                   : _enabled == false
                       ? 'Off'
                       : 'Status unknown';
@@ -369,7 +369,7 @@ Future<bool?> showAccountMfaEnableDialog(BuildContext context) async {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'MFA is on. Save these recovery codes offline — each works once if you lose your authenticator.',
+            'MFA is on. Save these recovery codes offline. Each works once if you lose your authenticator.',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),

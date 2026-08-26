@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -15,6 +17,12 @@ import '../../widgets/s_mark.dart';
 import '../place_name_dialog.dart';
 
 const _navy = Color(0xFF0A1737);
+const _brand = Color(0xFF2B5CE6);
+const _ok = Color(0xFF16A34A);
+const _warn = Color(0xFFD97706);
+const _asleep = Color(0xFFC4CDD8);
+const _star = Color(0xFFD97706);
+const _kHiddenOpt = 'sc_desk_hidden';
 
 /// Desk of named computers. Remote ID lives in Connect by ID.
 class DeskPage extends StatefulWidget {
@@ -44,12 +52,18 @@ class DeskPage extends StatefulWidget {
 
 enum _DeskSort { online, name, lastSeen }
 
+enum _DeskFilter { all, starred, hidden }
+
 class _DeskPageState extends State<DeskPage> {
   String _myId = '';
   String _status = '';
+  String _hoverId = '';
   bool _listMode = false;
   _DeskSort _sort = _DeskSort.online;
+  _DeskFilter _filter = _DeskFilter.all;
   final _search = TextEditingController();
+  final Set<String> _favs = {};
+  final Set<String> _hidden = {};
 
   @override
   void dispose() {
@@ -63,12 +77,47 @@ class _DeskPageState extends State<DeskPage> {
     bind.mainGetMyId().then((id) {
       if (mounted) setState(() => _myId = id);
     });
+    _loadPins();
     if (gFFI.userModel.isLogin) {
       gFFI.fleetModel.pull();
     }
     if (widget.helpMode || !bind.isOutgoingOnly()) {
       gFFI.serverModel.startService();
     }
+  }
+
+  Future<void> _loadPins() async {
+    try {
+      final favs = await bind.mainGetFav();
+      final raw = bind.mainGetLocalOption(key: _kHiddenOpt);
+      final hidden = <String>{};
+      if (raw.isNotEmpty) {
+        try {
+          final v = jsonDecode(raw);
+          if (v is List) {
+            hidden.addAll(v.map((e) => e.toString()));
+          }
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() {
+        _favs
+          ..clear()
+          ..addAll(favs);
+        _hidden
+          ..clear()
+          ..addAll(hidden);
+      });
+    } catch (e) {
+      debugPrint('desk _loadPins: $e');
+    }
+  }
+
+  void _persistHidden() {
+    bind.mainSetLocalOption(
+      key: _kHiddenOpt,
+      value: jsonEncode(_hidden.toList()),
+    );
   }
 
   bool get _outgoingOnly => bind.isOutgoingOnly();
@@ -105,9 +154,16 @@ class _DeskPageState extends State<DeskPage> {
     return raw.isEmpty ? _localOs() : kPeerPlatformWindows;
   }
 
-  Widget _osLogo(String os, {double size = 18}) {
-    return ColorFiltered(
-      colorFilter: const ColorFilter.mode(_navy, BlendMode.srcIn),
+  Widget _osTile(BuildContext context, String os, {double size = 22}) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: dark ? Colors.white.withOpacity(0.08) : const Color(0xFFEEF2F8),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: getPlatformImage(_osKey(os), size: size),
     );
   }
@@ -131,9 +187,57 @@ class _DeskPageState extends State<DeskPage> {
     }
   }
 
+  Future<void> _toggleStar(String id) async {
+    if (id.isEmpty) return;
+    final next = _favs.toList();
+    if (next.contains(id)) {
+      next.remove(id);
+    } else {
+      next.add(id);
+    }
+    await bind.mainStoreFav(favs: next);
+    if (!mounted) return;
+    setState(() {
+      _favs
+        ..clear()
+        ..addAll(next);
+    });
+  }
+
+  void _toggleHide(String id, {required String name}) {
+    if (id.isEmpty || id == _myId) return;
+    setState(() {
+      if (_hidden.contains(id)) {
+        _hidden.remove(id);
+        _status = '$name is back on the desk.';
+      } else {
+        _hidden.add(id);
+        _status = '$name is hidden. Find it under Hidden.';
+      }
+    });
+    _persistHidden();
+  }
+
+  Widget _starBtn(String id) {
+    final on = _favs.contains(id);
+    return IconButton(
+      tooltip: on ? 'Unstar' : 'Star',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      icon: Icon(
+        on ? Icons.star_rounded : Icons.star_outline_rounded,
+        size: 20,
+        color: on ? _star : Theme.of(context).iconTheme.color?.withOpacity(0.55),
+      ),
+      onPressed: () => _toggleStar(id),
+    );
+  }
+
   Widget _peerMore(BuildContext context, FleetDevice d) {
     final android = _osKey(d.deviceOs) == kPeerPlatformAndroid;
     final winPeer = _osKey(d.deviceOs) == kPeerPlatformWindows;
+    final starred = _favs.contains(d.deviceId);
+    final hidden = _hidden.contains(d.deviceId);
     return PopupMenuButton<String>(
       tooltip: 'More',
       padding: EdgeInsets.zero,
@@ -160,6 +264,14 @@ class _DeskPageState extends State<DeskPage> {
               child: Text(translate('Create desktop shortcut'))));
         }
         items.add(const PopupMenuDivider());
+        items.add(PopupMenuItem(
+          value: 'star',
+          child: Text(starred ? 'Unstar' : 'Star'),
+        ));
+        items.add(PopupMenuItem(
+          value: 'hide',
+          child: Text(hidden ? 'Show on desk' : 'Hide from desk'),
+        ));
         items.add(
             PopupMenuItem(value: 'rename', child: Text(translate('Rename'))));
         return items;
@@ -189,6 +301,12 @@ class _DeskPageState extends State<DeskPage> {
         await bind.mainCreateShortcut(id: d.deviceId);
         showToast(translate('Successful'));
         break;
+      case 'star':
+        await _toggleStar(d.deviceId);
+        break;
+      case 'hide':
+        _toggleHide(d.deviceId, name: _displayName(d));
+        break;
       case 'rename':
         await _rename(deviceId: d.deviceId, initial: _displayName(d));
         break;
@@ -217,13 +335,15 @@ class _DeskPageState extends State<DeskPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _chrome(context, loggedIn),
+                if (!widget.helpMode)
+                  _filterBar(context, devices, stopped),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                     child: _body(context, loggedIn, devices, stopped),
                   ),
                 ),
-                _foot(context),
+                _foot(context, devices, stopped),
               ],
             );
           });
@@ -235,7 +355,7 @@ class _DeskPageState extends State<DeskPage> {
   Widget _chrome(BuildContext context, bool loggedIn) {
     final muted = Theme.of(context).textTheme.bodySmall?.color;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 8, 4),
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 2),
       child: Row(
         children: [
           const SMark(size: 22),
@@ -275,9 +395,11 @@ class _DeskPageState extends State<DeskPage> {
               initialValue: _sort,
               onSelected: (v) => setState(() => _sort = v),
               itemBuilder: (_) => const [
-                PopupMenuItem(value: _DeskSort.online, child: Text('Online first')),
+                PopupMenuItem(
+                    value: _DeskSort.online, child: Text('Online first')),
                 PopupMenuItem(value: _DeskSort.name, child: Text('Name')),
-                PopupMenuItem(value: _DeskSort.lastSeen, child: Text('Last seen')),
+                PopupMenuItem(
+                    value: _DeskSort.lastSeen, child: Text('Last seen')),
               ],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -338,6 +460,84 @@ class _DeskPageState extends State<DeskPage> {
     );
   }
 
+  Widget _filterBar(
+      BuildContext context, List<FleetDevice> devices, bool stopped) {
+    final others = devices.where((d) => d.deviceId != _myId).toList();
+    final allN = others.where((d) => !_hidden.contains(d.deviceId)).length;
+    final starN = others
+        .where((d) =>
+            _favs.contains(d.deviceId) && !_hidden.contains(d.deviceId))
+        .length;
+    final hidN = others.where((d) => _hidden.contains(d.deviceId)).length;
+    final onlineN = others.where((d) => _awake(d) && !_hidden.contains(d.deviceId)).length +
+        ((!stopped) ? 1 : 0);
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _pill('All', allN + 1, _DeskFilter.all),
+                  _pill('Starred', starN, _DeskFilter.starred),
+                  _pill('Hidden', hidN, _DeskFilter.hidden),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            onlineN == 1 ? '1 online' : '$onlineN online',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: muted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(String label, int n, _DeskFilter f) {
+    final on = _filter == f;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: on ? _navy : Colors.transparent,
+        borderRadius: BorderRadius.circular(100),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(100),
+          onTap: () async {
+            await _loadPins();
+            if (!mounted) return;
+            setState(() => _filter = f);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(
+                color: on ? _navy : Theme.of(context).dividerColor,
+              ),
+            ),
+            child: Text(
+              n > 0 ? '$label $n' : label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: on ? Colors.white : null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _displayName(FleetDevice d) {
     final n = d.deviceName.trim();
     return n.isEmpty ? 'Computer' : n;
@@ -349,6 +549,19 @@ class _DeskPageState extends State<DeskPage> {
     final q = _search.text.trim().toLowerCase();
     var list = devices.where((d) {
       if (_myId.isNotEmpty && d.deviceId == _myId) return false;
+      switch (_filter) {
+        case _DeskFilter.all:
+          if (_hidden.contains(d.deviceId)) return false;
+          break;
+        case _DeskFilter.starred:
+          if (!_favs.contains(d.deviceId) || _hidden.contains(d.deviceId)) {
+            return false;
+          }
+          break;
+        case _DeskFilter.hidden:
+          if (!_hidden.contains(d.deviceId)) return false;
+          break;
+      }
       if (q.isEmpty) return true;
       return _displayName(d).toLowerCase().contains(q);
     }).toList();
@@ -357,9 +570,13 @@ class _DeskPageState extends State<DeskPage> {
         case _DeskSort.online:
           final c = (_awake(b) ? 1 : 0) - (_awake(a) ? 1 : 0);
           if (c != 0) return c;
-          return _displayName(a).toLowerCase().compareTo(_displayName(b).toLowerCase());
+          return _displayName(a)
+              .toLowerCase()
+              .compareTo(_displayName(b).toLowerCase());
         case _DeskSort.name:
-          return _displayName(a).toLowerCase().compareTo(_displayName(b).toLowerCase());
+          return _displayName(a)
+              .toLowerCase()
+              .compareTo(_displayName(b).toLowerCase());
         case _DeskSort.lastSeen:
           final at = a.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
           final bt = b.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -375,15 +592,45 @@ class _DeskPageState extends State<DeskPage> {
     List<FleetDevice> devices,
     bool stopped,
   ) {
-    final others = (loggedIn && !widget.helpMode) ? _others(devices) : <FleetDevice>[];
+    final others =
+        (loggedIn && !widget.helpMode) ? _others(devices) : <FleetDevice>[];
     final q = _search.text.trim().toLowerCase();
-    final showThis = q.isEmpty ||
-        _thisName().toLowerCase().contains(q) ||
-        'this computer'.contains(q);
+    final showThis = _filter != _DeskFilter.hidden &&
+        (q.isEmpty ||
+            _thisName().toLowerCase().contains(q) ||
+            'this computer'.contains(q));
     if (_listMode && !widget.helpMode) {
       return _list(context, stopped, others, showThis, loggedIn);
     }
     return _grid(context, stopped, others, showThis, loggedIn);
+  }
+
+  Widget _empty(String text) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13.5,
+            height: 1.45,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _emptyCopy() {
+    switch (_filter) {
+      case _DeskFilter.starred:
+        return 'Star a computer to pin it here. The star is on each card.';
+      case _DeskFilter.hidden:
+        return 'Nothing hidden. Hide a computer from the menu on a card when you do not want it on the desk.';
+      case _DeskFilter.all:
+        return 'No computers match that search.';
+    }
   }
 
   Widget _grid(
@@ -396,12 +643,13 @@ class _DeskPageState extends State<DeskPage> {
     final cards = <Widget>[
       if (showThis) _thisCard(context, stopped),
       for (final d in others) _placeCard(context, d),
-      if (loggedIn && !widget.helpMode && _search.text.trim().isEmpty)
+      if (loggedIn &&
+          !widget.helpMode &&
+          _filter == _DeskFilter.all &&
+          _search.text.trim().isEmpty)
         _addSlot(context),
     ];
-    if (cards.isEmpty) {
-      return const Center(child: Text('No computers match that search.'));
-    }
+    if (cards.isEmpty) return _empty(_emptyCopy());
     final w = MediaQuery.of(context).size.width;
     final cols = (!isDesktop || w < 640)
         ? 1
@@ -410,9 +658,9 @@ class _DeskPageState extends State<DeskPage> {
             : 3;
     return GridView.count(
       crossAxisCount: cols,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      childAspectRatio: 2.15,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: isDesktop ? 1.72 : 1.55,
       children: cards,
     );
   }
@@ -429,16 +677,17 @@ class _DeskPageState extends State<DeskPage> {
     for (final d in others) {
       rows.add(_placeRow(context, d));
     }
-    if (loggedIn && !widget.helpMode && _search.text.trim().isEmpty) {
+    if (loggedIn &&
+        !widget.helpMode &&
+        _filter == _DeskFilter.all &&
+        _search.text.trim().isEmpty) {
       rows.add(ListTile(
         leading: const Icon(Icons.add),
         title: const Text('+ Add a new computer'),
         onTap: _addNewComputer,
       ));
     }
-    if (rows.isEmpty) {
-      return const Center(child: Text('No computers match that search.'));
-    }
+    if (rows.isEmpty) return _empty(_emptyCopy());
     return ListView.separated(
       itemCount: rows.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
@@ -447,16 +696,26 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   Widget _dot(bool awake, {bool warn = false}) {
+    final color = warn
+        ? _warn
+        : awake
+            ? _ok
+            : _asleep;
     return Container(
-      width: 8,
-      height: 8,
+      width: 10,
+      height: 10,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: warn
-            ? const Color(0xFFD97706)
-            : awake
-                ? const Color(0xFF16A34A)
-                : const Color(0xFFC4CDD8),
+        color: color,
+        boxShadow: (awake || warn)
+            ? [
+                BoxShadow(
+                  color: color.withOpacity(0.35),
+                  blurRadius: 0,
+                  spreadRadius: 4,
+                ),
+              ]
+            : null,
       ),
     );
   }
@@ -475,7 +734,7 @@ class _DeskPageState extends State<DeskPage> {
         children: [
           _dot(!stopped && !needSetup, warn: stopped || needSetup),
           const SizedBox(width: 8),
-          _osLogo(_localOs()),
+          _osTile(context, _localOs(), size: 18),
         ],
       ),
       title: Text(_thisName()),
@@ -509,7 +768,7 @@ class _DeskPageState extends State<DeskPage> {
           _dot(_awake(d),
               warn: d.reason == 'battery' || d.reason == 'permission'),
           const SizedBox(width: 8),
-          _osLogo(d.deviceOs),
+          _osTile(context, d.deviceOs, size: 18),
         ],
       ),
       title: Text(_displayName(d)),
@@ -517,12 +776,7 @@ class _DeskPageState extends State<DeskPage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            tooltip: 'Rename',
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            onPressed: () =>
-                _rename(deviceId: d.deviceId, initial: _displayName(d)),
-          ),
+          _starBtn(d.deviceId),
           _peerMore(context, d),
           TextButton(
             onPressed: () => _open(context, d, stale),
@@ -564,8 +818,10 @@ class _DeskPageState extends State<DeskPage> {
     }
     return _cardShell(
       context: context,
+      id: _myId.isEmpty ? 'this' : _myId,
       title: _thisName(),
       badge: 'Here',
+      isThis: true,
       awake: !stopped && !needSetup,
       warn: stopped || needSetup,
       sentence: sentence,
@@ -578,16 +834,17 @@ class _DeskPageState extends State<DeskPage> {
   Widget _placeCard(BuildContext context, FleetDevice d) {
     final name = _displayName(d);
     final stale = !_awake(d);
-    final sentence = _sentence(d);
     return _cardShell(
       context: context,
+      id: d.deviceId,
       title: name,
       awake: d.online && d.ready != false,
       warn: d.reason == 'battery' || d.reason == 'permission',
-      sentence: sentence,
+      sentence: _sentence(d),
       os: d.deviceOs,
       onRename: () => _rename(deviceId: d.deviceId, initial: name),
       extra: _peerMore(context, d),
+      star: _starBtn(d.deviceId),
       child: _btn(
         context,
         'Open',
@@ -598,6 +855,8 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   Widget _addSlot(BuildContext context) {
+    final line = Theme.of(context).dividerColor;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -606,15 +865,28 @@ class _DeskPageState extends State<DeskPage> {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Theme.of(context).dividerColor,
-              style: BorderStyle.solid,
-            ),
+            color: dark ? Colors.white.withOpacity(0.03) : const Color(0xFFF8FAFF),
+            border: Border.all(color: line),
           ),
-          child: const Center(
-            child: Text(
-              '+ Add a new computer',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: line),
+                  ),
+                  child: const Icon(Icons.add, size: 20),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '+ Add a new computer',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+              ],
             ),
           ),
         ),
@@ -624,104 +896,128 @@ class _DeskPageState extends State<DeskPage> {
 
   Widget _cardShell({
     required BuildContext context,
+    required String id,
     required String title,
     String badge = '',
+    bool isThis = false,
     required bool awake,
     bool warn = false,
     required String sentence,
     required String os,
     VoidCallback? onRename,
     Widget? extra,
+    Widget? star,
     required Widget child,
   }) {
     final line = Theme.of(context).dividerColor;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.background,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: warn
-                      ? const Color(0xFFD97706)
-                      : awake
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFC4CDD8),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(
-                      text: title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 13.5),
-                    ),
-                    if (badge.isNotEmpty)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _navy,
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: Text(
-                              badge.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final hover = _hoverId == id;
+    final bg = isThis
+        ? (dark ? const Color(0xFF121A2C) : const Color(0xFFF7F9FF))
+        : Theme.of(context).colorScheme.background;
+    final border = isThis
+        ? const Color(0xFFD5E0F7)
+        : hover
+            ? const Color(0xFFC5D4F5)
+            : line;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoverId = id),
+      onExit: (_) {
+        if (_hoverId == id) setState(() => _hoverId = '');
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transformAlignment: Alignment.center,
+        transform: Matrix4.translationValues(0, hover ? -2 : 0, 0),
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: border),
+          boxShadow: [
+            BoxShadow(
+              color: Color(hover ? 0x1A14285A : 0x0D14285A),
+              blurRadius: hover ? 18 : 10,
+              offset: Offset(0, hover ? 8 : 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _dot(awake, warn: warn),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(
+                        text: title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          letterSpacing: -0.2,
+                          height: 1.2,
+                        ),
+                      ),
+                      if (badge.isNotEmpty)
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _navy,
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                badge.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                  ]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                    ]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              if (onRename != null)
-                IconButton(
-                  tooltip: 'Rename',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  onPressed: onRename,
+                if (star != null) star,
+                if (onRename != null)
+                  IconButton(
+                    tooltip: 'Rename',
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    onPressed: onRename,
+                  ),
+                if (extra != null) extra,
+                _osTile(context, os),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Text(
+                sentence,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.4,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
                 ),
-              if (extra != null) extra,
-              _osLogo(os),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              sentence,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.3,
-                color: Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
-          ),
-          child,
-        ],
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -732,25 +1028,40 @@ class _DeskPageState extends State<DeskPage> {
     required VoidCallback onTap,
     bool outlined = false,
   }) {
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(9),
+    );
     if (outlined) {
       return SizedBox(
         width: double.infinity,
+        height: 36,
         child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
+            shape: shape,
+          ),
           onPressed: onTap,
-          child: Text(label),
+          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
         ),
       );
     }
     return SizedBox(
       width: double.infinity,
+      height: 36,
       child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: _brand,
+          foregroundColor: Colors.white,
+          shape: shape,
+        ),
         onPressed: onTap,
-        child: Text(label),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
 
-  Widget _foot(BuildContext context) {
+  Widget _foot(
+      BuildContext context, List<FleetDevice> devices, bool stopped) {
     final muted = Theme.of(context).textTheme.bodySmall?.color;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -946,7 +1257,7 @@ class _DeskPageState extends State<DeskPage> {
           ),
         ),
       ),
-    );
+    ).whenComplete(_loadPins);
   }
 
   Future<void> _addNewComputer() async {
@@ -959,5 +1270,4 @@ class _DeskPageState extends State<DeskPage> {
       await showEnrollmentCodeDialog(code);
     }
   }
-
 }

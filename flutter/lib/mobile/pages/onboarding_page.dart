@@ -227,7 +227,7 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   static const _whys = [
     'So a supporter can see this screen during a session. '
-        'Android will show a system prompt — tap Allow.',
+        'Android will show a system prompt. Tap Allow.',
     'So a supporter can tap and type when you ask for help. '
         'In the list that opens, find ShamarrConnect and turn it ON.',
     'So this phone stays online for help. '

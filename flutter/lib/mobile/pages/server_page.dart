@@ -638,7 +638,7 @@ class _SetupHealthBannerState extends State<SetupHealthBanner>
         children: [
           Text(
             'Still needed: ${plain.join(', ')}.\n'
-            'Tap below — we walk you through one step at a time. '
+            'Tap below. We walk you through one step at a time. '
             'You do not need the Settings tab for this.',
             style: const TextStyle(fontSize: 13, color: MyTheme.darkGray, height: 1.35),
           ).marginOnly(bottom: 10),

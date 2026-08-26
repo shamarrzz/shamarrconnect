@@ -144,7 +144,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
                     const SizedBox(height: 8),
                     const Text(
                       "We're opening accounts in stages. Leave your email and "
-                      "we'll save you a spot — you'll be first in when your "
+                      "we'll save you a spot. You'll be first in when your "
                       'turn comes.',
                       style: TextStyle(color: Colors.black54, height: 1.4),
                     ),
@@ -264,7 +264,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
                         _registrationOpen == null ? null : _createAccount,
                     child: Text(
                       _registrationOpen == false
-                          ? 'Create account — join the list'
+                          ? 'Create account. Join the list'
                           : 'Create account',
                       style: const TextStyle(fontSize: 17),
                     ),
@@ -277,7 +277,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
                   icon: const Icon(Icons.support_agent,
                       color: Color(0xFF00BFE1)),
                   label: const Text(
-                    'Get help now — let a supporter connect to this phone',
+                    'Get help now. Let a supporter connect to this phone',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 15),
                   ),
