@@ -15,6 +15,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../../common.dart';
+import '../../common/widgets/desk/desk_memory.dart';
 import '../../common/widgets/overlay.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/remote_input.dart';
@@ -122,6 +123,13 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       }
       _disableAndroidSoftKeyboard(
           isKeyboardVisible: keyboardVisibilityController.isVisible);
+      Future.delayed(const Duration(seconds: 2), () {
+        DeskMemory.capture(
+          sessionId: gFFI.sessionId,
+          peerId: widget.id,
+          display: 0,
+        );
+      });
     });
     WidgetsBinding.instance.addObserver(this);
 
