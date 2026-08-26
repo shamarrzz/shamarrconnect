@@ -15,6 +15,7 @@ import '../../../models/server_model.dart';
 import '../../widgets/login.dart';
 import '../../widgets/shamarrdesk_mark.dart';
 import '../place_name_dialog.dart';
+import 'desk_memory.dart';
 
 const _navy = Color(0xFF0A1737);
 const _brand = Color(0xFF2B5CE6);
@@ -80,6 +81,10 @@ class _DeskPageState extends State<DeskPage> {
       if (mounted) setState(() => _myId = id);
     });
     _loadPins();
+    DeskMemory.preferOwnWindow();
+    DeskMemory.warmup().then((_) {
+      if (mounted) setState(() {});
+    });
     if (gFFI.userModel.isLogin) {
       gFFI.fleetModel.pull();
     }
@@ -912,11 +917,18 @@ class _DeskPageState extends State<DeskPage> {
     final name = _displayName(d);
     final stale = !_awake(d);
     final hidden = _hidden.contains(d.deviceId);
+    final last = DeskMemory.lastId() == d.deviceId;
     return _cardShell(
       context: context,
       id: d.deviceId,
       title: name,
-      badge: hidden ? 'Hidden' : '',
+      badge: hidden
+          ? 'Hidden'
+          : last
+              ? 'Last'
+              : '',
+      last: last && !hidden,
+      thumb: DeskMemory.preview(d.deviceId),
       awake: d.online && d.ready != false,
       warn: d.reason == 'battery' || d.reason == 'permission',
       sentence: hidden
@@ -984,6 +996,8 @@ class _DeskPageState extends State<DeskPage> {
     required String title,
     String badge = '',
     bool isThis = false,
+    bool last = false,
+    Widget? thumb,
     required bool awake,
     bool warn = false,
     required String sentence,
@@ -999,11 +1013,94 @@ class _DeskPageState extends State<DeskPage> {
     final bg = isThis
         ? (dark ? const Color(0xFF121A2C) : const Color(0xFFF7F9FF))
         : Theme.of(context).colorScheme.background;
-    final border = isThis
-        ? const Color(0xFFD5E0F7)
-        : hover
-            ? const Color(0xFFC5D4F5)
-            : line;
+    final border = last
+        ? _brand
+        : isThis
+            ? const Color(0xFFD5E0F7)
+            : hover
+                ? const Color(0xFFC5D4F5)
+                : line;
+    final lastBadge = badge.toLowerCase() == 'last';
+    final hiddenBadge = badge.toLowerCase() == 'hidden';
+    final body = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _dot(awake, warn: warn),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(
+                    text: title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                      letterSpacing: -0.2,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (badge.isNotEmpty)
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: hiddenBadge
+                                ? const Color(0xFF5A6B85)
+                                : lastBadge
+                                    ? _brand
+                                    : _navy,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            badge.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (star != null) star,
+            if (onRename != null)
+              IconButton(
+                tooltip: 'Rename',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                onPressed: onRename,
+              ),
+            if (extra != null) extra,
+            _osTile(context, os),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          sentence,
+          style: TextStyle(
+            fontSize: 12.5,
+            height: 1.4,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+        ),
+        const SizedBox(height: 10),
+        child,
+      ],
+    );
     return MouseRegion(
       onEnter: (_) => setState(() => _hoverId = id),
       onExit: (_) {
@@ -1013,11 +1110,10 @@ class _DeskPageState extends State<DeskPage> {
         duration: const Duration(milliseconds: 150),
         transformAlignment: Alignment.center,
         transform: Matrix4.translationValues(0, hover ? -2 : 0, 0),
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: border),
+          border: Border.all(color: border, width: last ? 1.5 : 1),
           boxShadow: [
             BoxShadow(
               color: Color(hover ? 0x1A14285A : 0x0D14285A),
@@ -1026,82 +1122,16 @@ class _DeskPageState extends State<DeskPage> {
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                _dot(awake, warn: warn),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: [
-                      TextSpan(
-                        text: title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14.5,
-                          letterSpacing: -0.2,
-                          height: 1.2,
-                        ),
-                      ),
-                      if (badge.isNotEmpty)
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: badge.toLowerCase() == 'hidden'
-                                    ? const Color(0xFF5A6B85)
-                                    : _navy,
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Text(
-                                badge.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (star != null) star,
-                if (onRename != null)
-                  IconButton(
-                    tooltip: 'Rename',
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    onPressed: onRename,
-                  ),
-                if (extra != null) extra,
-                _osTile(context, os),
-              ],
+            if (thumb != null) thumb,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+              child: body,
             ),
-            const SizedBox(height: 8),
-            Text(
-              sentence,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.4,
-                color: Theme.of(context).textTheme.bodySmall?.color,
-              ),
-            ),
-            const SizedBox(height: 10),
-            child,
           ],
         ),
       ),
@@ -1225,6 +1255,8 @@ class _DeskPageState extends State<DeskPage> {
     } else {
       setState(() => _status = 'You\'re on $name');
     }
+    DeskMemory.remember(d.deviceId);
+    if (mounted) setState(() {});
     connect(context, d.deviceId);
   }
 

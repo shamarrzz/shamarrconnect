@@ -215,6 +215,11 @@ class RustDeskMultiWindowManager {
       }
       final windowId = await newSessionWindow(
           type, remoteId, msg, windows, screenRect != null);
+      if (screenRect == null &&
+          (type == WindowType.RemoteDesktop || type == WindowType.ViewCamera)) {
+        await restoreWindowPosition(type,
+            windowId: windowId, peerId: remoteId);
+      }
       return MultiWindowCallResult(windowId, null);
     }
   }

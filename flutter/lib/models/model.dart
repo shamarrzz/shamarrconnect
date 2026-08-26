@@ -42,6 +42,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:vector_math/vector_math.dart' show Vector2;
 
 import '../common.dart';
+import '../common/widgets/desk/desk_memory.dart';
 import '../utils/image.dart' as img;
 import '../common/widgets/dialog.dart';
 import 'input_model.dart';
@@ -488,6 +489,9 @@ class FfiModel with ChangeNotifier {
     timerScreenshot?.cancel();
     timerScreenshot = null;
     final msg = evt['msg'] ?? '';
+    if (DeskMemory.consumeSilent(sessionId, msg)) {
+      return;
+    }
     final msgBoxType = 'custom-nook-nocancel-hasclose';
     final msgBoxTitle = 'Take screenshot';
     final dialogManager = parent.target!.dialogManager;

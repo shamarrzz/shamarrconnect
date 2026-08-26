@@ -12,6 +12,7 @@ import '../../consts.dart';
 import '../../common/widgets/overlay.dart';
 import '../../common/widgets/remote_input.dart';
 import '../../common.dart';
+import '../../common/widgets/desk/desk_memory.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/toolbar.dart';
 import '../../models/model.dart';
@@ -129,6 +130,14 @@ class _RemotePageState extends State<RemotePage>
           _ffi.ffiModel.pi.platform, _ffi.dialogManager);
       _ffi.recordingModel
           .updateStatus(bind.sessionGetIsRecording(sessionId: _ffi.sessionId));
+      final display = widget.display ?? 0;
+      Future.delayed(const Duration(seconds: 2), () {
+        DeskMemory.capture(
+          sessionId: _ffi.sessionId,
+          peerId: widget.id,
+          display: display < 0 ? 0 : display,
+        );
+      });
     });
     _ffi.canvasModel.initializeEdgeScrollFallback(this);
     _ffi.start(
