@@ -52,7 +52,7 @@ class DeskPage extends StatefulWidget {
 
 enum _DeskSort { online, name, lastSeen }
 
-enum _DeskFilter { all, starred, hidden }
+enum _DeskFilter { all, starred }
 
 class _DeskPageState extends State<DeskPage> {
   String _myId = '';
@@ -61,6 +61,8 @@ class _DeskPageState extends State<DeskPage> {
   bool _listMode = false;
   _DeskSort _sort = _DeskSort.online;
   _DeskFilter _filter = _DeskFilter.all;
+  /// Quiet attic. Not a pill on the glass. Search still finds them.
+  bool _peekHidden = false;
   final _search = TextEditingController();
   final Set<String> _favs = {};
   final Set<String> _hidden = {};
@@ -204,16 +206,44 @@ class _DeskPageState extends State<DeskPage> {
     });
   }
 
-  void _toggleHide(String id, {required String name}) {
+  Future<void> _toggleHide(
+    BuildContext context, {
+    required String id,
+    required String name,
+  }) async {
     if (id.isEmpty || id == _myId) return;
-    setState(() {
-      if (_hidden.contains(id)) {
+    if (_hidden.contains(id)) {
+      setState(() {
         _hidden.remove(id);
         _status = '$name is back on the desk.';
-      } else {
-        _hidden.add(id);
-        _status = '$name is hidden. Find it under Hidden.';
-      }
+        if (_hidden.isEmpty) _peekHidden = false;
+      });
+      _persistHidden();
+      return;
+    }
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(name),
+        content: const Text(
+          'Take it off this desk? It stays on the account, and your other computers still see it. Search the name here to bring it back.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Take off'),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+    setState(() {
+      _hidden.add(id);
+      _status = '$name is off this desk. Search the name to bring it back.';
     });
     _persistHidden();
   }
@@ -270,7 +300,7 @@ class _DeskPageState extends State<DeskPage> {
         ));
         items.add(PopupMenuItem(
           value: 'hide',
-          child: Text(hidden ? 'Show on desk' : 'Hide from desk'),
+          child: Text(hidden ? 'Show on desk' : 'Take off this desk'),
         ));
         items.add(
             PopupMenuItem(value: 'rename', child: Text(translate('Rename'))));
@@ -305,7 +335,7 @@ class _DeskPageState extends State<DeskPage> {
         await _toggleStar(d.deviceId);
         break;
       case 'hide':
-        _toggleHide(d.deviceId, name: _displayName(d));
+        await _toggleHide(context, id: d.deviceId, name: _displayName(d));
         break;
       case 'rename':
         await _rename(deviceId: d.deviceId, initial: _displayName(d));
@@ -390,16 +420,40 @@ class _DeskPageState extends State<DeskPage> {
                 ),
               ),
             ),
-            PopupMenuButton<_DeskSort>(
+            PopupMenuButton<String>(
               tooltip: 'Sort',
-              initialValue: _sort,
-              onSelected: (v) => setState(() => _sort = v),
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                    value: _DeskSort.online, child: Text('Online first')),
-                PopupMenuItem(value: _DeskSort.name, child: Text('Name')),
-                PopupMenuItem(
-                    value: _DeskSort.lastSeen, child: Text('Last seen')),
+              onSelected: (v) {
+                switch (v) {
+                  case 'online':
+                    setState(() => _sort = _DeskSort.online);
+                    break;
+                  case 'name':
+                    setState(() => _sort = _DeskSort.name);
+                    break;
+                  case 'seen':
+                    setState(() => _sort = _DeskSort.lastSeen);
+                    break;
+                  case 'peek':
+                    setState(() => _peekHidden = true);
+                    break;
+                  case 'unpeek':
+                    setState(() => _peekHidden = false);
+                    break;
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                    value: 'online', child: Text('Online first')),
+                const PopupMenuItem(value: 'name', child: Text('Name')),
+                const PopupMenuItem(value: 'seen', child: Text('Last seen')),
+                if (_hidden.isNotEmpty) const PopupMenuDivider(),
+                if (_hidden.isNotEmpty)
+                  PopupMenuItem(
+                    value: _peekHidden ? 'unpeek' : 'peek',
+                    child: Text(_peekHidden
+                        ? 'Back to the desk'
+                        : 'Show computers I hid'),
+                  ),
               ],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -468,10 +522,32 @@ class _DeskPageState extends State<DeskPage> {
         .where((d) =>
             _favs.contains(d.deviceId) && !_hidden.contains(d.deviceId))
         .length;
-    final hidN = others.where((d) => _hidden.contains(d.deviceId)).length;
     final onlineN = others.where((d) => _awake(d) && !_hidden.contains(d.deviceId)).length +
         ((!stopped) ? 1 : 0);
     final muted = Theme.of(context).textTheme.bodySmall?.color;
+    if (_peekHidden) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Computers off this desk. They stay on the account.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: muted,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _peekHidden = false),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
       child: Row(
@@ -483,7 +559,6 @@ class _DeskPageState extends State<DeskPage> {
                 children: [
                   _pill('All', allN + 1, _DeskFilter.all),
                   _pill('Starred', starN, _DeskFilter.starred),
-                  _pill('Hidden', hidN, _DeskFilter.hidden),
                 ],
               ),
             ),
@@ -514,7 +589,10 @@ class _DeskPageState extends State<DeskPage> {
           onTap: () async {
             await _loadPins();
             if (!mounted) return;
-            setState(() => _filter = f);
+            setState(() {
+              _filter = f;
+              _peekHidden = false;
+            });
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -549,21 +627,15 @@ class _DeskPageState extends State<DeskPage> {
     final q = _search.text.trim().toLowerCase();
     var list = devices.where((d) {
       if (_myId.isNotEmpty && d.deviceId == _myId) return false;
-      switch (_filter) {
-        case _DeskFilter.all:
-          if (_hidden.contains(d.deviceId)) return false;
-          break;
-        case _DeskFilter.starred:
-          if (!_favs.contains(d.deviceId) || _hidden.contains(d.deviceId)) {
-            return false;
-          }
-          break;
-        case _DeskFilter.hidden:
-          if (!_hidden.contains(d.deviceId)) return false;
-          break;
+      final hidden = _hidden.contains(d.deviceId);
+      final matches = q.isEmpty || _displayName(d).toLowerCase().contains(q);
+      if (!matches) return false;
+      if (_peekHidden) return hidden;
+      if (hidden) return q.isNotEmpty;
+      if (_filter == _DeskFilter.starred && !_favs.contains(d.deviceId)) {
+        return false;
       }
-      if (q.isEmpty) return true;
-      return _displayName(d).toLowerCase().contains(q);
+      return true;
     }).toList();
     list.sort((a, b) {
       switch (_sort) {
@@ -595,7 +667,7 @@ class _DeskPageState extends State<DeskPage> {
     final others =
         (loggedIn && !widget.helpMode) ? _others(devices) : <FleetDevice>[];
     final q = _search.text.trim().toLowerCase();
-    final showThis = _filter != _DeskFilter.hidden &&
+    final showThis = !_peekHidden &&
         (q.isEmpty ||
             _thisName().toLowerCase().contains(q) ||
             'this computer'.contains(q));
@@ -623,14 +695,16 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   String _emptyCopy() {
-    switch (_filter) {
-      case _DeskFilter.starred:
-        return 'Star a computer to pin it here. The star is on each card.';
-      case _DeskFilter.hidden:
-        return 'Nothing hidden. Hide a computer from the menu on a card when you do not want it on the desk.';
-      case _DeskFilter.all:
-        return 'No computers match that search.';
+    if (_peekHidden) {
+      return 'Nothing is off this desk.';
     }
+    if (_filter == _DeskFilter.starred) {
+      return 'Star a computer to pin it here. The star is on each card.';
+    }
+    if (_search.text.trim().isNotEmpty) {
+      return 'No computers match that search. A computer you hid will show up if you type its name.';
+    }
+    return 'No computers match that search.';
   }
 
   Widget _grid(
@@ -645,6 +719,7 @@ class _DeskPageState extends State<DeskPage> {
       for (final d in others) _placeCard(context, d),
       if (loggedIn &&
           !widget.helpMode &&
+          !_peekHidden &&
           _filter == _DeskFilter.all &&
           _search.text.trim().isEmpty)
         _addSlot(context),
@@ -679,6 +754,7 @@ class _DeskPageState extends State<DeskPage> {
     }
     if (loggedIn &&
         !widget.helpMode &&
+        !_peekHidden &&
         _filter == _DeskFilter.all &&
         _search.text.trim().isEmpty) {
       rows.add(ListTile(
@@ -761,6 +837,7 @@ class _DeskPageState extends State<DeskPage> {
 
   Widget _placeRow(BuildContext context, FleetDevice d) {
     final stale = !_awake(d);
+    final hidden = _hidden.contains(d.deviceId);
     return ListTile(
       leading: Row(
         mainAxisSize: MainAxisSize.min,
@@ -772,7 +849,9 @@ class _DeskPageState extends State<DeskPage> {
         ],
       ),
       title: Text(_displayName(d)),
-      subtitle: Text(_sentence(d)),
+      subtitle: Text(hidden
+          ? 'Off this desk. Still on the account.'
+          : _sentence(d)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -834,13 +913,17 @@ class _DeskPageState extends State<DeskPage> {
   Widget _placeCard(BuildContext context, FleetDevice d) {
     final name = _displayName(d);
     final stale = !_awake(d);
+    final hidden = _hidden.contains(d.deviceId);
     return _cardShell(
       context: context,
       id: d.deviceId,
       title: name,
+      badge: hidden ? 'Hidden' : '',
       awake: d.online && d.ready != false,
       warn: d.reason == 'battery' || d.reason == 'permission',
-      sentence: _sentence(d),
+      sentence: hidden
+          ? 'Off this desk. Still on the account.'
+          : _sentence(d),
       os: d.deviceOs,
       onRename: () => _rename(deviceId: d.deviceId, initial: name),
       extra: _peerMore(context, d),
@@ -970,7 +1053,9 @@ class _DeskPageState extends State<DeskPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
-                                color: _navy,
+                                color: badge.toLowerCase() == 'hidden'
+                                    ? const Color(0xFF5A6B85)
+                                    : _navy,
                                 borderRadius: BorderRadius.circular(100),
                               ),
                               child: Text(
