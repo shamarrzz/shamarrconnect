@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Lowercase Manrope ExtraBold wordmark. No S-mark — the window already has it.
+/// Place, not product. The window is ShamarrConnect; this line is your desk.
 ///
-/// Light: ink + brand blue. Dark: white + #8FA8F8. Same two-tone as the
-/// old ShamarrCo lockup, without the square mark.
-class ShamarrDeskMark extends StatefulWidget {
-  const ShamarrDeskMark({
+/// Lowercase Manrope ExtraBold. Light: ink + brand blue. Dark: white + #8FA8F8.
+class YourDeskMark extends StatefulWidget {
+  const YourDeskMark({
     Key? key,
     this.height = 22,
     this.animate = true,
@@ -16,10 +15,10 @@ class ShamarrDeskMark extends StatefulWidget {
   final bool animate;
 
   @override
-  State<ShamarrDeskMark> createState() => _ShamarrDeskMarkState();
+  State<YourDeskMark> createState() => _YourDeskMarkState();
 }
 
-class _ShamarrDeskMarkState extends State<ShamarrDeskMark>
+class _YourDeskMarkState extends State<YourDeskMark>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
 
@@ -47,10 +46,10 @@ class _ShamarrDeskMarkState extends State<ShamarrDeskMark>
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final mark = SvgPicture.asset(
-      dark ? 'assets/shamarrdesk-dark.svg' : 'assets/shamarrdesk.svg',
+      dark ? 'assets/your-desk-dark.svg' : 'assets/your-desk.svg',
       height: widget.height,
       fit: BoxFit.contain,
-      semanticsLabel: 'shamarrdesk',
+      semanticsLabel: 'your desk',
     );
     final fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
     final slide = Tween<Offset>(

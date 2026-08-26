@@ -388,7 +388,7 @@ class _DeskPageState extends State<DeskPage> {
       padding: const EdgeInsets.fromLTRB(16, 10, 8, 2),
       child: Row(
         children: [
-          const ShamarrDeskMark(height: 22),
+          const YourDeskMark(height: 22),
           if (!widget.helpMode) ...[
             const SizedBox(width: 16),
             Expanded(
@@ -400,7 +400,7 @@ class _DeskPageState extends State<DeskPage> {
                     controller: _search,
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
-                      hintText: 'Search',
+                      hintText: 'Search this desk',
                       prefixIcon: const Icon(Icons.search, size: 18),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -717,19 +717,25 @@ class _DeskPageState extends State<DeskPage> {
         _addSlot(context),
     ];
     if (cards.isEmpty) return _empty(_emptyCopy());
-    final w = MediaQuery.of(context).size.width;
-    final cols = (!isDesktop || w < 640)
-        ? 1
-        : w < 1000
-            ? 2
-            : 3;
-    return GridView.count(
-      crossAxisCount: cols,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: isDesktop ? 1.72 : 1.55,
-      children: cards,
-    );
+    return LayoutBuilder(builder: (context, c) {
+      final w = c.maxWidth;
+      final cols = (!isDesktop || w < 640)
+          ? 1
+          : w < 1000
+              ? 2
+              : 3;
+      const gap = 10.0;
+      final cardW = (w - gap * (cols - 1)) / cols;
+      return SingleChildScrollView(
+        child: Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final card in cards) SizedBox(width: cardW, child: card),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _list(
@@ -943,7 +949,9 @@ class _DeskPageState extends State<DeskPage> {
             color: dark ? Colors.white.withOpacity(0.03) : const Color(0xFFF8FAFF),
             border: Border.all(color: line),
           ),
-          child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 112),
+            child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -962,6 +970,7 @@ class _DeskPageState extends State<DeskPage> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
                 ),
               ],
+            ),
             ),
           ),
         ),
@@ -1018,6 +1027,7 @@ class _DeskPageState extends State<DeskPage> {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -1081,17 +1091,16 @@ class _DeskPageState extends State<DeskPage> {
                 _osTile(context, os),
               ],
             ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Text(
-                sentence,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.4,
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                ),
+            const SizedBox(height: 8),
+            Text(
+              sentence,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.4,
+                color: Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
+            const SizedBox(height: 10),
             child,
           ],
         ),
