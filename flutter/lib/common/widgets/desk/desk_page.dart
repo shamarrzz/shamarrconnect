@@ -13,7 +13,7 @@ import '../../../models/fleet_model.dart';
 import '../../../models/platform_model.dart';
 import '../../../models/server_model.dart';
 import '../../widgets/login.dart';
-import '../../widgets/s_mark.dart';
+import '../../widgets/shamarrdesk_mark.dart';
 import '../place_name_dialog.dart';
 
 const _navy = Color(0xFF0A1737);
@@ -388,15 +388,7 @@ class _DeskPageState extends State<DeskPage> {
       padding: const EdgeInsets.fromLTRB(16, 10, 8, 2),
       child: Row(
         children: [
-          const SMark(size: 22),
-          const SizedBox(width: 8),
-          Text(
-            'ShamarrConnect',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
-          ),
+          const ShamarrDeskMark(height: 22),
           if (!widget.helpMode) ...[
             const SizedBox(width: 16),
             Expanded(
