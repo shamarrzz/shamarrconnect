@@ -35,7 +35,7 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage>
     with WidgetsBindingObserver {
-  static const _blue = Color(0xFF0071FF);
+  static const _blue = Color(0xFF2B5CE6);
   static const _navy = Color(0xFF0A1737);
 
   int _step = 0;
@@ -255,10 +255,15 @@ class _OnboardingPageState extends State<OnboardingPage>
     final step = _step.clamp(0, 3);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: _navy,
-        title: const Text('A quick setup'),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+        title: const Text(
+          'A quick setup',
+          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.3),
+        ),
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
