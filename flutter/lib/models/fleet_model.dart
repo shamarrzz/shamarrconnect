@@ -40,7 +40,25 @@ class FleetDevice {
           : null,
     );
   }
+
+  FleetDevice copyWith({String? deviceName}) {
+    return FleetDevice(
+      deviceId: deviceId,
+      deviceName: deviceName ?? this.deviceName,
+      deviceOs: deviceOs,
+      lastSeen: lastSeen,
+      online: online,
+      ready: ready,
+      reason: reason,
+    );
+  }
 }
+
+/// RustDesk IDs are shown with spaces (`1 893 760 099`) and stored without.
+String compactDeviceId(String id) => id.replaceAll(RegExp(r'\s+'), '');
+
+bool sameDeviceId(String a, String b) =>
+    a == b || compactDeviceId(a) == compactDeviceId(b);
 
 /// Parse SQLite `YYYY-MM-DD HH:MM:SS` (UTC) or ISO-8601.
 DateTime? parseApiTime(dynamic raw) {
@@ -136,10 +154,21 @@ class FleetModel {
     }
   }
 
+  /// Show the new name on the desk immediately. Pull may overwrite later.
+  void applyLocalName(String deviceId, String deviceName) {
+    devices.assignAll([
+      for (final d in devices)
+        sameDeviceId(d.deviceId, deviceId)
+            ? d.copyWith(deviceName: deviceName)
+            : d,
+    ]);
+  }
+
   Future<bool> rename({
     required String deviceId,
     required String deviceName,
   }) async {
+    applyLocalName(deviceId, deviceName);
     final token = bind.mainGetLocalOption(key: 'access_token');
     if (token.isEmpty) return false;
     try {
@@ -155,8 +184,12 @@ class FleetModel {
           'device_name': deviceName,
         }),
       );
-      if (resp.statusCode != 200) return false;
+      if (resp.statusCode != 200) {
+        debugPrint('FleetModel.rename: HTTP ${resp.statusCode} ${resp.body}');
+        return false;
+      }
       await pull();
+      applyLocalName(deviceId, deviceName);
       return true;
     } catch (e) {
       debugPrint('FleetModel.rename: $e');

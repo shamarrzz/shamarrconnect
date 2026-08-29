@@ -13,6 +13,7 @@ import '../../../models/platform_model.dart';
 import '../../../models/server_model.dart';
 import '../../widgets/login.dart';
 import '../place_name_dialog.dart';
+import 'desk_layout.dart';
 import 'desk_memory.dart';
 
 const _navy = Color(0xFF0A1737);
@@ -22,6 +23,7 @@ const _warn = Color(0xFFD97706);
 const _asleep = Color(0xFFC4CDD8);
 const _star = Color(0xFFD97706);
 const _kHiddenOpt = 'sc_desk_hidden';
+const _kMaskOpt = 'sc_desk_mask';
 
 /// Desk of named computers. Remote ID lives in Connect by ID.
 class DeskPage extends StatefulWidget {
@@ -62,7 +64,10 @@ class _DeskPageState extends State<DeskPage> {
   _DeskFilter _filter = _DeskFilter.all;
   /// Quiet attic. Not a pill on the glass. Search still finds them.
   bool _peekHidden = false;
+  /// One click: hide names and screen stills on this desk.
+  bool _mask = false;
   bool _searchOpen = false;
+  String _thisPlace = '';
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
   final Set<String> _favs = {};
@@ -115,6 +120,7 @@ class _DeskPageState extends State<DeskPage> {
         _hidden
           ..clear()
           ..addAll(hidden);
+        _mask = bind.mainGetLocalOption(key: _kMaskOpt) == 'Y';
       });
     } catch (e) {
       debugPrint('desk _loadPins: $e');
@@ -128,20 +134,40 @@ class _DeskPageState extends State<DeskPage> {
     );
   }
 
+  void _persistMask() {
+    bind.mainSetLocalOption(key: _kMaskOpt, value: _mask ? 'Y' : 'N');
+  }
+
+  bool _isMe(String id) {
+    if (_myId.isEmpty || id.isEmpty) return false;
+    return sameDeviceId(id, _myId);
+  }
+
+  void _toggleMask() {
+    setState(() {
+      _mask = !_mask;
+      if (_mask) _status = 'Names and stills are hidden.';
+    });
+    _persistMask();
+  }
+
   bool get _outgoingOnly => bind.isOutgoingOnly();
 
-  String _thisName() {
+  String _thisNameRaw() {
     for (final d in gFFI.fleetModel.devices) {
-      if (_myId.isNotEmpty &&
-          d.deviceId == _myId &&
-          d.deviceName.trim().isNotEmpty) {
+      if (_isMe(d.deviceId) && d.deviceName.trim().isNotEmpty) {
         return d.deviceName.trim();
       }
     }
+    if (_thisPlace.isNotEmpty) return _thisPlace;
     final host = loginDeviceHostname();
     if (host.isNotEmpty) return host;
     return 'This computer';
   }
+
+  String _thisName() => _mask ? 'This computer' : _thisNameRaw();
+
+  bool _isHidden(String id) => _hidden.any((h) => sameDeviceId(h, id));
 
   String _localOs() {
     if (isWindows) return kPeerPlatformWindows;
@@ -186,13 +212,20 @@ class _DeskPageState extends State<DeskPage> {
     final id = (deviceId == null || deviceId.isEmpty) ? _myId : deviceId;
     if (id.isEmpty) return;
     final trimmed = name.trim();
-    final ok = await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
-    if (ok) {
-      await bind.mainSetPeerAlias(id: id, alias: trimmed);
-      if (mounted) setState(() {});
-    } else {
-      showToast(translate('Failed'));
+    if (_isMe(id) || deviceId == null || deviceId.isEmpty) {
+      _thisPlace = trimmed;
     }
+    final ok = await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
+    await bind.mainSetPeerAlias(id: id, alias: trimmed);
+    try {
+      await gFFI.abModel.changeAlias(id: id, alias: trimmed);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _status = ok
+          ? '$trimmed is the name on this desk.'
+          : 'Saved as $trimmed on this computer. The account did not take it yet.';
+    });
   }
 
   Future<void> _toggleStar(String id) async {
@@ -212,46 +245,37 @@ class _DeskPageState extends State<DeskPage> {
     });
   }
 
-  Future<void> _toggleHide(
-    BuildContext context, {
+  Future<void> _toggleHide({
     required String id,
     required String name,
   }) async {
-    if (id.isEmpty || id == _myId) return;
-    if (_hidden.contains(id)) {
-      setState(() {
-        _hidden.remove(id);
+    if (id.isEmpty || _isMe(id)) return;
+    setState(() {
+      if (_isHidden(id)) {
+        _hidden.removeWhere((h) => sameDeviceId(h, id));
         _status = '$name is back on the desk.';
         if (_hidden.isEmpty) _peekHidden = false;
-      });
-      _persistHidden();
-      return;
-    }
-    final go = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(name),
-        content: const Text(
-          'Take it off this desk? It stays on the account, and your other computers still see it. Search the name here to bring it back.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Take off'),
-          ),
-        ],
-      ),
-    );
-    if (go != true || !mounted) return;
-    setState(() {
-      _hidden.add(id);
-      _status = '$name is off this desk. Search the name to bring it back.';
+      } else {
+        _hidden.add(id);
+        _status = '$name is off this desk. Search the name to bring it back.';
+      }
     });
     _persistHidden();
+  }
+
+  Widget _hideBtn(String id, String name) {
+    final on = _isHidden(id);
+    return IconButton(
+      tooltip: on ? 'Show on desk' : 'Take off this desk',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      icon: Icon(
+        on ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+        size: 18,
+        color: Theme.of(context).iconTheme.color?.withOpacity(0.55),
+      ),
+      onPressed: () => _toggleHide(id: id, name: name),
+    );
   }
 
   Widget _starBtn(String id) {
@@ -273,7 +297,7 @@ class _DeskPageState extends State<DeskPage> {
     final android = _osKey(d.deviceOs) == kPeerPlatformAndroid;
     final winPeer = _osKey(d.deviceOs) == kPeerPlatformWindows;
     final starred = _favs.contains(d.deviceId);
-    final hidden = _hidden.contains(d.deviceId);
+    final hidden = _isHidden(d.deviceId);
     return PopupMenuButton<String>(
       tooltip: 'More',
       padding: EdgeInsets.zero,
@@ -341,10 +365,10 @@ class _DeskPageState extends State<DeskPage> {
         await _toggleStar(d.deviceId);
         break;
       case 'hide':
-        await _toggleHide(context, id: d.deviceId, name: _displayName(d));
+        await _toggleHide(id: d.deviceId, name: _realName(d));
         break;
       case 'rename':
-        await _rename(deviceId: d.deviceId, initial: _displayName(d));
+        await _rename(deviceId: d.deviceId, initial: _realName(d));
         break;
     }
   }
@@ -406,14 +430,14 @@ class _DeskPageState extends State<DeskPage> {
 
   Widget _toolbar(BuildContext context, bool loggedIn,
       List<FleetDevice> devices, bool stopped) {
-    final others = devices.where((d) => d.deviceId != _myId).toList();
-    final allN = others.where((d) => !_hidden.contains(d.deviceId)).length;
+    final others = devices.where((d) => !_isMe(d.deviceId)).toList();
+    final allN = others.where((d) => !_isHidden(d.deviceId)).length;
     final starN = others
-        .where((d) =>
-            _favs.contains(d.deviceId) && !_hidden.contains(d.deviceId))
+        .where((d) => _favs.contains(d.deviceId) && !_isHidden(d.deviceId))
         .length;
-    final onlineN = others.where((d) => _awake(d) && !_hidden.contains(d.deviceId)).length +
-        ((!stopped) ? 1 : 0);
+    final onlineN =
+        others.where((d) => _awake(d) && !_isHidden(d.deviceId)).length +
+            ((!stopped) ? 1 : 0);
     final muted = Theme.of(context).textTheme.bodySmall?.color;
     if (_peekHidden) {
       return Padding(
@@ -499,6 +523,15 @@ class _DeskPageState extends State<DeskPage> {
             onPressed: () => setState(() => _listMode = !_listMode),
             icon: Icon(
               _listMode ? Icons.grid_view : Icons.view_list,
+              size: 20,
+              color: muted,
+            ),
+          ),
+          IconButton(
+            tooltip: _mask ? 'Show names and stills' : 'Mask names and stills',
+            onPressed: _toggleMask,
+            icon: Icon(
+              _mask ? Icons.blur_off : Icons.blur_on,
               size: 20,
               color: muted,
             ),
@@ -639,19 +672,21 @@ class _DeskPageState extends State<DeskPage> {
     );
   }
 
-  String _displayName(FleetDevice d) {
+  String _realName(FleetDevice d) {
     final n = d.deviceName.trim();
     return n.isEmpty ? 'Computer' : n;
   }
+
+  String _faceName(FleetDevice d) => _mask ? 'Computer' : _realName(d);
 
   bool _awake(FleetDevice d) => d.online && d.ready != false;
 
   List<FleetDevice> _others(List<FleetDevice> devices) {
     final q = _search.text.trim().toLowerCase();
     var list = devices.where((d) {
-      if (_myId.isNotEmpty && d.deviceId == _myId) return false;
-      final hidden = _hidden.contains(d.deviceId);
-      final matches = q.isEmpty || _displayName(d).toLowerCase().contains(q);
+      if (_isMe(d.deviceId)) return false;
+      final hidden = _isHidden(d.deviceId);
+      final matches = q.isEmpty || _realName(d).toLowerCase().contains(q);
       if (!matches) return false;
       if (_peekHidden) return hidden;
       if (hidden) return q.isNotEmpty;
@@ -665,13 +700,13 @@ class _DeskPageState extends State<DeskPage> {
         case _DeskSort.online:
           final c = (_awake(b) ? 1 : 0) - (_awake(a) ? 1 : 0);
           if (c != 0) return c;
-          return _displayName(a)
+          return _realName(a)
               .toLowerCase()
-              .compareTo(_displayName(b).toLowerCase());
+              .compareTo(_realName(b).toLowerCase());
         case _DeskSort.name:
-          return _displayName(a)
+          return _realName(a)
               .toLowerCase()
-              .compareTo(_displayName(b).toLowerCase());
+              .compareTo(_realName(b).toLowerCase());
         case _DeskSort.lastSeen:
           final at = a.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
           final bt = b.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -737,32 +772,51 @@ class _DeskPageState extends State<DeskPage> {
     bool showThis,
     bool loggedIn,
   ) {
+    final showAdd = loggedIn &&
+        !widget.helpMode &&
+        !_peekHidden &&
+        _filter == _DeskFilter.all &&
+        _search.text.trim().isEmpty;
     final cards = <Widget>[
       if (showThis) _thisCard(context, stopped),
       for (final d in others) _placeCard(context, d),
-      if (loggedIn &&
-          !widget.helpMode &&
-          !_peekHidden &&
-          _filter == _DeskFilter.all &&
-          _search.text.trim().isEmpty)
-        _addSlot(context),
+      if (showAdd) _addSlot(context),
     ];
     if (cards.isEmpty) return _empty(_emptyCopy());
+    final tall = <bool>[
+      if (showThis) false,
+      for (final d in others)
+        !_mask && DeskMemory.fileIfPresent(d.deviceId) != null,
+      if (showAdd) false,
+    ];
     return LayoutBuilder(builder: (context, c) {
       final w = c.maxWidth;
-      final cols = (!isDesktop || w < 640)
-          ? 1
-          : w < 1000
-              ? 2
-              : 3;
+      final cols = deskColumnCount(w);
       const gap = 10.0;
       final cardW = (w - gap * (cols - 1)) / cols;
+      final heights = [
+        for (final t in tall)
+          deskCardHeight(hasStill: t, cardWidth: cardW),
+      ];
+      final packed = packShortestColumn(cols: cols, heights: heights);
       return SingleChildScrollView(
-        child: Wrap(
-          spacing: gap,
-          runSpacing: gap,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final card in cards) SizedBox(width: cardW, child: card),
+            for (var col = 0; col < cols; col++) ...[
+              if (col > 0) const SizedBox(width: gap),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final i in packed[col]) ...[
+                      cards[i],
+                      const SizedBox(height: gap),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       );
@@ -866,7 +920,7 @@ class _DeskPageState extends State<DeskPage> {
 
   Widget _placeRow(BuildContext context, FleetDevice d) {
     final stale = !_awake(d);
-    final hidden = _hidden.contains(d.deviceId);
+    final hidden = _isHidden(d.deviceId);
     return ListTile(
       leading: Row(
         mainAxisSize: MainAxisSize.min,
@@ -877,7 +931,7 @@ class _DeskPageState extends State<DeskPage> {
           _osTile(context, d.deviceOs, size: 18),
         ],
       ),
-      title: Text(_displayName(d)),
+      title: Text(_faceName(d)),
       subtitle: Text(hidden
           ? 'Off this desk. Still on the account.'
           : _sentence(d)),
@@ -885,6 +939,7 @@ class _DeskPageState extends State<DeskPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _starBtn(d.deviceId),
+          _hideBtn(d.deviceId, _realName(d)),
           _peerMore(context, d),
           TextButton(
             onPressed: () => _open(context, d, stale),
@@ -934,27 +989,27 @@ class _DeskPageState extends State<DeskPage> {
       warn: stopped || needSetup,
       sentence: sentence,
       os: _localOs(),
-      onRename: () => _rename(initial: _thisName()),
+      onRename: () => _rename(initial: _thisNameRaw()),
       child: action,
     );
   }
 
   Widget _placeCard(BuildContext context, FleetDevice d) {
-    final name = _displayName(d);
+    final name = _realName(d);
     final stale = !_awake(d);
-    final hidden = _hidden.contains(d.deviceId);
-    final last = DeskMemory.lastId() == d.deviceId;
+    final hidden = _isHidden(d.deviceId);
+    final last = sameDeviceId(DeskMemory.lastId(), d.deviceId);
     return _cardShell(
       context: context,
       id: d.deviceId,
-      title: name,
+      title: _faceName(d),
       badge: hidden
           ? 'Hidden'
           : last
               ? 'Last'
               : '',
       last: last && !hidden,
-      thumb: DeskMemory.preview(d.deviceId),
+      thumb: _mask ? null : DeskMemory.preview(d.deviceId),
       awake: d.online && d.ready != false,
       warn: d.reason == 'battery' || d.reason == 'permission',
       sentence: hidden
@@ -964,6 +1019,7 @@ class _DeskPageState extends State<DeskPage> {
       onRename: () => _rename(deviceId: d.deviceId, initial: name),
       extra: _peerMore(context, d),
       star: _starBtn(d.deviceId),
+      hide: _hideBtn(d.deviceId, name),
       child: _btn(
         context,
         'Open',
@@ -1031,6 +1087,7 @@ class _DeskPageState extends State<DeskPage> {
     VoidCallback? onRename,
     Widget? extra,
     Widget? star,
+    Widget? hide,
     required Widget child,
   }) {
     final line = Theme.of(context).dividerColor;
@@ -1102,6 +1159,7 @@ class _DeskPageState extends State<DeskPage> {
               ),
             ),
             if (star != null) star,
+            if (hide != null) hide,
             if (onRename != null)
               IconButton(
                 tooltip: 'Rename',
@@ -1257,7 +1315,7 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   Future<void> _open(BuildContext context, FleetDevice d, bool stale) async {
-    final name = _displayName(d);
+    final name = _realName(d);
     if (stale) {
       final go = await showDialog<bool>(
         context: context,
