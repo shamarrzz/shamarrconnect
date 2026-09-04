@@ -30,8 +30,8 @@ mkdir -p %{buildroot}/usr/share/icons/hicolor/scalable/apps/
 install -m 755 $HBB/target/release/rustdesk %{buildroot}/usr/bin/rustdesk
 install $HBB/libsciter-gtk.so %{buildroot}/usr/share/rustdesk/libsciter-gtk.so
 install $HBB/res/rustdesk.service %{buildroot}/usr/share/rustdesk/files/
-install $HBB/res/128x128@2x.png %{buildroot}/usr/share/icons/hicolor/256x256/apps/rustdesk.png
-install $HBB/res/scalable.svg %{buildroot}/usr/share/icons/hicolor/scalable/apps/rustdesk.svg
+install $HBB/res/128x128@2x.png %{buildroot}/usr/share/icons/hicolor/256x256/apps/shamarrconnect.png
+install $HBB/res/scalable.svg %{buildroot}/usr/share/icons/hicolor/scalable/apps/shamarrconnect.svg
 install $HBB/res/rustdesk.desktop %{buildroot}/usr/share/rustdesk/files/
 install $HBB/res/rustdesk-link.desktop %{buildroot}/usr/share/rustdesk/files/
 
@@ -39,8 +39,8 @@ install $HBB/res/rustdesk-link.desktop %{buildroot}/usr/share/rustdesk/files/
 /usr/bin/rustdesk
 /usr/share/rustdesk/libsciter-gtk.so
 /usr/share/rustdesk/files/rustdesk.service
-/usr/share/icons/hicolor/256x256/apps/rustdesk.png
-/usr/share/icons/hicolor/scalable/apps/rustdesk.svg
+/usr/share/icons/hicolor/256x256/apps/shamarrconnect.png
+/usr/share/icons/hicolor/scalable/apps/shamarrconnect.svg
 /usr/share/rustdesk/files/rustdesk.desktop
 /usr/share/rustdesk/files/rustdesk-link.desktop
 /usr/share/rustdesk/files/__pycache__/*

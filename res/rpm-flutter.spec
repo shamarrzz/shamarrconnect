@@ -29,14 +29,14 @@ mkdir -p "%{buildroot}/usr/bin"
 install -Dm 644 $HBB/res/rustdesk.service -t "%{buildroot}/usr/share/rustdesk/files"
 install -Dm 644 $HBB/res/rustdesk.desktop -t "%{buildroot}/usr/share/rustdesk/files"
 install -Dm 644 $HBB/res/rustdesk-link.desktop -t "%{buildroot}/usr/share/rustdesk/files"
-install -Dm 644 $HBB/res/128x128@2x.png "%{buildroot}/usr/share/icons/hicolor/256x256/apps/rustdesk.png"
-install -Dm 644 $HBB/res/scalable.svg "%{buildroot}/usr/share/icons/hicolor/scalable/apps/rustdesk.svg"
+install -Dm 644 $HBB/res/128x128@2x.png "%{buildroot}/usr/share/icons/hicolor/256x256/apps/shamarrconnect.png"
+install -Dm 644 $HBB/res/scalable.svg "%{buildroot}/usr/share/icons/hicolor/scalable/apps/shamarrconnect.svg"
 
 %files
 /usr/share/rustdesk/*
 /usr/share/rustdesk/files/rustdesk.service
-/usr/share/icons/hicolor/256x256/apps/rustdesk.png
-/usr/share/icons/hicolor/scalable/apps/rustdesk.svg
+/usr/share/icons/hicolor/256x256/apps/shamarrconnect.png
+/usr/share/icons/hicolor/scalable/apps/shamarrconnect.svg
 /usr/share/rustdesk/files/rustdesk.desktop
 /usr/share/rustdesk/files/rustdesk-link.desktop
 

@@ -29,6 +29,56 @@ void try_set_transparent(GtkWindow* window, GdkScreen* screen, FlView* view);
 
 extern bool gIsConnectionManager;
 
+static const char* kAppTitle = "ShamarrConnect";
+static const char* kIconName = "shamarrconnect";
+
+// Window icon + taskbar/dock name. Do not look up "rustdesk": a leftover
+// system icon (or this title) is what testers see for a split second.
+static void set_window_branding(GtkWindow* window) {
+  g_set_prgname("shamarrconnect");
+  g_set_application_name(kAppTitle);
+  gtk_window_set_title(window, kAppTitle);
+  gtk_window_set_default_icon_name(kIconName);
+  gtk_window_set_icon_name(window, kIconName);
+
+  GtkIconTheme* theme = gtk_icon_theme_get_default();
+  gint sizes[] = {256, 128, 64, 32};
+  for (int i = 0; i < 4; i++) {
+    GdkPixbuf* icon = gtk_icon_theme_load_icon(
+        theme, kIconName, sizes[i], GTK_ICON_LOOKUP_NO_SVG, NULL);
+    if (icon != nullptr) {
+      gtk_window_set_icon(window, icon);
+      g_object_unref(icon);
+      return;
+    }
+  }
+
+  g_autofree gchar* from_appdir = NULL;
+  g_autofree gchar* from_exe = NULL;
+  const gchar* paths[4];
+  int n = 0;
+  const gchar* appdir = g_getenv("APPDIR");
+  if (appdir && *appdir) {
+    from_appdir = g_build_filename(
+        appdir, "usr/share/icons/hicolor/128x128/apps/shamarrconnect.png",
+        NULL);
+    paths[n++] = from_appdir;
+  }
+  paths[n++] = "/usr/share/icons/hicolor/128x128/apps/shamarrconnect.png";
+  g_autofree gchar* exe = g_file_read_link("/proc/self/exe", NULL);
+  if (exe) {
+    g_autofree gchar* dir = g_path_get_dirname(exe);
+    from_exe = g_build_filename(dir, "shamarrconnect.png", NULL);
+    paths[n++] = from_exe;
+  }
+  for (int i = 0; i < n; i++) {
+    if (paths[i] && g_file_test(paths[i], G_FILE_TEST_IS_REGULAR)) {
+      gtk_window_set_icon_from_file(window, paths[i], NULL);
+      break;
+    }
+  }
+}
+
 // --- Side mouse button support (back/forward) ---
 // Flutter's Linux embedder doesn't deliver X11 button 8/9 events to Dart.
 // We intercept them via GDK and forward through a dedicated platform channel.
@@ -96,6 +146,7 @@ static void on_subwindow_created(FlPluginRegistry* registry) {
   FlView* view = FL_VIEW(registry);
   GtkWidget* toplevel = gtk_widget_get_toplevel(GTK_WIDGET(view));
   if (toplevel != NULL && GTK_IS_WINDOW(toplevel)) {
+    set_window_branding(GTK_WINDOW(toplevel));
     FlMethodChannel* channel = side_buttons_create_channel(fl_view_get_engine(view));
     if (channel == NULL) return;
     side_buttons_init_for_window(GTK_WINDOW(toplevel), channel);
@@ -112,15 +163,7 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
   gtk_window_set_decorated(window, FALSE);
-  // try setting icon for rustdesk, which uses the system cache
-  GtkIconTheme* theme = gtk_icon_theme_get_default();
-  gint icons[4] = {256, 128, 64, 32};
-  for (int i = 0; i < 4; i++) {
-    GdkPixbuf* icon = gtk_icon_theme_load_icon(theme, "rustdesk", icons[i], GTK_ICON_LOOKUP_NO_SVG, NULL);
-    if (icon != nullptr) {
-      gtk_window_set_icon(window, icon);
-    }
-  }
+  set_window_branding(window);
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
@@ -142,11 +185,11 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "rustdesk");
+    gtk_header_bar_set_title(header_bar, kAppTitle);
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "rustdesk");
+    gtk_window_set_title(window, kAppTitle);
   }
 
   // auto bdw = bitsdojo_window_from(window); // <--- add this line
