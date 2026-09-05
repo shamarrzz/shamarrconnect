@@ -4,42 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../common.dart';
+import '../../models/fleet_model.dart';
 import '../../models/platform_model.dart';
+import '../place_names.dart';
+
+export '../place_names.dart' show looksLikeFactoryName;
 
 const kPlaceNameChips = ['Office', 'Shop', 'Home', 'Workshop', 'Phone'];
-const _kPlaceNamedOpt = 'sc_place_named';
+const kPlaceNameOpt = 'sc_place_name';
+const _kPlaceSkipOpt = 'sc_place_skip';
 
 Future<void>? _placeNameInFlight;
 
 void resetPlaceNamePrompt() {
   _placeNameInFlight = null;
-}
-
-/// True when [name] is empty or looks like a factory hostname, not a place.
-bool looksLikeFactoryName(String name, {String hostname = ''}) {
-  final n = name.trim();
-  if (n.isEmpty) return true;
-  if (hostname.isNotEmpty && n.toLowerCase() == hostname.toLowerCase()) {
-    return true;
-  }
-  final u = n.toUpperCase();
-  if (u.startsWith('DESKTOP-') ||
-      u.startsWith('LAPTOP-') ||
-      u.startsWith('WIN-') ||
-      u.startsWith('MACBOOK') ||
-      u.startsWith('IMAC') ||
-      u.startsWith('IPHONE') ||
-      u.startsWith('IPAD') ||
-      u.startsWith('PIXEL') ||
-      u.startsWith('SM-') ||
-      u.startsWith('GALAXY')) {
-    return true;
-  }
-  if (n.contains('.') && !n.contains(' ')) return true;
-  if (RegExp(r'^[A-Z0-9_-]{8,}$').hasMatch(u) && !n.contains(' ')) {
-    return true;
-  }
-  return false;
 }
 
 String loginDeviceHostname() {
@@ -119,7 +97,7 @@ Future<String?> showPlaceNameDialog({String initial = ''}) async {
       ),
       actions: [
         dialogButton('Skip', isOutline: true, onPressed: () {
-          bind.mainSetLocalOption(key: _kPlaceNamedOpt, value: 'Y');
+          bind.mainSetLocalOption(key: _kPlaceSkipOpt, value: 'Y');
           close(null);
         }),
         dialogButton('Save', onPressed: () { submit(); }),
@@ -140,7 +118,6 @@ Future<void> maybePromptPlaceNameAfterLogin() {
 
 Future<void> _runPlaceNamePrompt() async {
   try {
-    if (bind.mainGetLocalOption(key: _kPlaceNamedOpt) == 'Y') return;
     final token = bind.mainGetLocalOption(key: 'access_token');
     if (token.isEmpty) return;
     final id = await bind.mainGetMyId();
@@ -148,20 +125,32 @@ Future<void> _runPlaceNamePrompt() async {
     await gFFI.fleetModel.pull();
     var current = '';
     for (final d in gFFI.fleetModel.devices) {
-      if (d.deviceId == id) {
+      if (sameDeviceId(d.deviceId, id)) {
         current = d.deviceName;
         break;
       }
     }
     final hostname = loginDeviceHostname();
-    if (current.trim().isNotEmpty) {
-      await bind.mainSetLocalOption(key: _kPlaceNamedOpt, value: 'Y');
+    final saved = bind.mainGetLocalOption(key: kPlaceNameOpt);
+    if (saved.trim().isNotEmpty &&
+        !looksLikeFactoryName(saved, hostname: hostname)) {
       return;
     }
-    final name = await showPlaceNameDialog(initial: hostname);
-    await bind.mainSetLocalOption(key: _kPlaceNamedOpt, value: 'Y');
+    if (!looksLikeFactoryName(current, hostname: hostname)) {
+      await bind.mainSetLocalOption(key: kPlaceNameOpt, value: current.trim());
+      return;
+    }
+    // Old sc_place_named=Y was set when the hostname was non-empty, so
+    // testers never saw the prompt. Only honor an explicit Skip.
+    if (bind.mainGetLocalOption(key: _kPlaceSkipOpt) == 'Y') return;
+    final name = await showPlaceNameDialog(
+      initial: looksLikeFactoryName(current, hostname: hostname)
+          ? ''
+          : current,
+    );
     if (name == null || name.trim().isEmpty) return;
     final trimmed = name.trim();
+    await bind.mainSetLocalOption(key: kPlaceNameOpt, value: trimmed);
     await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
     await bind.mainSetPeerAlias(id: id, alias: trimmed);
     try {

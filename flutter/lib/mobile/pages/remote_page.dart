@@ -123,7 +123,8 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       }
       _disableAndroidSoftKeyboard(
           isKeyboardVisible: keyboardVisibilityController.isVisible);
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(DeskMemory.captureDelay, () {
+        if (!mounted) return;
         DeskMemory.capture(
           sessionId: gFFI.sessionId,
           peerId: widget.id,

@@ -11,6 +11,8 @@ import '../../../models/platform_model.dart';
 /// Last opened computer + last screen snapshot for the desk.
 class DeskMemory {
   static const lastKey = 'sc_desk_last';
+  /// Wait until the session is past the remote's own home chrome (old ID pad).
+  static const captureDelay = Duration(seconds: 8);
   static Directory? _dir;
   static final Map<String, String> pending = {};
 
@@ -43,6 +45,17 @@ class DeskMemory {
     if (d == null) return null;
     final f = File('${d.path}/${_safe(id)}.png');
     return f.existsSync() ? f : null;
+  }
+
+  static Future<void> clear(String id) async {
+    if (id.isEmpty) return;
+    try {
+      await warmup();
+      final f = fileIfPresent(id);
+      if (f != null) await f.delete();
+    } catch (e) {
+      debugPrint('desk thumb clear: $e');
+    }
   }
 
   static Widget? preview(String id) {

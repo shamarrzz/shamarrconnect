@@ -266,7 +266,8 @@
     var n = (name || "").trim();
     if (!n) return true;
     var u = n.toUpperCase();
-    if (/^(DESKTOP-|LAPTOP-|WIN-|MACBOOK|IMAC|IPHONE|IPAD|PIXEL|SM-|GALAXY)/.test(u)) return true;
+    if (/^(DESKTOP-|LAPTOP-|WIN-|MACBOOK|IMAC|IPHONE|IPAD|PIXEL|SM-|GALAXY|SAMSUNG-|ANDROID-|POCO|REDMI)/.test(u)) return true;
+    if (u.indexOf("-SM-") >= 0) return true;
     if (n.indexOf(".") >= 0 && n.indexOf(" ") < 0) return true;
     if (/^[A-Z0-9_-]{8,}$/.test(u) && n.indexOf(" ") < 0) return true;
     return false;

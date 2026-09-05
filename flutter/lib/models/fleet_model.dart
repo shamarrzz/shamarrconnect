@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
+import '../common/place_names.dart';
 import '../utils/http_service.dart' as http;
 import 'platform_model.dart';
 
@@ -11,6 +12,7 @@ import 'platform_model.dart';
 class FleetDevice {
   FleetDevice({
     required this.deviceId,
+    this.deviceUuid = '',
     required this.deviceName,
     required this.deviceOs,
     this.lastSeen,
@@ -20,6 +22,7 @@ class FleetDevice {
   });
 
   final String deviceId;
+  final String deviceUuid;
   final String deviceName;
   final String deviceOs;
   final DateTime? lastSeen;
@@ -30,6 +33,7 @@ class FleetDevice {
   factory FleetDevice.fromJson(Map<String, dynamic> j) {
     return FleetDevice(
       deviceId: (j['device_id'] ?? '').toString(),
+      deviceUuid: (j['device_uuid'] ?? '').toString(),
       deviceName: (j['device_name'] ?? '').toString(),
       deviceOs: (j['device_os'] ?? '').toString(),
       lastSeen: parseApiTime(j['last_seen']),
@@ -44,6 +48,7 @@ class FleetDevice {
   FleetDevice copyWith({String? deviceName}) {
     return FleetDevice(
       deviceId: deviceId,
+      deviceUuid: deviceUuid,
       deviceName: deviceName ?? this.deviceName,
       deviceOs: deviceOs,
       lastSeen: lastSeen,
@@ -59,6 +64,44 @@ String compactDeviceId(String id) => id.replaceAll(RegExp(r'\s+'), '');
 
 bool sameDeviceId(String a, String b) =>
     a == b || compactDeviceId(a) == compactDeviceId(b);
+
+String fleetIdentity(FleetDevice d) {
+  final uuid = d.deviceUuid.trim();
+  if (uuid.isNotEmpty) return 'u:$uuid';
+  return 'i:${compactDeviceId(d.deviceId)}';
+}
+
+/// One card per box. Stale factory-named clones (two samsung-SM-A037U
+/// cards from an old ID) collapse. Two live phones of the same model stay.
+List<FleetDevice> dedupeFleetDevices(List<FleetDevice> raw) {
+  final newestFirst = [...raw]..sort((a, b) {
+      final at = a.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bt = b.lastSeen ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bt.compareTo(at);
+    });
+  final byId = <String, FleetDevice>{};
+  for (final d in newestFirst) {
+    byId.putIfAbsent(fleetIdentity(d), () => d);
+  }
+  final kept = <FleetDevice>[];
+  outer:
+  for (final r in byId.values) {
+    for (var i = 0; i < kept.length; i++) {
+      final k = kept[i];
+      final sameFactory = looksLikeFactoryName(k.deviceName) &&
+          looksLikeFactoryName(r.deviceName) &&
+          k.deviceName.trim().toLowerCase() ==
+              r.deviceName.trim().toLowerCase() &&
+          k.deviceOs.trim().toLowerCase() == r.deviceOs.trim().toLowerCase();
+      if (sameFactory && (!k.online || !r.online)) {
+        if (r.online && !k.online) kept[i] = r;
+        continue outer;
+      }
+    }
+    kept.add(r);
+  }
+  return kept;
+}
 
 /// Parse SQLite `YYYY-MM-DD HH:MM:SS` (UTC) or ISO-8601.
 DateTime? parseApiTime(dynamic raw) {
@@ -142,11 +185,10 @@ class FleetModel {
       if (body is! Map) return;
       final raw = body['devices'];
       if (raw is! List) return;
-      devices.assignAll(
-        raw
-            .whereType<Map>()
-            .map((e) => FleetDevice.fromJson(Map<String, dynamic>.from(e))),
-      );
+      devices.assignAll(dedupeFleetDevices([
+        for (final e in raw.whereType<Map>())
+          FleetDevice.fromJson(Map<String, dynamic>.from(e)),
+      ]));
     } catch (e) {
       debugPrint('FleetModel.pull: $e');
     } finally {

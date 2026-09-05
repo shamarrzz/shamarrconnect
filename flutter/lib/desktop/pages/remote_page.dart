@@ -131,7 +131,8 @@ class _RemotePageState extends State<RemotePage>
       _ffi.recordingModel
           .updateStatus(bind.sessionGetIsRecording(sessionId: _ffi.sessionId));
       final display = widget.display ?? 0;
-      Future.delayed(const Duration(seconds: 2), () {
+      Future.delayed(DeskMemory.captureDelay, () {
+        if (!mounted) return;
         DeskMemory.capture(
           sessionId: _ffi.sessionId,
           peerId: widget.id,

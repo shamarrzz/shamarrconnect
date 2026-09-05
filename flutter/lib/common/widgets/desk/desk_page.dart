@@ -12,6 +12,7 @@ import '../../../models/fleet_model.dart';
 import '../../../models/platform_model.dart';
 import '../../../models/server_model.dart';
 import '../../widgets/login.dart';
+import '../../place_names.dart';
 import '../place_name_dialog.dart';
 import 'desk_layout.dart';
 import 'desk_memory.dart';
@@ -68,6 +69,7 @@ class _DeskPageState extends State<DeskPage> {
   bool _mask = false;
   bool _searchOpen = false;
   String _thisPlace = '';
+  int _statusGen = 0;
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
   final Set<String> _favs = {};
@@ -121,6 +123,8 @@ class _DeskPageState extends State<DeskPage> {
           ..clear()
           ..addAll(hidden);
         _mask = bind.mainGetLocalOption(key: _kMaskOpt) == 'Y';
+        final saved = bind.mainGetLocalOption(key: kPlaceNameOpt).trim();
+        if (saved.isNotEmpty) _thisPlace = saved;
       });
     } catch (e) {
       debugPrint('desk _loadPins: $e');
@@ -154,15 +158,33 @@ class _DeskPageState extends State<DeskPage> {
   bool get _outgoingOnly => bind.isOutgoingOnly();
 
   String _thisNameRaw() {
+    if (_thisPlace.isNotEmpty && !looksLikeFactoryName(_thisPlace)) {
+      return _thisPlace;
+    }
+    for (final d in gFFI.fleetModel.devices) {
+      if (_isMe(d.deviceId) && d.deviceName.trim().isNotEmpty) {
+        final n = d.deviceName.trim();
+        if (!looksLikeFactoryName(n)) return n;
+      }
+    }
+    if (_thisPlace.isNotEmpty) return _thisPlace;
     for (final d in gFFI.fleetModel.devices) {
       if (_isMe(d.deviceId) && d.deviceName.trim().isNotEmpty) {
         return d.deviceName.trim();
       }
     }
-    if (_thisPlace.isNotEmpty) return _thisPlace;
     final host = loginDeviceHostname();
     if (host.isNotEmpty) return host;
     return 'This computer';
+  }
+
+  void _flashStatus(String text) {
+    final gen = ++_statusGen;
+    setState(() => _status = text);
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!mounted || gen != _statusGen) return;
+      if (_status == text) setState(() => _status = '');
+    });
   }
 
   String _thisName() => _mask ? 'This computer' : _thisNameRaw();
@@ -214,6 +236,7 @@ class _DeskPageState extends State<DeskPage> {
     final trimmed = name.trim();
     if (_isMe(id) || deviceId == null || deviceId.isEmpty) {
       _thisPlace = trimmed;
+      bind.mainSetLocalOption(key: kPlaceNameOpt, value: trimmed);
     }
     final ok = await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
     await bind.mainSetPeerAlias(id: id, alias: trimmed);
@@ -334,6 +357,10 @@ class _DeskPageState extends State<DeskPage> {
         ));
         items.add(
             PopupMenuItem(value: 'rename', child: Text(translate('Rename'))));
+        if (DeskMemory.fileIfPresent(d.deviceId) != null) {
+          items.add(const PopupMenuItem(
+              value: 'clear_still', child: Text('Remove picture')));
+        }
         return items;
       },
     );
@@ -369,6 +396,12 @@ class _DeskPageState extends State<DeskPage> {
         break;
       case 'rename':
         await _rename(deviceId: d.deviceId, initial: _realName(d));
+        break;
+      case 'clear_still':
+        await DeskMemory.clear(d.deviceId);
+        if (mounted) {
+          setState(() => _status = 'Picture removed from ${_realName(d)}.');
+        }
         break;
     }
   }
@@ -904,7 +937,7 @@ class _DeskPageState extends State<DeskPage> {
           IconButton(
             tooltip: 'Rename',
             icon: const Icon(Icons.edit_outlined, size: 18),
-            onPressed: () => _rename(initial: _thisName()),
+            onPressed: () => _rename(initial: _thisNameRaw()),
           ),
           if (!_outgoingOnly)
             TextButton(
@@ -1335,9 +1368,9 @@ class _DeskPageState extends State<DeskPage> {
         ),
       );
       if (go != true || !mounted) return;
-      setState(() => _status = 'Trying $name.');
+      _flashStatus('Trying $name.');
     } else {
-      setState(() => _status = 'You\'re on $name');
+      _flashStatus('You\'re on $name');
     }
     DeskMemory.remember(d.deviceId);
     if (mounted) setState(() {});
