@@ -201,10 +201,19 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   String _thisName() {
-    if (_mask) return 'This computer';
+    // Mask hides peer names and stills, not this computer's place name.
+    // Testers saved Home; API has Home; the row still said "This computer"
+    // because blur was on.
     final label = _thisLabel.value.trim();
     if (label.isNotEmpty && !looksLikeFactoryName(label)) return label;
-    return _thisNameRaw();
+    final raw = _thisNameRaw();
+    if (raw.isNotEmpty &&
+        raw != 'This computer' &&
+        !looksLikeFactoryName(raw)) {
+      return raw;
+    }
+    if (_mask) return 'This computer';
+    return raw;
   }
 
   bool _isHidden(String id) => _hidden.any((h) => sameDeviceId(h, id));

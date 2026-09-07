@@ -71,10 +71,14 @@ bool _unnamed(String name) {
       u == 'computer' ||
       u == 'this computer' ||
       u == 'this phone' ||
+      u == 'phone' ||
       u == 'windows pc' ||
       u == 'linux pc' ||
       u == 'mac';
 }
+
+bool _cloneLabel(String name) =>
+    _unnamed(name) || looksLikeFactoryName(name);
 
 String osFamily(String os) {
   final u = os.trim().toLowerCase();
@@ -117,16 +121,9 @@ List<FleetDevice> dedupeFleetDevices(List<FleetDevice> raw) {
       final k = kept[i];
       final sameFamily = osFamily(k.deviceOs) == osFamily(r.deviceOs) &&
           osFamily(k.deviceOs).isNotEmpty;
-      final unnamed = _unnamed(k.deviceName) && _unnamed(r.deviceName);
-      final sameFactoryName = looksLikeFactoryName(k.deviceName) &&
-          looksLikeFactoryName(r.deviceName) &&
-          k.deviceName.trim().toLowerCase() ==
-              r.deviceName.trim().toLowerCase();
-      if (sameFamily && unnamed) {
-        if (r.online && !k.online) kept[i] = r;
-        continue outer;
-      }
-      if (sameFactoryName && sameFamily && (!k.online || !r.online)) {
+      if (sameFamily &&
+          _cloneLabel(k.deviceName) &&
+          _cloneLabel(r.deviceName)) {
         if (r.online && !k.online) kept[i] = r;
         continue outer;
       }

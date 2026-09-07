@@ -39,6 +39,22 @@ void main() {
       );
     }
 
+    test('collapses This phone, Phone, and google-sdk android to one card', () {
+      final out = dedupeFleetDevices([
+        d(id: 'a', name: 'This phone', os: 'android', online: false, daysAgo: 1),
+        d(id: 'b', name: 'Phone', os: 'Android', online: false, daysAgo: 2),
+        d(
+          id: 'c',
+          name: 'google-sdk_gphone64_x86_64',
+          os: 'android',
+          online: false,
+          daysAgo: 3,
+        ),
+      ]);
+      expect(out, hasLength(1));
+      expect(out.single.deviceId, 'a');
+    });
+
     test('collapses Computer and empty android names to one card', () {
       final out = dedupeFleetDevices([
         d(id: 'old', name: 'Computer', os: 'Android', online: false, daysAgo: 2),
@@ -66,10 +82,10 @@ void main() {
       expect(out.single.deviceId, 'new');
     });
 
-    test('keeps two live phones of the same model', () {
+    test('keeps two live named phones', () {
       final out = dedupeFleetDevices([
-        d(id: 'a', uuid: 'ua', name: 'samsung-SM-A037U', online: true),
-        d(id: 'b', uuid: 'ub', name: 'samsung-SM-A037U', online: true),
+        d(id: 'a', uuid: 'ua', name: 'Shop', os: 'android', online: true),
+        d(id: 'b', uuid: 'ub', name: 'Office', os: 'android', online: true),
       ]);
       expect(out, hasLength(2));
     });
