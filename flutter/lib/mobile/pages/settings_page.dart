@@ -35,7 +35,8 @@ class SettingsPage extends StatefulWidget implements PageShape {
   final icon = Icon(Icons.settings);
 
   @override
-  final appBarActions = bind.isDisableSettings() ? [] : [ScanButton()];
+  final appBarActions =
+      bind.isDisableSettings() || bind.isCustomClient() ? [] : [ScanButton()];
 
   @override
   State<SettingsPage> createState() => _SettingsState();
@@ -424,6 +425,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 });
               },
       ),
+      if (!bind.isCustomClient())
       SettingsTile.switchTile(
         title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -633,22 +635,24 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
       ),
     );
 
-    enhancementsTiles.add(
-      SettingsTile.switchTile(
-        initialValue: _showTerminalExtraKeys,
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(translate('Show terminal extra keys')),
-        ]),
-        onToggle: (bool v) async {
-          await mainSetLocalBoolOption(kOptionEnableShowTerminalExtraKeys, v);
-          final newValue =
-              mainGetLocalBoolOptionSync(kOptionEnableShowTerminalExtraKeys);
-          setState(() {
-            _showTerminalExtraKeys = newValue;
-          });
-        },
-      ),
-    );
+    if (!bind.isCustomClient()) {
+      enhancementsTiles.add(
+        SettingsTile.switchTile(
+          initialValue: _showTerminalExtraKeys,
+          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(translate('Show terminal extra keys')),
+          ]),
+          onToggle: (bool v) async {
+            await mainSetLocalBoolOption(kOptionEnableShowTerminalExtraKeys, v);
+            final newValue =
+                mainGetLocalBoolOptionSync(kOptionEnableShowTerminalExtraKeys);
+            setState(() {
+              _showTerminalExtraKeys = newValue;
+            });
+          },
+        ),
+      );
+    }
 
     onFloatingWindowChanged(bool toValue) async {
       if (toValue) {
@@ -669,8 +673,9 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
     enhancementsTiles.add(SettingsTile.switchTile(
         initialValue: !_floatingWindowDisabled,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(translate('Floating window')),
-          Text('* ${translate('floating_window_tip')}',
+          Text('Keep a small control over other apps'),
+          Text(
+              '* Off unless you need to switch apps during a session.',
               style: Theme.of(context).textTheme.bodySmall),
         ]),
         onToggle: bind.mainIsOptionFixed(key: kOptionDisableFloatingWindow)
@@ -792,7 +797,10 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
             ],
           ),
         SettingsSection(title: Text(translate("Settings")), tiles: [
-          if (!disabledSettings && !_hideNetwork && !_hideServer)
+          if (!bind.isCustomClient() &&
+              !disabledSettings &&
+              !_hideNetwork &&
+              !_hideServer)
             SettingsTile(
                 title: Text(translate('ID/Relay Server')),
                 leading: Icon(Icons.cloud),
@@ -802,21 +810,24 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                     setState(callback);
                   });
                 }),
-          if (!_hideNetwork && !_hideProxy)
+          if (!bind.isCustomClient() && !_hideNetwork && !_hideProxy)
             SettingsTile(
                 title: Text(translate('Socks5/Http(s) Proxy')),
                 leading: Icon(Icons.network_ping),
                 onPressed: (context) {
                   changeSocks5Proxy();
                 }),
-          if (isAndroid && !bind.isOutgoingOnly())
+          if (!bind.isCustomClient() && isAndroid && !bind.isOutgoingOnly())
             SettingsTile(
                 title: Text(translate('Deploy')),
                 leading: Icon(Icons.cloud_upload),
                 onPressed: (context) {
                   showDeployDialog();
                 }),
-          if (!disabledSettings && !_hideNetwork && !_hideWebSocket)
+          if (!bind.isCustomClient() &&
+              !disabledSettings &&
+              !_hideNetwork &&
+              !_hideWebSocket)
             SettingsTile.switchTile(
               title: Text(translate('Use WebSocket')),
               initialValue: _allowWebSocket,
@@ -831,7 +842,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                       });
                     },
             ),
-          if (!_isUsingPublicServer)
+          if (!bind.isCustomClient() && !_isUsingPublicServer)
             SettingsTile.switchTile(
               title: Text(translate('Allow insecure TLS fallback')),
               initialValue: _allowInsecureTlsFallback,
@@ -847,7 +858,10 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                       });
                     },
             ),
-          if (isAndroid && !outgoingOnly && !_isUsingPublicServer)
+          if (!bind.isCustomClient() &&
+              isAndroid &&
+              !outgoingOnly &&
+              !_isUsingPublicServer)
             SettingsTile.switchTile(
               title: Text(translate('Disable UDP')),
               initialValue: _disableUdp,
@@ -1004,11 +1018,18 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 ),
               SettingsTile(
                 title: Text(translate("Directory")),
-                description: Text(bind.mainVideoSaveDirectory(root: false)),
+                description: Text(() {
+                  final d = bind.mainVideoSaveDirectory(root: false);
+                  if (d.isEmpty || d.contains('/system/')) {
+                    return 'Choose a folder';
+                  }
+                  return d;
+                }()),
               ),
             ],
           ),
-        if (isAndroid &&
+        if (!bind.isCustomClient() &&
+            isAndroid &&
             !disabledSettings &&
             !outgoingOnly &&
             !hideSecuritySettings)

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -150,9 +151,11 @@ class _DeskPageState extends State<DeskPage> {
   void _toggleMask() {
     setState(() {
       _mask = !_mask;
-      if (_mask) _status = 'Names and stills are hidden.';
     });
     _persistMask();
+    if (_mask) {
+      _flashStatus('Names and stills are hidden.');
+    }
   }
 
   bool get _outgoingOnly => bind.isOutgoingOnly();
@@ -280,7 +283,7 @@ class _DeskPageState extends State<DeskPage> {
         if (_hidden.isEmpty) _peekHidden = false;
       } else {
         _hidden.add(id);
-        _status = '$name is off this desk. Search the name to bring it back.';
+        _status = 'Hidden. Search the name to show it again.';
       }
     });
     _persistHidden();
@@ -289,7 +292,7 @@ class _DeskPageState extends State<DeskPage> {
   Widget _hideBtn(String id, String name) {
     final on = _isHidden(id);
     return IconButton(
-      tooltip: on ? 'Show on desk' : 'Take off this desk',
+      tooltip: on ? 'Show on desk' : 'Hide from this desk',
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
       icon: Icon(
@@ -327,14 +330,18 @@ class _DeskPageState extends State<DeskPage> {
       icon: const Icon(Icons.more_vert, size: 18),
       onSelected: (v) => _onPeerMore(context, d, v),
       itemBuilder: (_) {
+        final hosted = bind.isCustomClient();
         final items = <PopupMenuEntry<String>>[
           PopupMenuItem(value: 'files', child: Text(translate('Transfer file'))),
-          PopupMenuItem(value: 'camera', child: Text(translate('View camera'))),
-          PopupMenuItem(
-              value: 'terminal',
-              child: Text('${translate('Terminal')} (beta)')),
         ];
-        if (isDesktop && !android) {
+        if (!hosted) {
+          items.add(PopupMenuItem(
+              value: 'camera', child: Text(translate('View camera'))));
+          items.add(PopupMenuItem(
+              value: 'terminal',
+              child: Text('${translate('Terminal')} (beta)')));
+        }
+        if (!hosted && isDesktop && !android) {
           items.add(PopupMenuItem(
               value: 'tunnel', child: Text(translate('TCP tunneling'))));
         }
@@ -347,16 +354,16 @@ class _DeskPageState extends State<DeskPage> {
               child: Text(translate('Create desktop shortcut'))));
         }
         items.add(const PopupMenuDivider());
+        items.add(
+            PopupMenuItem(value: 'rename', child: Text(translate('Rename'))));
         items.add(PopupMenuItem(
           value: 'star',
           child: Text(starred ? 'Unstar' : 'Star'),
         ));
         items.add(PopupMenuItem(
           value: 'hide',
-          child: Text(hidden ? 'Show on desk' : 'Take off this desk'),
+          child: Text(hidden ? 'Show on desk' : 'Hide from this desk'),
         ));
-        items.add(
-            PopupMenuItem(value: 'rename', child: Text(translate('Rename'))));
         if (DeskMemory.fileIfPresent(d.deviceId) != null) {
           items.add(const PopupMenuItem(
               value: 'clear_still', child: Text('Remove picture')));
@@ -1374,7 +1381,15 @@ class _DeskPageState extends State<DeskPage> {
     }
     DeskMemory.remember(d.deviceId);
     if (mounted) setState(() {});
-    connect(context, d.deviceId);
+    try {
+      await connect(context, d.deviceId)
+          .timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      if (mounted) {
+        setState(() => _status =
+            'Couldn\'t open. Check the phone is awake and Share screen is allowed.');
+      }
+    }
   }
 
   String _explain(FleetDevice d) {

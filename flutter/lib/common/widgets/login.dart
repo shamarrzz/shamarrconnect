@@ -1116,10 +1116,8 @@ Future<void> maybePromptAccountMfaSetup() async {
         style: TextStyle(fontSize: 13.5),
       ),
       actions: [
-        dialogButton('Later', onPressed: close, isOutline: true),
         dialogButton('Enable MFA', onPressed: () async {
           close();
-          // Wait a tick so this dialog is gone before the setup dialog opens.
           await Future.delayed(const Duration(milliseconds: 50));
           final ctx = globalKey.currentContext;
           if (ctx != null) {

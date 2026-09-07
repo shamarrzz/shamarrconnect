@@ -6,6 +6,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 
 import '../../models/platform_model.dart';
+import '../hosted.dart';
 
 class HttpType {
   static const kAuthReqTypeAccount = "account";
@@ -171,6 +172,11 @@ class LoginRequest {
       deviceInfo = jsonDecode(bind.mainGetLoginDeviceInfo());
     } catch (e) {
       debugPrint('Failed to decode get device info: $e');
+    }
+    try {
+      deviceInfo['name'] = loginDeviceName();
+    } catch (e) {
+      debugPrint('loginDeviceName: $e');
     }
     data['deviceInfo'] = deviceInfo;
     return data;

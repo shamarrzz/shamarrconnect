@@ -2156,7 +2156,25 @@ pub fn load_custom_client() {
         overwrite.insert("relay-server".to_owned(), "connect.shamarrconnect.com".to_owned());
         overwrite.insert("api-server".to_owned(), "https://api.shamarrconnect.com".to_owned());
         overwrite.insert("key".to_owned(), "JfyPD2rFXBvBipAn8bfICvPocBqects1mLC2qiHIu0c=".to_owned());
+        overwrite.insert("allow-insecure-tls-fallback".to_owned(), "N".to_owned());
+        overwrite.insert("disable-udp".to_owned(), "N".to_owned());
+        overwrite.insert("allow-websocket".to_owned(), "N".to_owned());
+        overwrite.insert("direct-server".to_owned(), "N".to_owned());
     }
+    // Hosted: hide factory network UI. Grey-out is not a fix. Testers Gate 1.
+    {
+        let mut builtin = config::BUILTIN_SETTINGS.write().unwrap();
+        builtin.insert("hide-server-settings".to_owned(), "Y".to_owned());
+        builtin.insert("hide-proxy-settings".to_owned(), "Y".to_owned());
+        builtin.insert("hide-websocket-settings".to_owned(), "Y".to_owned());
+        builtin.insert("hide-network-settings".to_owned(), "Y".to_owned());
+    }
+    {
+        let mut local = config::OVERWRITE_LOCAL_SETTINGS.write().unwrap();
+        local.insert("enable-show-terminal-extra-keys".to_owned(), "N".to_owned());
+        local.insert("disable-floating-window".to_owned(), "Y".to_owned());
+    }
+    hbb_common::config::Config::set_socks(None);
 
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
@@ -3089,5 +3107,7 @@ mod tests {
         assert!(sc_release_rank("1.4.9") > sc_release_rank("1.4.8-sc9"));
         assert_eq!(sc_release_rank("latest"), 0);
         assert_eq!(sc_release_rank(""), 0);
+        assert_eq!(sc_release_rank("1.4.9-sc17"), sc_release_rank("1.4.9-sc17"));
+        assert!(sc_release_rank("1.4.9-sc18") > sc_release_rank("1.4.9-sc17"));
     }
 }

@@ -49,7 +49,7 @@ class HomePageState extends State<HomePage> {
   void initPages() {
     _pages.clear();
     _pages.add(MobileDeskPage(helpMode: bind.isIncomingOnly()));
-    if (isAndroid && !bind.isOutgoingOnly()) {
+    if (isAndroid && !bind.isOutgoingOnly() && !bind.isCustomClient()) {
       _chatPageTabIndex = _pages.length;
       _pages.add(ChatPage(type: ChatPageType.mobileMain));
     }

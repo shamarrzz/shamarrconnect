@@ -6,6 +6,7 @@ void main() {
   group('looksLikeFactoryName', () {
     test('hostnames and phone models are factory', () {
       expect(looksLikeFactoryName('samsung-SM-A037U'), isTrue);
+      expect(looksLikeFactoryName('google-sdk_gphone64_x86_64'), isTrue);
       expect(looksLikeFactoryName('desktop-os6e272'), isTrue);
       expect(looksLikeFactoryName('DESKTOP-LK73UKM'), isTrue);
       expect(looksLikeFactoryName('kali', hostname: 'kali'), isTrue);

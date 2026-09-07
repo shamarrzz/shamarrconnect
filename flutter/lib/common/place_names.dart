@@ -21,6 +21,9 @@ bool looksLikeFactoryName(String name, {String hostname = ''}) {
     'ANDROID-',
     'POCO',
     'REDMI',
+    'GOOGLE-SDK',
+    'SDK_GPHONE',
+    'EMULATOR',
   ];
   if (prefixes.any(u.startsWith)) return true;
   if (u.contains('-SM-')) return true;
