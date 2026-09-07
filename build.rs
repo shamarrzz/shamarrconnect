@@ -84,30 +84,37 @@ fn stamp_release_tag() {
     let tag = ["SC_RELEASE_TAG", "VERSION"]
         .iter()
         .find_map(|k| std::env::var(k).ok().filter(|s| s.contains("-sc")));
-    let tag = tag.unwrap_or_else(|| "1.4.9".to_string());
+    let tag = tag.unwrap_or_else(|| "1.4.9-sc18".to_string());
     let path = std::path::Path::new("src/version.rs");
     let mut body = std::fs::read_to_string(path).unwrap_or_default();
-    let line = format!("pub const RELEASE_TAG: &str = \"{tag}\";\n");
-    if body.contains("pub const RELEASE_TAG:") {
-        let mut out = String::new();
-        for l in body.lines() {
-            if l.starts_with("pub const RELEASE_TAG:") {
-                out.push_str(&line);
-            } else {
-                out.push_str(l);
-                out.push('\n');
-            }
+    let release_line = format!("pub const RELEASE_TAG: &str = \"{tag}\";");
+    let version_line = format!("pub const VERSION: &str = \"{tag}\";");
+    let mut out = String::new();
+    let mut saw_release = false;
+    let mut saw_version = false;
+    for l in body.lines() {
+        if l.starts_with("pub const RELEASE_TAG:") {
+            out.push_str(&release_line);
+            out.push('\n');
+            saw_release = true;
+        } else if l.starts_with("pub const VERSION:") {
+            out.push_str(&version_line);
+            out.push('\n');
+            saw_version = true;
+        } else {
+            out.push_str(l);
+            out.push('\n');
         }
-        body = out;
-    } else if let Some(idx) = body.find("pub const VERSION:") {
-        if let Some(nl) = body[idx..].find('\n') {
-            let insert_at = idx + nl + 1;
-            body.insert_str(insert_at, &line);
-        }
-    } else {
-        body.push_str(&line);
     }
-    let _ = std::fs::write(path, body);
+    if !saw_version {
+        out.push_str(&version_line);
+        out.push('\n');
+    }
+    if !saw_release {
+        out.push_str(&release_line);
+        out.push('\n');
+    }
+    let _ = std::fs::write(path, out);
 }
 
 fn main() {

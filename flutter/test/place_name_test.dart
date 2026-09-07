@@ -39,6 +39,15 @@ void main() {
       );
     }
 
+    test('collapses two empty-name android cards to the newer one', () {
+      final out = dedupeFleetDevices([
+        d(id: 'old', name: '', os: 'android', online: false, daysAgo: 2),
+        d(id: 'new', name: '', os: 'android', online: false, daysAgo: 0),
+      ]);
+      expect(out, hasLength(1));
+      expect(out.single.deviceId, 'new');
+    });
+
     test('collapses two stale samsung-SM-A037U cards to the newer one', () {
       final out = dedupeFleetDevices([
         d(id: 'old', name: 'samsung-SM-A037U', online: false, daysAgo: 17),

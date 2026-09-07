@@ -12,6 +12,8 @@ import '../../../desktop/pages/connection_page.dart' as dconn;
 import '../../../models/fleet_model.dart';
 import '../../../models/platform_model.dart';
 import '../../../models/server_model.dart';
+import '../../../models/user_model.dart';
+import '../../../desktop/pages/desktop_tab_page.dart';
 import '../../widgets/login.dart';
 import '../../place_names.dart';
 import '../place_name_dialog.dart';
@@ -161,6 +163,10 @@ class _DeskPageState extends State<DeskPage> {
   bool get _outgoingOnly => bind.isOutgoingOnly();
 
   String _thisNameRaw() {
+    final saved = bind.mainGetLocalOption(key: kPlaceNameOpt).trim();
+    if (saved.isNotEmpty && !looksLikeFactoryName(saved)) {
+      return saved;
+    }
     if (_thisPlace.isNotEmpty && !looksLikeFactoryName(_thisPlace)) {
       return _thisPlace;
     }
@@ -232,16 +238,41 @@ class _DeskPageState extends State<DeskPage> {
       await loginDialog();
       if (!gFFI.userModel.isLogin) return;
     }
-    final name = await showPlaceNameDialog(initial: initial);
+    final seed = looksLikeFactoryName(initial) ||
+            initial.trim().toLowerCase() == 'computer' ||
+            initial.trim().toLowerCase() == 'this computer'
+        ? ''
+        : initial;
+    final name = await showPlaceNameDialog(initial: seed);
     if (name == null || name.trim().isEmpty || !mounted) return;
-    final id = (deviceId == null || deviceId.isEmpty) ? _myId : deviceId;
-    if (id.isEmpty) return;
+    var id = (deviceId == null || deviceId.isEmpty) ? _myId : deviceId;
     final trimmed = name.trim();
-    if (_isMe(id) || deviceId == null || deviceId.isEmpty) {
+    final me = deviceId == null || deviceId.isEmpty || _isMe(id);
+    var uuid = '';
+    if (me) {
       _thisPlace = trimmed;
-      bind.mainSetLocalOption(key: kPlaceNameOpt, value: trimmed);
+      await bind.mainSetLocalOption(key: kPlaceNameOpt, value: trimmed);
+      uuid = await UserModel.accountDeviceUuid();
+      if (id.isEmpty) id = uuid;
+    } else {
+      for (final d in gFFI.fleetModel.devices) {
+        if (sameDeviceId(d.deviceId, id)) {
+          uuid = d.deviceUuid;
+          break;
+        }
+      }
     }
-    final ok = await gFFI.fleetModel.rename(deviceId: id, deviceName: trimmed);
+    if (id.isEmpty && uuid.isEmpty) {
+      if (mounted) {
+        setState(() => _status = 'Could not rename: this computer has no id yet.');
+      }
+      return;
+    }
+    final ok = await gFFI.fleetModel.rename(
+      deviceId: id,
+      deviceName: trimmed,
+      deviceUuid: uuid,
+    );
     await bind.mainSetPeerAlias(id: id, alias: trimmed);
     try {
       await gFFI.abModel.changeAlias(id: id, alias: trimmed);
@@ -250,7 +281,7 @@ class _DeskPageState extends State<DeskPage> {
     setState(() {
       _status = ok
           ? '$trimmed is the name on this desk.'
-          : 'Saved as $trimmed on this computer. The account did not take it yet.';
+          : 'Could not save $trimmed on the account. Check you are signed in.';
     });
   }
 
@@ -402,7 +433,9 @@ class _DeskPageState extends State<DeskPage> {
         await _toggleHide(id: d.deviceId, name: _realName(d));
         break;
       case 'rename':
-        await _rename(deviceId: d.deviceId, initial: _realName(d));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _rename(deviceId: d.deviceId, initial: _realName(d));
+        });
         break;
       case 'clear_still':
         await DeskMemory.clear(d.deviceId);
@@ -650,9 +683,18 @@ class _DeskPageState extends State<DeskPage> {
     return PopupMenuButton<String>(
       tooltip: gFFI.userModel.displayNameOrUserName,
       onSelected: (v) async {
-        if (v == 'logout') gFFI.userModel.logOut();
+        if (v == 'settings') {
+          DesktopTabPage.onAddSetting();
+        } else if (v == 'logout') {
+          gFFI.userModel.logOut();
+        }
       },
       itemBuilder: (_) => [
+        if (isDesktop)
+          PopupMenuItem(
+            value: 'settings',
+            child: Text(translate('Settings')),
+          ),
         PopupMenuItem(
           value: 'logout',
           child: Text(translate('Logout')),

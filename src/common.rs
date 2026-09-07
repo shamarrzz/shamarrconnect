@@ -1017,7 +1017,9 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     let response_url = resp.url;
     let latest_release_version = response_url.rsplit('/').next().unwrap_or_default();
 
-    if sc_release_rank(latest_release_version) > sc_release_rank(crate::RELEASE_TAG) {
+    let current = sc_release_rank(crate::RELEASE_TAG)
+        .max(sc_release_rank(crate::VERSION));
+    if sc_release_rank(latest_release_version) > current {
         #[cfg(feature = "flutter")]
         {
             let mut m = HashMap::new();
@@ -1550,6 +1552,7 @@ async fn get_http_response_async(
         "get" => http_client.get(url),
         "post" => http_client.post(url),
         "put" => http_client.put(url),
+        "patch" => http_client.patch(url),
         "delete" => http_client.delete(url),
         _ => return Err(anyhow!("The HTTP request method is not supported!")),
     };
@@ -3109,5 +3112,6 @@ mod tests {
         assert_eq!(sc_release_rank(""), 0);
         assert_eq!(sc_release_rank("1.4.9-sc17"), sc_release_rank("1.4.9-sc17"));
         assert!(sc_release_rank("1.4.9-sc18") > sc_release_rank("1.4.9-sc17"));
+        assert!(!(sc_release_rank("1.4.9-sc18") > sc_release_rank("1.4.9-sc18")));
     }
 }

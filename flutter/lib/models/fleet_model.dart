@@ -65,6 +65,20 @@ String compactDeviceId(String id) => id.replaceAll(RegExp(r'\s+'), '');
 bool sameDeviceId(String a, String b) =>
     a == b || compactDeviceId(a) == compactDeviceId(b);
 
+bool _genericOrFactory(String name) {
+  final u = name.trim().toLowerCase();
+  if (u.isEmpty ||
+      u == 'computer' ||
+      u == 'this computer' ||
+      u == 'this phone' ||
+      u == 'windows pc' ||
+      u == 'linux pc' ||
+      u == 'mac') {
+    return true;
+  }
+  return looksLikeFactoryName(name);
+}
+
 String fleetIdentity(FleetDevice d) {
   final uuid = d.deviceUuid.trim();
   if (uuid.isNotEmpty) return 'u:$uuid';
@@ -88,8 +102,8 @@ List<FleetDevice> dedupeFleetDevices(List<FleetDevice> raw) {
   for (final r in byId.values) {
     for (var i = 0; i < kept.length; i++) {
       final k = kept[i];
-      final sameFactory = looksLikeFactoryName(k.deviceName) &&
-          looksLikeFactoryName(r.deviceName) &&
+      final sameFactory = _genericOrFactory(k.deviceName) &&
+          _genericOrFactory(r.deviceName) &&
           k.deviceName.trim().toLowerCase() ==
               r.deviceName.trim().toLowerCase() &&
           k.deviceOs.trim().toLowerCase() == r.deviceOs.trim().toLowerCase();
@@ -209,12 +223,22 @@ class FleetModel {
   Future<bool> rename({
     required String deviceId,
     required String deviceName,
+    String deviceUuid = '',
   }) async {
     applyLocalName(deviceId, deviceName);
     final token = bind.mainGetLocalOption(key: 'access_token');
     if (token.isEmpty) return false;
     try {
       final url = await bind.mainGetApiServer();
+      var uuid = deviceUuid.trim();
+      if (uuid.isEmpty) {
+        for (final d in devices) {
+          if (sameDeviceId(d.deviceId, deviceId) && d.deviceUuid.trim().isNotEmpty) {
+            uuid = d.deviceUuid.trim();
+            break;
+          }
+        }
+      }
       final resp = await http.patch(
         Uri.parse('$url/api/user/device-name'),
         headers: {
@@ -223,6 +247,7 @@ class FleetModel {
         },
         body: jsonEncode({
           'device_id': deviceId,
+          'device_uuid': uuid,
           'device_name': deviceName,
         }),
       );
