@@ -1017,8 +1017,10 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     let response_url = resp.url;
     let latest_release_version = response_url.rsplit('/').next().unwrap_or_default();
 
+    let stamped = option_env!("SC_STAMPED_TAG").unwrap_or(crate::RELEASE_TAG);
     let current = sc_release_rank(crate::RELEASE_TAG)
-        .max(sc_release_rank(crate::VERSION));
+        .max(sc_release_rank(crate::VERSION))
+        .max(sc_release_rank(stamped));
     if sc_release_rank(latest_release_version) > current {
         #[cfg(feature = "flutter")]
         {

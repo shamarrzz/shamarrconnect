@@ -39,6 +39,15 @@ void main() {
       );
     }
 
+    test('collapses Computer and empty android names to one card', () {
+      final out = dedupeFleetDevices([
+        d(id: 'old', name: 'Computer', os: 'Android', online: false, daysAgo: 2),
+        d(id: 'new', name: '', os: 'android', online: true),
+      ]);
+      expect(out, hasLength(1));
+      expect(out.single.deviceId, 'new');
+    });
+
     test('collapses two empty-name android cards to the newer one', () {
       final out = dedupeFleetDevices([
         d(id: 'old', name: '', os: 'android', online: false, daysAgo: 2),

@@ -759,7 +759,9 @@ pub fn get_new_version() -> String {
 
 #[inline]
 pub fn get_version() -> String {
-    crate::RELEASE_TAG.to_owned()
+    option_env!("SC_STAMPED_TAG")
+        .unwrap_or(crate::RELEASE_TAG)
+        .to_owned()
 }
 
 #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]

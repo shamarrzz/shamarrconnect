@@ -77,14 +77,36 @@ fn install_android_deps() {
     println!("cargo:rustc-link-lib=OpenSLES");
 }
 
+fn tag_from_pubspec() -> Option<String> {
+    let s = std::fs::read_to_string("flutter/pubspec.yaml").ok()?;
+    for line in s.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("version:") {
+            let v = rest.trim().split('+').next()?.trim();
+            if v.contains("-sc") {
+                return Some(v.to_string());
+            }
+        }
+    }
+    None
+}
+
 fn stamp_release_tag() {
-    // ShamarrConnect: cargo:rerun so CI's VERSION (the git tag) is baked in.
     println!("cargo:rerun-if-env-changed=SC_RELEASE_TAG");
     println!("cargo:rerun-if-env-changed=VERSION");
-    let tag = ["SC_RELEASE_TAG", "VERSION"]
+    println!("cargo:rerun-if-env-changed=GITHUB_REF_NAME");
+    println!("cargo:rerun-if-changed=flutter/pubspec.yaml");
+    let tag = ["SC_RELEASE_TAG", "VERSION", "GITHUB_REF_NAME"]
         .iter()
-        .find_map(|k| std::env::var(k).ok().filter(|s| s.contains("-sc")));
-    let tag = tag.unwrap_or_else(|| "1.4.9-sc18".to_string());
+        .find_map(|k| {
+            std::env::var(k).ok().and_then(|s| {
+                let s = s.trim().trim_start_matches("refs/tags/").to_string();
+                s.contains("-sc").then_some(s)
+            })
+        })
+        .or_else(tag_from_pubspec)
+        .unwrap_or_else(|| "1.4.9-sc19".to_string());
+    println!("cargo:rustc-env=SC_STAMPED_TAG={tag}");
     let path = std::path::Path::new("src/version.rs");
     let mut body = std::fs::read_to_string(path).unwrap_or_default();
     let release_line = format!("pub const RELEASE_TAG: &str = \"{tag}\";");

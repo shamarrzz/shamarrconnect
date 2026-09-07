@@ -65,18 +65,31 @@ String compactDeviceId(String id) => id.replaceAll(RegExp(r'\s+'), '');
 bool sameDeviceId(String a, String b) =>
     a == b || compactDeviceId(a) == compactDeviceId(b);
 
-bool _genericOrFactory(String name) {
+bool _unnamed(String name) {
   final u = name.trim().toLowerCase();
-  if (u.isEmpty ||
+  return u.isEmpty ||
       u == 'computer' ||
       u == 'this computer' ||
       u == 'this phone' ||
       u == 'windows pc' ||
       u == 'linux pc' ||
-      u == 'mac') {
-    return true;
+      u == 'mac';
+}
+
+String osFamily(String os) {
+  final u = os.trim().toLowerCase();
+  if (u.contains('android')) return 'android';
+  if (u.contains('win')) return 'windows';
+  if (u.contains('mac') || u.contains('ios') || u.contains('darwin')) {
+    return 'mac';
   }
-  return looksLikeFactoryName(name);
+  if (u.contains('linux') ||
+      u.contains('ubuntu') ||
+      u.contains('debian') ||
+      u.contains('fedora')) {
+    return 'linux';
+  }
+  return u;
 }
 
 String fleetIdentity(FleetDevice d) {
@@ -102,12 +115,18 @@ List<FleetDevice> dedupeFleetDevices(List<FleetDevice> raw) {
   for (final r in byId.values) {
     for (var i = 0; i < kept.length; i++) {
       final k = kept[i];
-      final sameFactory = _genericOrFactory(k.deviceName) &&
-          _genericOrFactory(r.deviceName) &&
+      final sameFamily = osFamily(k.deviceOs) == osFamily(r.deviceOs) &&
+          osFamily(k.deviceOs).isNotEmpty;
+      final unnamed = _unnamed(k.deviceName) && _unnamed(r.deviceName);
+      final sameFactoryName = looksLikeFactoryName(k.deviceName) &&
+          looksLikeFactoryName(r.deviceName) &&
           k.deviceName.trim().toLowerCase() ==
-              r.deviceName.trim().toLowerCase() &&
-          k.deviceOs.trim().toLowerCase() == r.deviceOs.trim().toLowerCase();
-      if (sameFactory && (!k.online || !r.online)) {
+              r.deviceName.trim().toLowerCase();
+      if (sameFamily && unnamed) {
+        if (r.online && !k.online) kept[i] = r;
+        continue outer;
+      }
+      if (sameFactoryName && sameFamily && (!k.online || !r.online)) {
         if (r.online && !k.online) kept[i] = r;
         continue outer;
       }

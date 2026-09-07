@@ -72,6 +72,7 @@ class _DeskPageState extends State<DeskPage> {
   bool _mask = false;
   bool _searchOpen = false;
   String _thisPlace = '';
+  final RxString _thisLabel = ''.obs;
   int _statusGen = 0;
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
@@ -127,7 +128,10 @@ class _DeskPageState extends State<DeskPage> {
           ..addAll(hidden);
         _mask = bind.mainGetLocalOption(key: _kMaskOpt) == 'Y';
         final saved = bind.mainGetLocalOption(key: kPlaceNameOpt).trim();
-        if (saved.isNotEmpty) _thisPlace = saved;
+        if (saved.isNotEmpty) {
+          _thisPlace = saved;
+          _thisLabel.value = saved;
+        }
       });
     } catch (e) {
       debugPrint('desk _loadPins: $e');
@@ -196,7 +200,12 @@ class _DeskPageState extends State<DeskPage> {
     });
   }
 
-  String _thisName() => _mask ? 'This computer' : _thisNameRaw();
+  String _thisName() {
+    if (_mask) return 'This computer';
+    final label = _thisLabel.value.trim();
+    if (label.isNotEmpty && !looksLikeFactoryName(label)) return label;
+    return _thisNameRaw();
+  }
 
   bool _isHidden(String id) => _hidden.any((h) => sameDeviceId(h, id));
 
@@ -251,6 +260,7 @@ class _DeskPageState extends State<DeskPage> {
     var uuid = '';
     if (me) {
       _thisPlace = trimmed;
+      _thisLabel.value = trimmed;
       await bind.mainSetLocalOption(key: kPlaceNameOpt, value: trimmed);
       uuid = await UserModel.accountDeviceUuid();
       if (id.isEmpty) id = uuid;
