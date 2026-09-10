@@ -135,6 +135,8 @@ jobs:
         run: |
           export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
           sed -i "s/org.gradle.jvmargs=-Xmx1024M/org.gradle.jvmargs=-Xmx2g/g" ./flutter/android/gradle.properties
+          # Gradle still builds with debug signing; Play rejects that. We
+          # jarsigner the bundle with the upload keystore in the next step.
           sed -i "s/signingConfigs.release/signingConfigs.debug/g" ./flutter/android/app/build.gradle
           mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so \
@@ -148,30 +150,26 @@ jobs:
           cp flutter/build/app/outputs/bundle/release/app-release.aab \
              signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
 
-      - name: Setup sign tool version variable
-        shell: bash
-        run: |
-          BUILD_TOOL_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
-          echo "ANDROID_SIGN_TOOL_VERSION=$BUILD_TOOL_VERSION" >> $GITHUB_ENV
-
-      - uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
-        name: Sign app AAB
-        if: env.ANDROID_SIGNING_KEY != ''
-        id: sign-android
-        with:
-          releaseDirectory: ./signed-aab
-          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
-          alias: ${{ secrets.ANDROID_ALIAS }}
-          keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      - name: Sign AAB with upload keystore
         env:
-          BUILD_TOOLS_VERSION: ${{ env.ANDROID_SIGN_TOOL_VERSION }}
-
-      - name: Prepare signed AAB
-        if: env.ANDROID_SIGNING_KEY != ''
+          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+          ANDROID_ALIAS: ${{ secrets.ANDROID_ALIAS }}
+          ANDROID_KEY_STORE_PASSWORD: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         run: |
-          cp "${{ steps.sign-android.outputs.signedReleaseFile }}" \
-             "signed-aab/ShamarrConnect-${{ env.VERSION }}.aab"
+          test -n "$ANDROID_SIGNING_KEY"
+          echo "$ANDROID_SIGNING_KEY" | base64 -d > /tmp/upload.p12
+          AAB="signed-aab/ShamarrConnect-${{ env.VERSION }}.aab"
+          zip -d "$AAB" 'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.DSA' 'META-INF/MANIFEST.MF' || true
+          # PKCS12: key password is the store password.
+          jarsigner -storetype PKCS12 -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore /tmp/upload.p12 -storepass "$ANDROID_KEY_STORE_PASSWORD" \
+            "$AAB" "$ANDROID_ALIAS"
+          rm -f /tmp/upload.p12
+          jarsigner -verify "$AAB"
+          if jarsigner -verify -verbose -certs "$AAB" | grep -q 'Android Debug'; then
+            echo "AAB is still debug-signed" >&2
+            exit 1
+          fi
 
       - name: Upload AAB
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
