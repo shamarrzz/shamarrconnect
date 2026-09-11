@@ -15,7 +15,12 @@
   body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:15px 24px}
   .brand{display:flex;align-items:center;text-decoration:none;color:var(--ink)}
-  .brand .mark{width:36px;height:36px;display:block;border-radius:9px}
+  .brand .wordmark{height:30px;width:auto;display:block}
+  .brand .mark{display:none}
+  @media(max-width:720px){
+    .brand .wordmark{display:none}
+    .brand .mark{display:block;width:36px;height:36px;border-radius:9px}
+  }
   .wrap{max-width:760px;margin:0 auto;padding:44px 24px 64px}
   h1{font-size:30px;letter-spacing:-.02em;margin-bottom:6px}
   .upd{color:var(--muted);font-size:14px;margin-bottom:30px}
@@ -31,13 +36,14 @@
 <body>
   <header class="top">
     <a class="brand" href="/" aria-label="ShamarrConnect home">
-      <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect">
+      <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
     </a>
   </header>
 
   <main class="wrap">
     <h1>Privacy statement</h1>
-    <p class="upd">Last updated: 10 June 2026 · Private beta</p>
+    <p class="upd">Last updated: 9 September 2026 · Private beta</p>
 
     <p>ShamarrConnect provides remote-desktop access. This statement explains, in plain language, what the service can and cannot see. Use of the service is governed by the <a href="/terms">Terms of Service</a>; refunds are covered by the <a href="/refund">Refund Policy</a>.</p>
 
@@ -60,6 +66,9 @@
 
     <h2>Where your data lives</h2>
     <p>Account data is held on systems run by ShamarrConnect, not by a third-party remote-desktop vendor. Access to production systems is restricted and audited.</p>
+
+    <h2>Delete your account</h2>
+    <p>You can request deletion of your ShamarrConnect account and associated data at any time, including after you uninstall the app: <a href="/delete">shamarrconnect.com/delete</a>.</p>
 
     <h2>Contact</h2>
     <p>Questions about privacy or a data request? Email <a href="mailto:privacy@shamarrconnect.com">privacy@shamarrconnect.com</a>.</p>

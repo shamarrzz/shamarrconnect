@@ -16,7 +16,12 @@
   body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   .top{background:#fff;border-bottom:1px solid var(--line);padding:15px 24px}
   .brand{display:flex;align-items:center;text-decoration:none;color:var(--ink)}
-  .brand .mark{width:36px;height:36px;display:block;border-radius:9px}
+  .brand .wordmark{height:30px;width:auto;display:block}
+  .brand .mark{display:none}
+  @media(max-width:720px){
+    .brand .wordmark{display:none}
+    .brand .mark{display:block;width:36px;height:36px;border-radius:9px}
+  }
   .wrap{max-width:760px;margin:0 auto;padding:44px 24px 64px}
   h1{font-size:30px;letter-spacing:-.02em;margin-bottom:6px}
   .upd{color:var(--muted);font-size:14px;margin-bottom:30px}
@@ -32,7 +37,8 @@
 <body>
   <header class="top">
     <a class="brand" href="/" aria-label="ShamarrConnect home">
-      <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect">
+      <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
     </a>
   </header>
 

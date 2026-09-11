@@ -28,7 +28,12 @@
     background:#fff;border-bottom:1px solid var(--line);
     padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   }
-  .bar .mark{width:32px;height:32px;border-radius:8px}
+  .bar .brand .wordmark{height:28px;width:auto;display:block}
+  .bar .brand .mark{display:none}
+  @media(max-width:720px){
+    .bar .brand .wordmark{display:none}
+    .bar .brand .mark{display:block;width:32px;height:32px;border-radius:8px}
+  }
   .bar .ttl{font-weight:750;letter-spacing:-.02em}
   .bar .sub{font-size:13px;color:var(--muted)}
   .bar .grow{flex:1}
@@ -74,7 +79,10 @@
 </head>
 <body>
   <header class="bar">
-    <a href="/" aria-label="ShamarrConnect home"><img class="mark" src="/logo-mark.svg" width="32" height="32" alt=""></a>
+    <a class="brand" href="/" aria-label="ShamarrConnect home">
+      <img class="wordmark" src="/wordmark.svg" height="28" alt="ShamarrConnect">
+      <img class="mark" src="/logo-mark.svg" width="32" height="32" alt="">
+    </a>
     <div>
       <div class="ttl">Desk preview</div>
       <div class="sub">Click like a user. This is the home screen, not an ID pad.</div>

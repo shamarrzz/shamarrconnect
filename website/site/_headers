@@ -7,15 +7,33 @@
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.shamarrconnect.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 
 # Brand assets change often during launch — short cache + revalidate
+/wordmark.svg
+  Cache-Control: public, max-age=300, must-revalidate
+/wordmark-lockup.svg
+  Cache-Control: public, max-age=300, must-revalidate
 /wordmark.png
   Cache-Control: public, max-age=300, must-revalidate
 /wordmark-2x.png
   Cache-Control: public, max-age=300, must-revalidate
-/wordmark.svg
-  Cache-Control: public, max-age=300, must-revalidate
 /wordmark-light.png
   Cache-Control: public, max-age=300, must-revalidate
 /logo-mark.svg
+  Cache-Control: public, max-age=300, must-revalidate
+/logo-mark.png
+  Cache-Control: public, max-age=300, must-revalidate
+/logo-mark-64.png
+  Cache-Control: public, max-age=300, must-revalidate
+/logo-mark-128.png
+  Cache-Control: public, max-age=300, must-revalidate
+/favicon.svg
+  Cache-Control: public, max-age=300, must-revalidate
+/favicon.ico
+  Cache-Control: public, max-age=300, must-revalidate
+/favicon-16.png
+  Cache-Control: public, max-age=300, must-revalidate
+/favicon-32.png
+  Cache-Control: public, max-age=300, must-revalidate
+/apple-touch-icon.png
   Cache-Control: public, max-age=300, must-revalidate
 
 /fonts/*
@@ -32,3 +50,7 @@
   Content-Type: application/octet-stream
   Content-Disposition: attachment; filename="ShamarrConnect.7z"
   Cache-Control: no-store
+
+/play/a11y-disclosure.mp4
+  Content-Type: video/mp4
+  Cache-Control: public, max-age=3600

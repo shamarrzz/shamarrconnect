@@ -27,7 +27,13 @@
   a:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
   header{background:#fff;border-bottom:1px solid var(--line)}
   .hwrap{max-width:880px;margin:0 auto;padding:0 24px;height:70px;display:flex;align-items:center}
-  .mark{width:36px;height:36px;display:block;border-radius:9px}
+  .brand{display:flex;align-items:center}
+  .brand .wordmark{height:30px;width:auto;display:block}
+  .brand .mark{display:none}
+  @media(max-width:720px){
+    .brand .wordmark{display:none}
+    .brand .mark{display:block;width:36px;height:36px;border-radius:9px}
+  }
   .wrap{max-width:640px;margin:0 auto;padding:72px 24px 96px}
   .card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:44px 40px;text-align:center}
   .check{width:64px;height:64px;border-radius:50%;background:#E7F7EE;display:grid;place-items:center;margin:0 auto 22px}
@@ -46,7 +52,10 @@
 
 <header>
   <div class="hwrap">
-    <a href="/" aria-label="ShamarrConnect home"><img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect"></a>
+    <a class="brand" href="/" aria-label="ShamarrConnect home">
+      <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
+    </a>
   </div>
 </header>
 

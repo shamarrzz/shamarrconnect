@@ -60,39 +60,39 @@
     backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
   nav{display:flex;align-items:center;justify-content:space-between;gap:16px;height:60px;min-width:0}
   .brand{display:flex;align-items:center;gap:0;flex:0 0 auto;text-decoration:none}
-  .brand .mark{width:36px;height:36px;flex:none;display:block;border-radius:9px}
-  .brand .wordmark,.brand-text{display:none!important}
+  .brand .wordmark{height:30px;width:auto;display:block}
+  .brand .mark{display:none}
   .navlinks{display:flex;align-items:center;gap:4px;flex:1 1 auto;justify-content:center;min-width:0;flex-wrap:nowrap}
   .navlinks a{color:var(--muted);font-weight:600;font-size:13.5px;padding:8px 10px;border-radius:8px;transition:color .15s,background .15s;white-space:nowrap}
   .navlinks a:hover{color:var(--ink);background:var(--bg-soft)}
   .nav-cta{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   .nav-cta .btn{padding:8px 14px;font-size:13.5px}
-  /* Compact mid-desktop (common 1280–1366) */
+  /* Compact mid-desktop; drop secondary so lockup + CTAs stay on one line */
   @media(max-width:1366px){
     .navlinks{gap:2px}
     .navlinks a{padding:8px 8px;font-size:13px}
-  }
-  /* Drop secondary anchors so primary + CTAs stay on one line */
-  @media(max-width:1180px){
     .navlinks a.nav-secondary{display:none}
   }
-  @media(max-width:900px){
+  @media(max-width:1040px){
     .navlinks{display:none}
   }
+  @media(max-width:720px){
+    .brand .wordmark{display:none}
+    .brand .mark{display:block;width:36px;height:36px;border-radius:9px}
+  }
 
-  /* HERO (dark, dramatic) */
+  /* HERO (dark, dramatic) — 01 constellation sits behind copy + desk */
   .hero{position:relative;overflow:hidden;color:#fff;
     background:
-      radial-gradient(900px 500px at 85% -10%, rgba(43,92,230,.45) 0%, transparent 55%),
-      radial-gradient(700px 500px at 5% 110%, rgba(43,92,230,.28) 0%, transparent 55%),
+      radial-gradient(900px 500px at 85% -10%, rgba(43,92,230,.38) 0%, transparent 55%),
+      radial-gradient(700px 500px at 5% 110%, rgba(43,92,230,.22) 0%, transparent 55%),
       linear-gradient(160deg,#0B1430 0%, #101E45 55%, #0F1B33 100%)}
-  .hero::before{content:"";position:absolute;inset:0;pointer-events:none;
-    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
-                     linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
-    background-size:56px 56px;
-    -webkit-mask-image:radial-gradient(75% 65% at 50% 30%, #000 0%, transparent 100%);
-            mask-image:radial-gradient(75% 65% at 50% 30%, #000 0%, transparent 100%)}
-  .hero-grid{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;
+  .hero-stars{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .hero-veil{position:absolute;inset:0;pointer-events:none;z-index:1;
+    background:
+      linear-gradient(90deg, rgba(11,20,48,.48) 0%, rgba(11,20,48,.16) 40%, transparent 62%),
+      radial-gradient(ellipse at 50% 38%, transparent 8%, rgba(11,20,48,.38) 78%)}
+  .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;
     padding:96px 0 104px}
   .eyebrow{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.1);
     border:1px solid rgba(255,255,255,.16);color:#D9E4FF;font-weight:600;font-size:13px;
@@ -123,7 +123,7 @@
   @media(max-width:820px){.window{max-width:100%}.hero .desk-live{max-width:50%}}
 
   /* FACT CHIPS (hero bottom) */
-  .facts{position:relative;border-top:1px solid rgba(255,255,255,.12)}
+  .facts{position:relative;z-index:2;border-top:1px solid rgba(255,255,255,.12)}
   .facts .wrap{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;padding:22px 24px}
   .facts span{color:#B9C6E4;font-weight:600;font-size:14.5px;padding:6px 28px;border-left:1px solid rgba(255,255,255,.12)}
   .facts span:first-child{border-left:none}
@@ -261,7 +261,8 @@
   <div class="wrap">
     <nav>
       <a class="brand" href="#top" aria-label="ShamarrConnect home">
-        <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="ShamarrConnect">
+        <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+        <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
       </a>
       <div class="navlinks">
         <a class="nav-secondary" href="#who">Who it's for</a>
@@ -282,6 +283,8 @@
 
 <a id="top"></a>
 <section class="hero">
+  <canvas class="hero-stars" id="hero-stars" aria-hidden="true"></canvas>
+  <div class="hero-veil" aria-hidden="true"></div>
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-copy">
@@ -652,6 +655,7 @@
         <h4>Company</h4>
         <a href="mailto:hello@shamarrconnect.com">Contact</a>
         <a href="/privacy">Privacy</a>
+        <a href="/delete">Delete account</a>
         <a href="/terms">Terms</a>
         <a href="/refund">Refunds</a>
       </div>
@@ -665,6 +669,125 @@
 
 <script>
 (function(){
+  var hero=document.querySelector('.hero');
+  var canvas=document.getElementById('hero-stars');
+  if(hero && canvas){
+    var ctx=canvas.getContext('2d');
+    if(ctx){
+      var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var nodes=[], w=0, h=0, dpr=1, raf=0, running=false, inView=true, lastW=0, lastH=0;
+
+      function size(){
+        dpr=Math.min(window.devicePixelRatio||1, 2);
+        w=hero.clientWidth;
+        h=hero.clientHeight;
+        canvas.width=Math.max(1, Math.floor(w*dpr));
+        canvas.height=Math.max(1, Math.floor(h*dpr));
+        canvas.style.width=w+'px';
+        canvas.style.height=h+'px';
+        var changed=Math.abs(w-lastW)>2 || Math.abs(h-lastH)>2;
+        lastW=w; lastH=h;
+        return changed;
+      }
+      function seed(){
+        var n=Math.max(18, Math.min(38, Math.floor(w*h/26000)));
+        var i;
+        nodes=[];
+        for(i=0;i<n;i++){
+          nodes.push({
+            x:Math.random()*canvas.width,
+            y:Math.random()*canvas.height,
+            vx:(Math.random()-0.5)*0.12*dpr,
+            vy:(Math.random()-0.5)*0.12*dpr,
+            r:(i%7===0?3.3:1.5)*dpr,
+            on:i%7===0
+          });
+        }
+      }
+      function tick(){
+        raf=0;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        var max=170*dpr, i, j, a, dx, dy, d;
+        if(!reduce){
+          for(i=0;i<nodes.length;i++){
+            a=nodes[i];
+            a.x+=a.vx; a.y+=a.vy;
+            if(a.x<0||a.x>canvas.width) a.vx*=-1;
+            if(a.y<0||a.y>canvas.height) a.vy*=-1;
+          }
+        }
+        ctx.lineWidth=0.85*dpr;
+        for(i=0;i<nodes.length;i++){
+          for(j=i+1;j<nodes.length;j++){
+            dx=nodes[i].x-nodes[j].x; dy=nodes[i].y-nodes[j].y;
+            d=Math.hypot(dx,dy);
+            if(d<max){
+              ctx.strokeStyle='rgba(125,162,255,'+((1-d/max)*0.32)+')';
+              ctx.beginPath();
+              ctx.moveTo(nodes[i].x, nodes[i].y);
+              ctx.lineTo(nodes[j].x, nodes[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+        for(i=0;i<nodes.length;i++){
+          a=nodes[i];
+          ctx.beginPath();
+          ctx.fillStyle=a.on?'#4ADE80':'#9BB0D4';
+          ctx.globalAlpha=a.on?0.95:0.5;
+          ctx.arc(a.x, a.y, a.r, 0, Math.PI*2);
+          ctx.fill();
+          if(a.on){
+            ctx.globalAlpha=0.16;
+            ctx.beginPath();
+            ctx.arc(a.x, a.y, a.r*3.1, 0, Math.PI*2);
+            ctx.fill();
+          }
+          ctx.globalAlpha=1;
+        }
+        if(!reduce && inView && !document.hidden){
+          raf=requestAnimationFrame(tick);
+          running=true;
+        } else {
+          running=false;
+        }
+      }
+      function start(){
+        if(reduce || running || !inView || document.hidden) return;
+        raf=requestAnimationFrame(tick);
+        running=true;
+      }
+      function stop(){
+        running=false;
+        if(raf){ cancelAnimationFrame(raf); raf=0; }
+      }
+      function reset(){
+        if(size()) seed();
+        if(reduce) tick();
+        else if(!running) start();
+      }
+
+      if(window.ResizeObserver){
+        new ResizeObserver(reset).observe(hero);
+      } else {
+        size(); seed(); tick();
+        window.addEventListener('resize', reset);
+      }
+      document.addEventListener('visibilitychange', function(){
+        if(document.hidden) stop();
+        else if(reduce) tick();
+        else start();
+      });
+      if('IntersectionObserver' in window){
+        new IntersectionObserver(function(entries){
+          inView=entries[0].isIntersecting;
+          if(inView){ if(reduce) tick(); else start(); }
+          else stop();
+        }, {threshold:0.05}).observe(hero);
+      }
+    }
+  }
+
   var root=document.getElementById('desk-mock');
   var sheet=document.getElementById('desk-sheet');
   var panel=document.getElementById('desk-panel');
