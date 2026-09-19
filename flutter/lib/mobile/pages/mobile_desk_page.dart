@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../common/widgets/desk/desk_page.dart';
 import '../../models/platform_model.dart';
-import 'connection_page.dart';
 import 'home_page.dart';
 import 'onboarding_page.dart';
 
@@ -26,14 +25,6 @@ class MobileDeskPage extends StatelessWidget implements PageShape {
     return DeskPage(
       helpMode: helpMode || bind.isIncomingOnly(),
       showSettings: false,
-      onConnectById: () {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Connect by ID')),
-            body: ConnectionPage(appBarActions: const []),
-          ),
-        ));
-      },
       onContinueSetup: () {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => OnboardingPage(

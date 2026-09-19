@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 
 import '../../../common.dart';
 import '../../../consts.dart';
-import '../../../desktop/pages/connection_page.dart' as dconn;
 import '../../../models/fleet_model.dart';
 import '../../../models/platform_model.dart';
 import '../../../models/server_model.dart';
@@ -17,6 +16,7 @@ import '../../../desktop/pages/desktop_tab_page.dart';
 import '../../widgets/login.dart';
 import '../../place_names.dart';
 import '../place_name_dialog.dart';
+import 'connect_by_id_sheet.dart';
 import 'desk_layout.dart';
 import 'desk_memory.dart';
 
@@ -35,7 +35,6 @@ class DeskPage extends StatefulWidget {
     Key? key,
     this.helpMode = false,
     this.showSettings = true,
-    this.onConnectById,
     this.onContinueSetup,
   }) : super(key: key);
 
@@ -44,9 +43,6 @@ class DeskPage extends StatefulWidget {
 
   /// Kept so callers still compile. Settings lives on the window title bar.
   final bool showSettings;
-
-  /// Mobile: push the Connection page. Desktop: in-window sheet.
-  final VoidCallback? onConnectById;
 
   /// Android: open the permission wizard. Desktop unused.
   final VoidCallback? onContinueSetup;
@@ -1370,13 +1366,7 @@ class _DeskPageState extends State<DeskPage> {
         children: [
           if (!widget.helpMode)
             TextButton(
-              onPressed: () {
-                if (widget.onConnectById != null) {
-                  widget.onConnectById!();
-                } else {
-                  _connectById(context);
-                }
-              },
+              onPressed: () => _connectById(context),
               child: const Text('Connect by ID'),
             ),
           const Spacer(),
@@ -1389,9 +1379,7 @@ class _DeskPageState extends State<DeskPage> {
                 style: TextStyle(
                     fontSize: 12, fontWeight: FontWeight.w600, color: muted),
               ),
-            )
-          else
-            loadPowered(context),
+            ),
         ],
       ),
     );
@@ -1539,36 +1527,7 @@ class _DeskPageState extends State<DeskPage> {
   }
 
   void _connectById(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        contentPadding: EdgeInsets.zero,
-        insetPadding: const EdgeInsets.all(24),
-        content: SizedBox(
-          width: 720,
-          height: 520,
-          child: Column(
-            children: [
-              ListTile(
-                title: const Text(
-                  'Connect by ID',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: const Text(
-                  'For a computer that is not on your desk yet.',
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              const Divider(height: 1),
-              const Expanded(child: dconn.ConnectionPage()),
-            ],
-          ),
-        ),
-      ),
-    ).whenComplete(_loadPins);
+    showConnectByIdSheet(context);
   }
 
   Future<void> _addNewComputer() async {

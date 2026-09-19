@@ -563,10 +563,11 @@ class _ConnectionPageState extends State<ConnectionPage>
                                       'View camera',
                                       () => onConnect(isViewCamera: true)
                                     ),
-                                    (
-                                      '${translate('Terminal')} (beta)',
-                                      () => onConnect(isTerminal: true)
-                                    ),
+                                    if (!bind.isCustomClient())
+                                      (
+                                        '${translate('Terminal')} (beta)',
+                                        () => onConnect(isTerminal: true)
+                                      ),
                                   ]
                                       .map((e) => MenuEntryButton<String>(
                                             childBuilder: (TextStyle? style) =>
