@@ -11,7 +11,7 @@
     ProcessorArchitecture="x64" />
   <Properties>
     <DisplayName>ShamarrConnect</DisplayName>
-    <PublisherDisplayName>Shamarr Integrated Services Limited</PublisherDisplayName>
+    <PublisherDisplayName>SiSLLC</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <Description>Hosted remote desktop for computers and phones you own or are authorised to support.</Description>
   </Properties>

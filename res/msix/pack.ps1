@@ -11,11 +11,15 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Convert-StoreVersion([string]$v) {
-    if ($v -match '^(\d+)\.(\d+)\.(\d+)\.(\d+)$') { return $v }
+    # Store requires revision (fourth part) to be 0.
+    # Tag 1.4.9-sc22 → 1.4.22.0
     if ($v -match '^(\d+)\.(\d+)\.(\d+)-sc(\d+)$') {
-        return "$($Matches[1]).$($Matches[2]).$($Matches[3]).$($Matches[4])"
+        return "$($Matches[1]).$($Matches[2]).$($Matches[4]).0"
     }
-    throw "Cannot map '$v' to a four-part MSIX version (want 1.4.9-sc22 or 1.4.9.22)"
+    if ($v -match '^(\d+)\.(\d+)\.(\d+)\.(\d+)$') {
+        return "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
+    }
+    throw "Cannot map '$v' to a Store MSIX version (want 1.4.9-sc22 → 1.4.22.0)"
 }
 
 $msixVersion = Convert-StoreVersion $Version
