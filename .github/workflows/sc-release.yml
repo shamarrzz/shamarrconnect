@@ -26,6 +26,10 @@ on:
       version:
         description: 'Release version, e.g. 1.4.8-sc1'
         required: true
+      windows_only:
+        description: 'Build Windows (+ Store MSIX) only; skip Mac/Linux/Android'
+        type: boolean
+        default: false
 
 env:
   VERSION: ${{ github.event.inputs.version || github.ref_name }}
@@ -232,6 +236,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "signtool failed" }
 
       - name: Publish installer
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           repository: shamarrzz/shamarrconnect-releases
@@ -245,7 +250,24 @@ jobs:
             ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
             ./SignOutput/ShamarrConnect-windows-x86_64.exe
 
+      - name: Pack Store MSIX
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ./SignOutput | Out-Null
+          ./res/msix/pack.ps1 -Source ./shamarrconnect -OutDir ./SignOutput -Version $env:VERSION
+
+      - name: Publish Store MSIX
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        shell: bash
+        run: |
+          gh release upload "${{ env.VERSION }}" \
+            SignOutput/SiSLLC.shamarrdesk_*.msix \
+            SignOutput/SiSLLC.shamarrdesk_*.msixupload \
+            --repo shamarrzz/shamarrconnect-releases --clobber
+
   macos:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
     needs: [generate-bridge]
     runs-on: ${{ matrix.job.os }}
     strategy:
@@ -433,6 +455,7 @@ jobs:
             ShamarrConnect-macos-${{ matrix.job.arch }}.dmg
 
   linux:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
     needs: [generate-bridge]
     runs-on: ubuntu-22.04
     steps:
@@ -624,6 +647,7 @@ jobs:
           path: ShamarrConnect-${{ env.VERSION }}-x86_64.deb
 
   appimage:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
     needs: [linux]
     runs-on: ubuntu-22.04
     steps:
@@ -687,6 +711,7 @@ jobs:
             ./appimage/ShamarrConnect-linux-x86_64.AppImage
 
   android:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
     needs: [generate-bridge]
     runs-on: ubuntu-24.04
     env:
@@ -899,6 +924,7 @@ jobs:
             signed-apk/ShamarrConnect-android-${{ matrix.job.arch }}.apk
 
   source-offer:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
     needs: [windows, macos, linux, appimage]
     runs-on: ubuntu-22.04
     steps:
