@@ -10,7 +10,7 @@
     Version="0.0.0.0"
     ProcessorArchitecture="x64" />
   <Properties>
-    <DisplayName>ShamarrConnect</DisplayName>
+    <DisplayName>ShamarrDesk</DisplayName>
     <PublisherDisplayName>SiSLLC</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <Description>Hosted remote desktop for computers and phones you own or are authorised to support.</Description>
@@ -32,7 +32,7 @@
       Executable="ShamarrConnect.exe"
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="ShamarrConnect"
+        DisplayName="ShamarrDesk"
         Description="Hosted remote desktop for your computers and phones."
         BackgroundColor="#0A1737"
         Square150x150Logo="Assets\Square150x150Logo.png"

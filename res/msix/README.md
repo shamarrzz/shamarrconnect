@@ -5,7 +5,7 @@ Locked Partner Center identity:
 - **Name:** `SiSLLC.shamarrdesk`
 - **Publisher:** `CN=947D66EB-CE27-43A4-AEC1-002D59118CD0`
 - **PublisherDisplayName:** `SiSLLC` (must match Partner Center, not the legal name)
-- **Display name:** ShamarrConnect (listing name is shamarrdesk)
+- **DisplayName in the package:** `ShamarrDesk` (must match the reserved Store name). In-app chrome is still ShamarrConnect.
 
 `pack.ps1` runs on the Windows CI runner after `./shamarrconnect` is built.
 It **drops** `usbmmidd_v2` and printer `drivers/` (kernel drivers — Store will not take them).
