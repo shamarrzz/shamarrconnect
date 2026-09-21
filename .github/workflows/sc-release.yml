@@ -10,8 +10,9 @@ name: SC Release
 #
 # Secrets (all optional — jobs degrade to unsigned when absent):
 #   RELEASES_TOKEN        PAT with repo scope on shamarrzz/shamarrconnect-releases (REQUIRED to publish)
-#   WIN_CERT_PFX_BASE64   base64 PFX for Windows Authenticode (signtool)
-#   WIN_CERT_PASSWORD     PFX password
+#   ESIGNER_USERNAME / ESIGNER_PASSWORD / ESIGNER_CREDENTIAL_ID / ESIGNER_TOTP_SECRET
+#                         SSL.com eSigner (CodeSignTool). PIN is stored but not used at sign time.
+#   WIN_CERT_PFX_BASE64   unused (CA/B 2023 — no PFX for new OV certs)
 #   MACOS_P12_BASE64      base64 Developer ID Application cert
 #   MACOS_P12_PASSWORD    P12 password
 #   MACOS_CODESIGN_IDENTITY  e.g. "Developer ID Application: Name (TEAMID)"
@@ -43,7 +44,7 @@ env:
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   MACOS_P12_BASE64: "${{ secrets.MACOS_P12_BASE64 }}"
-  WIN_CERT_PFX_BASE64: "${{ secrets.WIN_CERT_PFX_BASE64 }}"
+  ESIGNER_USERNAME: "${{ secrets.ESIGNER_USERNAME }}"
 
 jobs:
   generate-bridge:
@@ -199,23 +200,6 @@ jobs:
           name: topmostwindow-artifacts
           path: "./shamarrconnect"
 
-      - name: Install signing certificate
-        if: env.WIN_CERT_PFX_BASE64 != ''
-        run: |
-          $bytes = [Convert]::FromBase64String("${{ secrets.WIN_CERT_PFX_BASE64 }}")
-          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\signing.pfx", $bytes)
-          $pwd = ConvertTo-SecureString -String "${{ secrets.WIN_CERT_PASSWORD }}" -Force -AsPlainText
-          Import-PfxCertificate -FilePath "$env:RUNNER_TEMP\signing.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pwd | Out-Null
-
-      - name: Sign binaries (skipped without cert secrets)
-        if: env.WIN_CERT_PFX_BASE64 != ''
-        run: |
-          $signtool = Get-ChildItem -Path "C:/Program Files (x86)/Windows Kits/10/bin" -Recurse -Filter signtool.exe | Where-Object { $_.FullName -match 'x64' } | Select-Object -Last 1 -ExpandProperty FullName
-          Get-ChildItem -Path ./shamarrconnect -Recurse -Include *.exe, *.dll | ForEach-Object {
-            & $signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /a $_.FullName
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed on $($_.FullName)" }
-          }
-
       - name: Build self-extracted executable
         shell: bash
         run: |
@@ -226,14 +210,37 @@ jobs:
           popd
           mkdir -p ./SignOutput
           mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
+
+      - name: Sign installer (eSigner)
+        if: env.ESIGNER_USERNAME != ''
+        uses: sslcom/esigner-codesign@cf5f6c1d38ad10f47e3ed9aca873f429b1a8d85b # v1.3.2
+        with:
+          command: sign
+          username: ${{ secrets.ESIGNER_USERNAME }}
+          password: ${{ secrets.ESIGNER_PASSWORD }}
+          credential_id: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ESIGNER_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}/SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
+          output_path: ${{ github.workspace }}/SignOutput
+          environment_name: PROD
+          malware_block: false
+          program_name: ShamarrConnect
+
+      - name: Alias signed installer
+        shell: bash
+        run: |
           cp ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe ./SignOutput/ShamarrConnect-windows-x86_64.exe
 
-      - name: Sign installer (skipped without cert secrets)
-        if: env.WIN_CERT_PFX_BASE64 != ''
+      - name: Publish signed installer (windows_only, do not flip draft)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.windows_only == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        shell: bash
         run: |
-          $signtool = Get-ChildItem -Path "C:/Program Files (x86)/Windows Kits/10/bin" -Recurse -Filter signtool.exe | Where-Object { $_.FullName -match 'x64' } | Select-Object -Last 1 -ExpandProperty FullName
-          & $signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /a ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
-          if ($LASTEXITCODE -ne 0) { throw "signtool failed" }
+          gh release upload "${{ env.VERSION }}" \
+            SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe \
+            SignOutput/ShamarrConnect-windows-x86_64.exe \
+            --repo shamarrzz/shamarrconnect-releases --clobber
 
       - name: Publish installer
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
