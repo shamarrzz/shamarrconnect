@@ -1,5 +1,5 @@
 # Pack ./shamarrconnect (Flutter Windows Release + extras) as a Store MSIX.
-# Identity is locked to Partner Center: SiSLLC.shamarrdesk.
+# Identity is locked to Partner Center: SiSLLC.ShamarrConnect.
 param(
     [Parameter(Mandatory = $true)][string]$Source,
     [Parameter(Mandatory = $true)][string]$OutDir,
@@ -65,14 +65,14 @@ $makeappx = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -
 if (-not $makeappx) { throw "makeappx.exe not found (Windows SDK)" }
 Write-Host "makeappx: $($makeappx.FullName)"
 
-$msixName = "SiSLLC.shamarrdesk_${msixVersion}_x64.msix"
+$msixName = "SiSLLC.ShamarrConnect_${msixVersion}_x64.msix"
 $msixPath = Join-Path $OutDir $msixName
 if (Test-Path $msixPath) { Remove-Item -Force $msixPath }
 
 & $makeappx.FullName pack /d $stage /p $msixPath /o /l
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed: $LASTEXITCODE" }
 
-$upload = Join-Path $OutDir "SiSLLC.shamarrdesk_${msixVersion}_x64.msixupload"
+$upload = Join-Path $OutDir "SiSLLC.ShamarrConnect_${msixVersion}_x64.msixupload"
 if (Test-Path $upload) { Remove-Item -Force $upload }
 Compress-Archive -Path $msixPath -DestinationPath $upload -Force
 

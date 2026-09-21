@@ -1,11 +1,12 @@
-# Microsoft Store MSIX (ShamarrDesk)
+# Microsoft Store MSIX (ShamarrConnect)
 
-Locked Partner Center identity:
+Locked Partner Center identity (Store ID `9P0VJTLT97J1`):
 
-- **Name:** `SiSLLC.shamarrdesk`
+- **Name:** `SiSLLC.ShamarrConnect`
 - **Publisher:** `CN=947D66EB-CE27-43A4-AEC1-002D59118CD0`
-- **PublisherDisplayName:** `SiSLLC` (must match Partner Center, not the legal name)
-- **DisplayName in the package:** `ShamarrDesk` (must match the reserved Store name). In-app chrome is still ShamarrConnect.
+- **PublisherDisplayName:** `SiSLLC`
+- **DisplayName:** `ShamarrConnect`
+- **PFN:** `SiSLLC.ShamarrConnect_ygb6c6m5066qj`
 
 `pack.ps1` runs on the Windows CI runner after `./shamarrconnect` is built.
 It **drops** `usbmmidd_v2` and printer `drivers/` (kernel drivers — Store will not take them).

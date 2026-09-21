@@ -262,8 +262,8 @@ jobs:
         shell: bash
         run: |
           gh release upload "${{ env.VERSION }}" \
-            SignOutput/SiSLLC.shamarrdesk_*.msix \
-            SignOutput/SiSLLC.shamarrdesk_*.msixupload \
+            SignOutput/SiSLLC.ShamarrConnect_*.msix \
+            SignOutput/SiSLLC.ShamarrConnect_*.msixupload \
             --repo shamarrzz/shamarrconnect-releases --clobber
 
   macos:
