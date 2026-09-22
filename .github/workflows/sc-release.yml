@@ -221,15 +221,23 @@ jobs:
           credential_id: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
           totp_secret: ${{ secrets.ESIGNER_TOTP_SECRET }}
           file_path: ${{ github.workspace }}/SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe
-          output_path: ${{ github.workspace }}/SignOutput
+          output_path: ${{ github.workspace }}/SignOutput/signed
           environment_name: PROD
           malware_block: false
+          override: true
           program_name: ShamarrConnect
 
       - name: Alias signed installer
         shell: bash
         run: |
-          cp ./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe ./SignOutput/ShamarrConnect-windows-x86_64.exe
+          signed="./SignOutput/signed/ShamarrConnect-${{ env.VERSION }}-x86_64.exe"
+          if [ ! -f "$signed" ]; then
+            echo "signed installer missing: $signed"
+            ls -la ./SignOutput ./SignOutput/signed || true
+            exit 1
+          fi
+          cp "$signed" "./SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe"
+          cp "$signed" ./SignOutput/ShamarrConnect-windows-x86_64.exe
 
       - name: Publish signed installer (windows_only, do not flip draft)
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.windows_only == 'true' }}
