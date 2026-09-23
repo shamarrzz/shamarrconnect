@@ -23,6 +23,9 @@ TMPDIR="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
 cp -r "$WEBSITE_DIR/site/." "$TMPDIR/"
+if [ -d "$WEBSITE_DIR/functions" ]; then
+  cp -r "$WEBSITE_DIR/functions" "$TMPDIR/functions"
+fi
 if [ -d "$WEBSITE_DIR/private" ]; then
   cp -r "$WEBSITE_DIR/private/." "$TMPDIR/"
 fi

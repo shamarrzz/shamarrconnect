@@ -6,120 +6,109 @@
 <title>Team · ShamarrConnect</title>
 <meta name="robots" content="noindex">
 <meta name="description" content="Invite teammates, manage seats, and see shared device usage on your ShamarrConnect Team plan.">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<script>
+(function(){
+  try{
+    if(localStorage.getItem('sc-landing-theme')!=='light') document.documentElement.classList.add('dark');
+    if(sessionStorage.getItem('sc_token')) document.documentElement.classList.add('in');
+  }catch(e){ document.documentElement.classList.add('dark'); }
+})();
+</script>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=3">
+<link rel="shortcut icon" href="/favicon.ico?v=3">
 <link rel="stylesheet" href="/fonts.css">
-<style>
-  :root{
-    --brand:#2B5CE6;--brand-dk:#1E3FA8;--ink:#0F1B33;--muted:#5A6B85;
-    --line:#E6ECF5;--bg:#F8FAFF;--ok:#1D9E75;--err:#B91C1C;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink);
-    background:var(--bg);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
-  a{color:var(--brand);text-decoration:none}
-  header{background:#fff;border-bottom:1px solid var(--line)}
-  header .bar{max-width:920px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  header .brand .wordmark{height:30px;width:auto;display:block}
-  header .brand .mark{display:none}
-  @media(max-width:720px){
-    header .brand .wordmark{display:none}
-    header .brand .mark{display:block;width:36px;height:36px;border-radius:9px}
-  }
-  header .nav{display:flex;gap:14px;font-size:13.5px}
-  header .nav a{color:var(--muted);font-weight:600}
-  header .nav a:hover,header .nav a.on{color:var(--brand)}
-  header .who{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:10px}
-  header button{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
-  header button:hover{border-color:var(--brand);color:var(--brand)}
-  main{flex:1;max-width:920px;width:100%;margin:0 auto;padding:36px 24px 80px}
-  h1{font-size:26px;letter-spacing:-.02em;margin-bottom:6px}
-  h2{font-size:17px;margin:28px 0 12px}
-  .sub{color:var(--muted);margin-bottom:22px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 24px;
-    box-shadow:0 10px 30px rgba(20,40,90,.05);margin-bottom:16px}
-  .meters{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:560px){.meters{grid-template-columns:1fr}}
-  .meter .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-  .meter .val{font-size:22px;font-weight:800;margin-top:4px}
-  .meter .bar{height:8px;background:#EAF0FF;border-radius:100px;margin-top:10px;overflow:hidden}
-  .meter .bar > i{display:block;height:100%;background:var(--brand);border-radius:100px}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
-    padding:0 8px 10px;border-bottom:1px solid var(--line)}
-  td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-  tr:last-child td{border-bottom:0}
-  .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;background:#EAF0FF;color:#1E3FA8}
-  .badge.owner{background:#ECFDF5;color:#065F46}
-  .badge.admin{background:#EEF2FF;color:#3730A3}
-  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;
-    font-weight:700;font-size:13.5px;padding:10px 16px;border-radius:10px;border:0;cursor:pointer}
-  .btn:hover{background:var(--brand-dk)}
-  .btn[disabled]{opacity:.55;cursor:default}
-  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
-  .btn.danger{background:#fff;color:var(--err);border:1px solid #FECACA}
-  .btn.sm{padding:6px 10px;font-size:12px}
-  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
-  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit}
-  .row{display:grid;grid-template-columns:1fr 140px auto;gap:10px;align-items:end}
-  @media(max-width:640px){.row{grid-template-columns:1fr}}
-  .msg{font-size:13.5px;padding:10px 14px;border-radius:10px;margin-top:12px;display:none}
-  .msg.ok{display:block;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
-  .msg.err{display:block;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
-  .empty{color:var(--muted);padding:12px 0;font-size:14px}
-  .note{font-size:13px;color:var(--muted);margin-top:10px}
-  .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-all}
-  .linkrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  footer{border-top:1px solid var(--line);padding:18px 24px;text-align:center;font-size:12.5px;color:var(--muted)}
-  #login-view,#no-team,#team-view{display:none}
-</style>
+<link rel="stylesheet" href="/account/account.css">
 </head>
 <body>
-<header>
-  <div class="bar">
-    <a class="brand" href="/" aria-label="ShamarrConnect home">
-      <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
-      <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
+<div class="shell">
+<aside class="side">
+  <a class="side-brand" href="/account#desk" aria-label="ShamarrConnect desk">
+    <span class="icon-btn"><img src="/logo-mark.svg" width="36" height="36" alt=""></span>
+    <span class="brand-name">Shamarr<span>Connect</span></span>
+  </a>
+  <nav class="side-nav" aria-label="Account">
+    <a class="side-link" href="/account#desk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <span>Desk</span>
     </a>
-    <nav class="nav">
-      <a href="/account/">Account</a>
-      <a class="on" href="/account/team/">Team</a>
-      <a href="/pricing/">Pricing</a>
-    </nav>
+    <a class="side-link" href="/account#profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M5.2 19.5c1.3-2.8 3.6-4.2 6.8-4.2s5.5 1.4 6.8 4.2"/></svg>
+      <span>Profile</span>
+    </a>
+    <a class="side-link" href="/account#billing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+      <span>Billing</span>
+    </a>
+    <a class="side-link" href="/account#security">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 19 6v5.8c0 4.1-2.7 6.6-7 8.2-4.3-1.6-7-4.1-7-8.2V6z"/></svg>
+      <span>Security</span>
+    </a>
+    <a class="side-link on" href="/account/team/" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.2" r="2.5"/><circle cx="16.2" cy="9" r="2"/><path d="M4.2 18.6c.9-2.5 2.8-3.7 4.8-3.7s3.9 1.2 4.8 3.7M14.2 14.8c1.4-.2 2.8.5 3.6 2.2"/></svg>
+      <span>Team</span>
+    </a>
+  </nav>
+</aside>
+<div class="workspace">
+<header class="topbar">
+  <a class="top-mark" href="/account#desk" aria-label="Desk"><img src="/logo-mark.svg" width="32" height="32" alt=""></a>
+  <div class="top-end">
+    <button type="button" class="theme-switch" id="theme-switch" aria-pressed="true">
+      <span class="track" aria-hidden="true"><span class="knob"></span></span>
+      <span class="theme-label">Dark</span>
+    </button>
     <div class="who" id="who" hidden>
       <span id="who-email"></span>
-      <button type="button" id="signout">Sign out</button>
+      <button id="signout" type="button" aria-label="Sign out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V5.8A1.8 1.8 0 0 1 10.8 4h7.4A1.8 1.8 0 0 1 20 5.8v12.4a1.8 1.8 0 0 1-1.8 1.8h-7.4A1.8 1.8 0 0 1 9 18.2V17"/><path d="M13 12H3.5M6 9.2 3.2 12 6 14.8"/></svg>
+        <span>Sign out</span>
+      </button>
     </div>
   </div>
 </header>
-
 <main>
   <div id="login-view">
     <h1>Team</h1>
     <p class="sub">Sign in to manage your ShamarrConnect team.</p>
-    <div class="card" style="max-width:420px">
+    <div class="card narrow">
+      <div class="oauth">
+        <a class="oauth-btn" href="https://api.shamarrconnect.com/api/oauth/google/start?next=/account/team/" aria-label="Sign in with Google">
+          <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.7-6.6 7.1l6.3 5.3C37.4 38.4 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"/>
+          </svg>
+        </a>
+        <a class="oauth-btn li" href="https://api.shamarrconnect.com/api/oauth/linkedin/start?next=/account/team/" aria-label="Sign in with LinkedIn">
+          <span class="in-mark" aria-hidden="true">in</span>
+        </a>
+      </div>
+      <p class="or">Or use your password.</p>
       <form id="login-form">
         <label for="email">Email</label>
         <input id="email" type="email" autocomplete="username" required>
-        <label for="password" style="margin-top:12px">Password</label>
+        <label for="password">Password</label>
         <input id="password" type="password" autocomplete="current-password" required>
         <div id="mfa-row" hidden>
-          <label for="code" style="margin-top:12px">Two-step code</label>
+          <label for="code">Two-step code</label>
           <input id="code" inputmode="numeric" autocomplete="one-time-code">
         </div>
-        <button class="btn" style="width:100%;margin-top:16px" id="login-btn" type="submit">Sign in</button>
-        <div class="msg err" id="login-err"></div>
+        <button class="btn block" id="login-btn" type="submit">Sign in</button>
+        <div class="msg" id="login-err"></div>
       </form>
     </div>
   </div>
 
   <div id="no-team">
     <h1>No team yet</h1>
-    <p class="sub">Team management is for accounts on the Team plan (or invited members).</p>
+    <p class="sub" id="no-team-help">Team is 10 people and 150 shared computers. Your own computers stay on this account until you are on Team.</p>
     <div class="card">
-      <p>If you just upgraded to Team, create your team workspace:</p>
-      <button class="btn" type="button" id="create-team" style="margin-top:14px">Create my team</button>
-      <div class="msg err" id="create-err"></div>
-      <p class="note">Need Team? <a href="/pricing/">See pricing</a> · Personal devices live on <a href="/account/">your account</a>.</p>
+      <button class="btn" type="button" id="create-team" hidden>Create my team</button>
+      <div class="msg" id="create-err"></div>
+      <p class="note" id="no-team-pricing">See <a href="/pricing/">Team pricing</a>. Personal computers stay on <a href="/account/">your account</a>.</p>
     </div>
   </div>
 
@@ -157,6 +146,7 @@
     </div>
 
     <h2>Members</h2>
+    <p class="note" id="member-help" hidden>An admin invites people and changes the team name.</p>
     <div class="card">
       <div id="members-table"><div class="empty">Loading…</div></div>
       <button class="btn ghost danger sm" type="button" id="leave-team" style="margin-top:12px" hidden>Leave team</button>
@@ -180,7 +170,7 @@
           <button class="btn" type="button" id="inv-send">Email invite</button>
         </div>
         <div class="msg" id="inv-msg"></div>
-        <p class="note">We email them a secure link. They sign in with <strong>that same email</strong> and accept. Seats include pending invites. You can still copy the link if mail fails.</p>
+        <p class="note">Seats include people you have invited and not yet accepted. They must sign in with the invited email. We email a link. You can still copy it if mail fails.</p>
       </div>
 
       <h2>Pending invites</h2>
@@ -192,13 +182,15 @@
   </div>
 </main>
 
-<footer>ShamarrConnect · <a href="/account/">Account</a> · <a href="/privacy/">Privacy</a></footer>
+<footer>ShamarrConnect · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refund">Refunds</a></footer>
+</div>
+</div>
 
 <script>
 (function(){
   var API = "https://api.shamarrconnect.com";
   var $ = function(id){ return document.getElementById(id); };
-  var mfaSecret = null, myRole = "", myUserId = "";
+  var mfaSecret = null, myRole = "", accountPlan = "free";
 
   function token(){ return sessionStorage.getItem("sc_token"); }
   function setToken(t){ t ? sessionStorage.setItem("sc_token", t) : sessionStorage.removeItem("sc_token"); }
@@ -229,6 +221,7 @@
     $("no-team").style.display = "none";
     $("team-view").style.display = "none";
     $("who").hidden = true;
+    document.documentElement.classList.remove("in");
     if (msg){ $("login-err").textContent = msg; $("login-err").className = "msg err"; }
   }
   function showNoTeam(){
@@ -236,12 +229,20 @@
     $("no-team").style.display = "block";
     $("team-view").style.display = "none";
     $("who").hidden = false;
+    document.documentElement.classList.add("in");
+    var teamPlan = accountPlan === "team";
+    $("create-team").hidden = !teamPlan;
+    $("no-team-help").textContent = teamPlan
+      ? "Your Team plan is active. Create the workspace, then invite people with their email."
+      : "Team is 10 people and 150 shared computers. Your own computers stay on this account until you are on Team.";
+    $("no-team-pricing").hidden = teamPlan;
   }
   function showTeam(){
     $("login-view").style.display = "none";
     $("no-team").style.display = "none";
     $("team-view").style.display = "block";
     $("who").hidden = false;
+    document.documentElement.classList.add("in");
   }
 
   function pct(used, limit){
@@ -252,28 +253,31 @@
   function load(){
     api("/api/currentUser", { method: "POST", body: { id: "", uuid: "" } })
       .then(function(u){
+        accountPlan = String(u.plan || "free").toLowerCase();
         $("who-email").textContent = u.email || u.name || "";
-        myUserId = ""; // not in payload as id
-      }).catch(function(){});
-
-    api("/api/org").then(function(v){
-      if (!v.org){ showNoTeam(); return; }
-      showTeam();
-      renderOrg(v.org);
-      var isAdmin = v.org.my_role === "owner" || v.org.my_role === "admin";
-      $("admin-only").style.display = isAdmin ? "" : "none";
-      $("rename-card").hidden = !isAdmin;
-      $("leave-team").hidden = v.org.my_role === "owner";
-      myRole = v.org.my_role;
-      $("team-name").value = v.org.name || "";
-      return Promise.all([
-        api("/api/org/members").then(renderMembers),
-        isAdmin ? api("/api/org/invites").then(renderInvites) : Promise.resolve(),
-        api("/api/org/activity?limit=40").then(renderActivity)
-      ]);
-    }).catch(function(e){
-      if (e.message !== "unauthorized") showLogin(e.message);
-    });
+        document.documentElement.classList.add("in");
+        return api("/api/org");
+      })
+      .then(function(v){
+        if (!v || !v.org){ showNoTeam(); return; }
+        showTeam();
+        renderOrg(v.org);
+        var isAdmin = v.org.my_role === "owner" || v.org.my_role === "admin";
+        $("admin-only").style.display = isAdmin ? "" : "none";
+        $("rename-card").hidden = !isAdmin;
+        $("member-help").hidden = isAdmin;
+        $("leave-team").hidden = v.org.my_role === "owner";
+        myRole = v.org.my_role;
+        $("team-name").value = v.org.name || "";
+        return Promise.all([
+          api("/api/org/members").then(renderMembers),
+          isAdmin ? api("/api/org/invites").then(renderInvites) : Promise.resolve(),
+          api("/api/org/activity?limit=40").then(renderActivity)
+        ]);
+      })
+      .catch(function(e){
+        if (e && e.message && e.message !== "unauthorized") showLogin(e.message);
+      });
   }
 
   function renderOrg(o){
@@ -477,7 +481,44 @@
     api("/api/org/leave", { method: "POST", body: {} }).then(load).catch(function(e){ alert(e.message); });
   });
 
-  if (token()) load(); else showLogin();
+  (function theme(){
+    var themeBtn = $("theme-switch");
+    function setTheme(dark){
+      document.documentElement.classList.toggle("dark", dark);
+      if (themeBtn){
+        themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
+        var lab = themeBtn.querySelector(".theme-label");
+        if (lab) lab.textContent = dark ? "Dark" : "Light";
+      }
+      try{ localStorage.setItem("sc-landing-theme", dark ? "dark" : "light"); }catch(e){}
+    }
+    if (themeBtn){
+      setTheme(document.documentElement.classList.contains("dark"));
+      themeBtn.addEventListener("click", function(){
+        setTheme(!document.documentElement.classList.contains("dark"));
+      });
+    }
+  })();
+
+  var stopForOauth = false;
+  (function takeOauth(){
+    var hash = location.hash || "";
+    if (hash.indexOf("#token=") === 0) {
+      var t = decodeURIComponent(hash.slice("#token=".length));
+      if (t) setToken(t);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    var params = new URLSearchParams(location.search);
+    var err = params.get("oauth_error");
+    if (err) {
+      params.delete("oauth_error");
+      var qs = params.toString();
+      history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
+      showLogin(err);
+      stopForOauth = true;
+    }
+  })();
+  if (!stopForOauth){ if (token()) load(); else showLogin(); }
 })();
 </script>
 </body>

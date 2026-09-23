@@ -1,4 +1,5 @@
-# Pre-launch: keep the whole site out of search indexes.
-# LAUNCH DAY: delete this file (or replace with Allow). See docs/psc/LAUNCH.md.
+# Public pages must be fetchable (Paystack and other reviewers).
+# Search engines: landing still has <meta name="robots" content="noindex">
+# until LAUNCH.md. Do not Disallow: / — crawlers treat that as the site is down.
 User-agent: *
-Disallow: /
+Allow: /
