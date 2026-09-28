@@ -1957,6 +1957,24 @@ pub fn is_installed() -> bool {
     std::fs::metadata(exe).is_ok()
 }
 
+/// True when this process was launched from an MSIX / Store package.
+/// A classic `.exe` has no package identity, so the website installer is unchanged.
+pub fn is_running_as_packaged_app() -> bool {
+    // ERROR_INSUFFICIENT_BUFFER: the process has a package name and the
+    // zero-length buffer was too small. APPMODEL_ERROR_NO_PACKAGE (15700)
+    // is the unpackaged result.
+    const ERROR_INSUFFICIENT_BUFFER: i32 = 122;
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetCurrentPackageFullName(package_full_name_length: *mut u32, package_full_name: *mut u16)
+            -> i32;
+    }
+    unsafe {
+        let mut len: u32 = 0;
+        GetCurrentPackageFullName(&mut len, std::ptr::null_mut()) == ERROR_INSUFFICIENT_BUFFER
+    }
+}
+
 pub fn get_reg(name: &str) -> String {
     let (subkey, _, _, _) = get_install_info();
     get_reg_of(&subkey, name)
@@ -4563,6 +4581,11 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_unpackaged_process_is_not_a_store_app() {
+        assert!(!is_running_as_packaged_app());
     }
 
     #[test]

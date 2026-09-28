@@ -9,7 +9,7 @@ Locked Partner Center identity (Store ID `9P0VJTLT97J1`):
 - **PFN:** `SiSLLC.ShamarrConnect_ygb6c6m5066qj`
 
 `pack.ps1` runs on the Windows CI runner after `./shamarrconnect` is built.
-It **drops** `usbmmidd_v2` and printer `drivers/` (kernel drivers — Store will not take them).
+It **drops** `usbmmidd_v2`, printer `drivers/`, and `printer_driver_adapter.dll` (kernel drivers and the virtual printer — Store will not take them).
 The package is **unsigned**; the Store re-signs on submit.
 
 Version mapping: tag `1.4.9-sc22` → MSIX `1.4.22.0` (Store forces the fourth number to 0).

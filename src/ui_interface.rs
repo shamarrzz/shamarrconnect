@@ -98,12 +98,20 @@ pub fn get_id() -> String {
 
 #[inline]
 pub fn goto_install() {
+    #[cfg(windows)]
+    if crate::platform::is_running_as_packaged_app() {
+        return;
+    }
     allow_err!(crate::run_me(vec!["--install"]));
     std::process::exit(0);
 }
 
 #[inline]
 pub fn install_me(_options: String, _path: String, _silent: bool, _debug: bool) {
+    #[cfg(windows)]
+    if crate::platform::is_running_as_packaged_app() {
+        return;
+    }
     #[cfg(windows)]
     std::thread::spawn(move || {
         allow_err!(crate::platform::windows::install_me(

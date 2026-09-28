@@ -245,6 +245,13 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         shell: bash
         run: |
+          if ! gh release view "${{ env.VERSION }}" --repo shamarrzz/shamarrconnect-releases >/dev/null 2>&1; then
+            gh release create "${{ env.VERSION }}" \
+              --repo shamarrzz/shamarrconnect-releases \
+              --draft \
+              --title "ShamarrConnect ${{ env.VERSION }}" \
+              --notes "Windows build. Draft, not latest."
+          fi
           gh release upload "${{ env.VERSION }}" \
             SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe \
             SignOutput/ShamarrConnect-windows-x86_64.exe \
@@ -271,11 +278,27 @@ jobs:
           New-Item -ItemType Directory -Force -Path ./SignOutput | Out-Null
           ./res/msix/pack.ps1 -Source ./shamarrconnect -OutDir ./SignOutput -Version $env:VERSION
 
+      - name: Upload Store MSIX artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: store-msix-${{ env.VERSION }}
+          if-no-files-found: error
+          path: |
+            SignOutput/SiSLLC.ShamarrConnect_*.msix
+            SignOutput/SiSLLC.ShamarrConnect_*.msixupload
+
       - name: Publish Store MSIX
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         shell: bash
         run: |
+          if ! gh release view "${{ env.VERSION }}" --repo shamarrzz/shamarrconnect-releases >/dev/null 2>&1; then
+            gh release create "${{ env.VERSION }}" \
+              --repo shamarrzz/shamarrconnect-releases \
+              --draft \
+              --title "ShamarrConnect ${{ env.VERSION }}" \
+              --notes "Windows build. Draft, not latest."
+          fi
           gh release upload "${{ env.VERSION }}" \
             SignOutput/SiSLLC.ShamarrConnect_*.msix \
             SignOutput/SiSLLC.ShamarrConnect_*.msixupload \

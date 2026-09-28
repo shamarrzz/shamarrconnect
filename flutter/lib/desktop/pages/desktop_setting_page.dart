@@ -2519,6 +2519,10 @@ class __PrinterState extends State<_Printer> {
   }
 
   Widget outgoing(BuildContext context) {
+    // Store package: no second install and no printer driver.
+    if (isWindows && bind.isDisableInstallation()) {
+      return const SizedBox.shrink();
+    }
     final isSupportPrinterDriver =
         bind.mainGetCommonSync(key: 'is-support-printer-driver') == 'true';
 

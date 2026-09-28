@@ -38,7 +38,8 @@ Get-ChildItem -Path $Source -Force | ForEach-Object {
     $skip = @(
         "usbmmidd_v2",
         "drivers",
-        "Win32"
+        "Win32",
+        "printer_driver_adapter.dll"
     ) -contains $_.Name
     if ($skip) {
         Write-Host "  skip $($_.Name) (kernel driver / not for Store)"

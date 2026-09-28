@@ -2484,6 +2484,10 @@ pub fn is_disable_group_panel() -> SyncReturn<bool> {
 
 // windows only
 pub fn is_disable_installation() -> SyncReturn<bool> {
+    #[cfg(windows)]
+    if crate::platform::is_running_as_packaged_app() {
+        return SyncReturn(true);
+    }
     SyncReturn(config::is_disable_installation())
 }
 
@@ -2886,6 +2890,9 @@ pub fn main_get_common_sync(key: String) -> SyncReturn<String> {
 pub fn main_set_common(_key: String, _value: String) {
     #[cfg(target_os = "windows")]
     if _key == "install-printer" && crate::platform::is_win_10_or_greater() {
+        if crate::platform::is_running_as_packaged_app() {
+            return;
+        }
         std::thread::spawn(move || {
             let (success, msg) = match remote_printer::install_update_printer(&get_app_name()) {
                 Ok(_) => (true, "".to_owned()),

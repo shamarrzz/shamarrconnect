@@ -134,9 +134,11 @@ Future<void> initEnv(String appType) async {
   updateSystemWindowTheme();
 }
 
-void runMainApp(bool startService) async {
+void runMainApp(bool startService, {bool alreadyInited = false}) async {
   // register uni links
-  await initEnv(kAppTypeMain);
+  if (!alreadyInited) {
+    await initEnv(kAppTypeMain);
+  }
   checkUpdate();
   // trigger connection status updater
   await bind.mainCheckConnectStatus();
@@ -400,6 +402,13 @@ void _runApp(
 void runInstallPage() async {
   await windowManager.ensureInitialized();
   await initEnv(kAppTypeMain);
+  // Store launch: the package is already installed. Open the desk.
+  if (bind.isDisableInstallation()) {
+    desktopType = DesktopType.main;
+    windowManager.setPreventClose(true);
+    await runMainApp(true, alreadyInited: true);
+    return;
+  }
   _runApp('', const InstallPage(), MyTheme.currentThemeMode());
   WindowOptions windowOptions =
       getHiddenTitleBarWindowOptions(size: Size(800, 600), center: true);
