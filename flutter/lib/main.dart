@@ -134,7 +134,7 @@ Future<void> initEnv(String appType) async {
   updateSystemWindowTheme();
 }
 
-void runMainApp(bool startService, {bool alreadyInited = false}) async {
+Future<void> runMainApp(bool startService, {bool alreadyInited = false}) async {
   // register uni links
   if (!alreadyInited) {
     await initEnv(kAppTypeMain);
