@@ -31,6 +31,10 @@ on:
         description: 'Build Windows (+ Store MSIX) only; skip Mac/Linux/Android'
         type: boolean
         default: false
+      macos_only:
+        description: 'Build signed Mac DMGs only; skip Windows/Linux/Android'
+        type: boolean
+        default: false
 
 env:
   VERSION: ${{ github.event.inputs.version || github.ref_name }}
@@ -51,6 +55,7 @@ jobs:
     uses: ./.github/workflows/bridge.yml
 
   build-topmostwindow:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.macos_only != 'true' }}
     uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
     with:
       upload-artifact: true
@@ -60,6 +65,7 @@ jobs:
       target_version: Windows10
 
   windows:
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.macos_only != 'true' }}
     needs: [generate-bridge, build-topmostwindow]
     runs-on: windows-2022
     steps:
@@ -475,7 +481,7 @@ jobs:
           codesign --force --options runtime -s "${{ secrets.MACOS_CODESIGN_IDENTITY }}" --deep --strict ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app -vvv
           create-dmg --icon "ShamarrConnect.app" 200 190 --hide-extension "ShamarrConnect.app" --window-size 800 400 --app-drop-link 600 185 ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app
           codesign --force --options runtime -s "${{ secrets.MACOS_CODESIGN_IDENTITY }}" --deep --strict ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg -vvv
-          rcodesign notary-submit --api-key-path ${{ github.workspace }}/shamarrconnect.json --staple ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
+          rcodesign notary-submit --api-key-path ${{ github.workspace }}/shamarrconnect.json --staple --max-wait-seconds 3600 ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
 
       - name: Stage stable alias for website deep links
         run: |
@@ -494,7 +500,7 @@ jobs:
             ShamarrConnect-macos-${{ matrix.job.arch }}.dmg
 
   linux:
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.windows_only != 'true' && github.event.inputs.macos_only != 'true') }}
     needs: [generate-bridge]
     runs-on: ubuntu-22.04
     steps:
@@ -686,7 +692,7 @@ jobs:
           path: ShamarrConnect-${{ env.VERSION }}-x86_64.deb
 
   appimage:
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.windows_only != 'true' && github.event.inputs.macos_only != 'true') }}
     needs: [linux]
     runs-on: ubuntu-22.04
     steps:
@@ -750,7 +756,7 @@ jobs:
             ./appimage/ShamarrConnect-linux-x86_64.AppImage
 
   android:
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.windows_only != 'true' && github.event.inputs.macos_only != 'true') }}
     needs: [generate-bridge]
     runs-on: ubuntu-24.04
     env:
@@ -963,7 +969,7 @@ jobs:
             signed-apk/ShamarrConnect-android-${{ matrix.job.arch }}.apk
 
   source-offer:
-    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.windows_only != 'true' && github.event.inputs.macos_only != 'true') }}
     needs: [windows, macos, linux, appimage]
     runs-on: ubuntu-22.04
     steps:
