@@ -345,6 +345,7 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.MACOS_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_P12_PASSWORD }}
+          keychain-password: ${{ secrets.MACOS_P12_PASSWORD }}
           keychain: shamarrconnect
 
       - name: Check sign and import sign key
@@ -469,11 +470,11 @@ jobs:
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
           security default-keychain -s shamarrconnect.keychain
-          security unlock-keychain -p ${{ secrets.MACOS_P12_PASSWORD }} shamarrconnect.keychain
+          security unlock-keychain -p "${{ secrets.MACOS_P12_PASSWORD }}" shamarrconnect.keychain
           rm -rf *.dmg || true
-          codesign --force --options runtime -s ${{ secrets.MACOS_CODESIGN_IDENTITY }} --deep --strict ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app -vvv
+          codesign --force --options runtime -s "${{ secrets.MACOS_CODESIGN_IDENTITY }}" --deep --strict ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app -vvv
           create-dmg --icon "ShamarrConnect.app" 200 190 --hide-extension "ShamarrConnect.app" --window-size 800 400 --app-drop-link 600 185 ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app
-          codesign --force --options runtime -s ${{ secrets.MACOS_CODESIGN_IDENTITY }} --deep --strict ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg -vvv
+          codesign --force --options runtime -s "${{ secrets.MACOS_CODESIGN_IDENTITY }}" --deep --strict ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg -vvv
           rcodesign notary-submit --api-key-path ${{ github.workspace }}/shamarrconnect.json --staple ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
 
       - name: Stage stable alias for website deep links
