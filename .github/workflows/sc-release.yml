@@ -481,7 +481,49 @@ jobs:
           codesign --force --options runtime -s "${{ secrets.MACOS_CODESIGN_IDENTITY }}" --deep --strict ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app -vvv
           create-dmg --icon "ShamarrConnect.app" 200 190 --hide-extension "ShamarrConnect.app" --window-size 800 400 --app-drop-link 600 185 ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/ShamarrConnect.app
           codesign --force --options runtime -s "${{ secrets.MACOS_CODESIGN_IDENTITY }}" --deep --strict ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg -vvv
-          rcodesign notary-submit --api-key-path ${{ github.workspace }}/shamarrconnect.json --staple --max-wait-seconds 3600 ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
+          dmg="ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg"
+          key="${{ github.workspace }}/shamarrconnect.json"
+          log=/tmp/notary.log
+          ok=0
+          submission=""
+          for attempt in 1 2 3 4; do
+            set +e
+            set -o pipefail
+            rcodesign notary-submit --api-key-path "$key" --staple --max-wait-seconds 3600 "$dmg" 2>&1 | tee "$log"
+            rc=${PIPESTATUS[0]}
+            set +o pipefail
+            set -e
+            if [ "$rc" -eq 0 ]; then
+              ok=1
+              break
+            fi
+            id="$(sed -n 's/.*created submission ID: //p' "$log" | tail -1 | tr -d '[:space:]')"
+            if [ -n "$id" ]; then
+              submission="$id"
+            fi
+            if [ -z "$submission" ] || ! grep -Eq 'dns error|error trying to connect|reached time limit|timed out|temporary failure|nodename nor servname' "$log"; then
+              exit "$rc"
+            fi
+            echo "notarization wait failed on attempt ${attempt}; resuming ${submission}"
+            set +e
+            set -o pipefail
+            rcodesign notary-wait --api-key-path "$key" --max-wait-seconds 3600 "$submission" 2>&1 | tee "$log"
+            rc=${PIPESTATUS[0]}
+            set +o pipefail
+            set -e
+            if [ "$rc" -eq 0 ] && grep -q 'Accepted' "$log"; then
+              rcodesign staple "$dmg"
+              ok=1
+              break
+            fi
+            if ! grep -Eq 'dns error|error trying to connect|reached time limit|timed out|temporary failure|nodename nor servname' "$log"; then
+              exit "$rc"
+            fi
+            sleep 30
+          done
+          if [ "$ok" != 1 ]; then
+            exit 1
+          fi
 
       - name: Stage stable alias for website deep links
         run: |
