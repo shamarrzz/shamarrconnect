@@ -3544,8 +3544,13 @@ pub async fn handle_hash(
     }
 
     let password = if password.is_empty() {
-        // login without password, the remote side can click accept
-        interface.msgbox("input-password", "Password Required", "", "");
+        // A signed-in Open sends the account token and often succeeds with no
+        // one-time password. Showing the box here flashes it until peer info
+        // arrives. The peer sends "Empty Password" if the token is not enough.
+        // Logged-out Connect by ID still asks immediately.
+        if hbb_common::config::LocalConfig::get_option("access_token").is_empty() {
+            interface.msgbox("input-password", "Password Required", "", "");
+        }
         Vec::new()
     } else {
         let mut hasher = Sha256::new();

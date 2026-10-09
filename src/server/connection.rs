@@ -2847,6 +2847,11 @@ impl Connection {
                         }
                     }
                     self.try_start_cm(lr.my_id, lr.my_name, false);
+                    // Signed-in clients skip the password box until this
+                    // arrives, so a same-account Open does not flash it.
+                    if !lr.api_auth_token.is_empty() {
+                        self.send_login_error(crate::client::LOGIN_MSG_PASSWORD_EMPTY).await;
+                    }
                 } else {
                     self.send_login_error(
                         crate::client::LOGIN_MSG_DESKTOP_SESSION_NOT_READY_PASSWORD_EMPTY,
