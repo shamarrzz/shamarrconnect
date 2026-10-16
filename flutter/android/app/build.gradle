@@ -2,7 +2,8 @@ import com.google.protobuf.gradle.*
 import groovy.json.JsonSlurper
 
 plugins {
-    id "com.google.protobuf" version "0.9.4"
+    // 0.10.0 is the first release that builds with Android Gradle Plugin 9.
+    id "com.google.protobuf" version "0.10.0"
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"

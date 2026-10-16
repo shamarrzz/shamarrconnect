@@ -22,9 +22,14 @@ subprojects { sub ->
         if (manifestFile == null || !manifestFile.exists()) {
             return
         }
-        def pkg = new XmlParser().parse(manifestFile).attribute("package")
+        // Gradle 9 does not put Groovy's XmlParser on the buildscript classpath.
+        def pkg = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(manifestFile)
+                .documentElement
+                .getAttribute("package")
         if (pkg) {
-            sub.android.namespace = pkg.toString()
+            sub.android.namespace = pkg
         }
     }
 }
