@@ -97,7 +97,7 @@ android {
 
     defaultConfig {
         applicationId "com.shamarrconnect.mobile"
-        minSdkVersion 22
+        minSdkVersion 24
         targetSdkVersion 33
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
