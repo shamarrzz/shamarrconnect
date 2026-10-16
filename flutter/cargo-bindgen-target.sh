@@ -23,4 +23,5 @@ if [[ "$(readlink -f "$real")" == "$(readlink -f "$0")" ]]; then
   exit 1
 fi
 export CARGO="$real"
+echo "cargo-bindgen-target: cargo $*" >&2
 exec "$real" "$@"
