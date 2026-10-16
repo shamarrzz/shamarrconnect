@@ -182,6 +182,13 @@ jobs:
             exit 1
           fi
 
+      - name: Upload AAB
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ShamarrConnect-${{ env.VERSION }}-play
+          path: signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
+          if-no-files-found: error
+
       - name: Setup sign tool version variable
         shell: bash
         run: |
@@ -196,7 +203,9 @@ jobs:
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
           alias: ${{ secrets.ANDROID_ALIAS }}
           keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # PKCS12 upload key uses the store password. The separate key
+          # password does not decrypt this keystore.
+          keyPassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: ${{ env.ANDROID_SIGN_TOOL_VERSION }}
 
@@ -212,13 +221,6 @@ jobs:
             echo "APK is still debug-signed" >&2
             exit 1
           fi
-
-      - name: Upload AAB
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: ShamarrConnect-${{ env.VERSION }}-play
-          path: signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
-          if-no-files-found: error
 
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
