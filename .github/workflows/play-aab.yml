@@ -5,6 +5,7 @@ name: Play AAB
 # versionCode must stay above anything already sent to Play.
 # Closed testing is 1.4.9-sc21 versionCode 2084.
 # 2087 was rejected: Play automatic protection requires minSdk 24.
+# 2088 was rejected: Play requires targetSdk 36. Next upload is 2089.
 
 on:
   workflow_dispatch:
@@ -16,7 +17,7 @@ on:
       build_number:
         description: 'Android versionCode. Must be greater than any bundle already sent to Play.'
         required: true
-        default: '2088'
+        default: '2089'
 
 env:
   VERSION: ${{ github.event.inputs.version }}

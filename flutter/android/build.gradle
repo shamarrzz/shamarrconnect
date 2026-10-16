@@ -10,6 +10,24 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+// AGP 8 requires a namespace. Flutter 3.24 plugins still declare it only
+// as the manifest package attribute.
+subprojects { sub ->
+    sub.afterEvaluate {
+        def isAndroid = sub.plugins.hasPlugin("com.android.library") || sub.plugins.hasPlugin("com.android.application")
+        if (!isAndroid || sub.android.namespace != null) {
+            return
+        }
+        def manifestFile = sub.android.sourceSets.main.manifest.srcFile
+        if (manifestFile == null || !manifestFile.exists()) {
+            return
+        }
+        def pkg = new XmlParser().parse(manifestFile).attribute("package")
+        if (pkg) {
+            sub.android.namespace = pkg.toString()
+        }
+    }
+}
 subprojects {
     project.evaluationDependsOn(':app')
 }

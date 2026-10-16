@@ -82,7 +82,8 @@ protobuf {
 }
 
 android {
-    compileSdkVersion 34
+    namespace "com.carriez.flutter_hbb"
+    compileSdkVersion 36
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
 
@@ -98,7 +99,7 @@ android {
     defaultConfig {
         applicationId "com.shamarrconnect.mobile"
         minSdkVersion 24
-        targetSdkVersion 33
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
