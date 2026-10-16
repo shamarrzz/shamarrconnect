@@ -2,8 +2,10 @@ package com.carriez.flutter_hbb
 
 import android.Manifest.permission.*
 import android.annotation.SuppressLint
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.media.AudioRecord
 import android.media.AudioRecord.READ_BLOCKING
 import android.media.MediaCodecList
@@ -87,8 +89,17 @@ fun startAction(context: Context, action: String) {
     try {
         context.startActivity(Intent(action).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            // don't pass package name when launch ACTION_ACCESSIBILITY_SETTINGS
-            if (ACTION_ACCESSIBILITY_SETTINGS != action) {
+            if (ACTION_ACCESSIBILITY_SETTINGS == action) {
+                // Open the list on ShamarrConnect Input, not the top of Settings.
+                val component = ComponentName(
+                    context.packageName,
+                    InputService::class.java.name
+                ).flattenToString()
+                val bundle = Bundle()
+                bundle.putString(":settings:fragment_args_key", component)
+                putExtra(":settings:fragment_args_key", component)
+                putExtra(":settings:show_fragment_args", bundle)
+            } else {
                 data = Uri.parse("package:" + context.packageName)
             }
         })

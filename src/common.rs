@@ -2177,7 +2177,6 @@ pub fn load_custom_client() {
     {
         let mut local = config::OVERWRITE_LOCAL_SETTINGS.write().unwrap();
         local.insert("enable-show-terminal-extra-keys".to_owned(), "N".to_owned());
-        local.insert("disable-floating-window".to_owned(), "Y".to_owned());
     }
     hbb_common::config::Config::set_socks(None);
 

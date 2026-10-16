@@ -903,6 +903,7 @@ class OverlayDialogManager {
       tag = _tagCount.toString();
       _tagCount++;
     }
+    final connecting = isConnectingLabel(text, translate('Connecting...'));
     show((setState, close, context) {
       cancel() {
         dismissAll();
@@ -919,7 +920,10 @@ class OverlayDialogManager {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 30),
-                  const Center(child: CircularProgressIndicator()),
+                  Center(
+                      child: connecting
+                          ? const ExcludeSemantics(child: ConnectingMark())
+                          : const CircularProgressIndicator()),
                   const SizedBox(height: 20),
                   Center(
                       child: Text(translate(text),

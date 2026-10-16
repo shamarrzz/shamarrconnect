@@ -17,6 +17,7 @@ import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import android.graphics.Color
@@ -214,6 +215,19 @@ class MainService : Service() {
 
     // video
     private var mediaProjection: MediaProjection? = null
+    private val mediaProjectionCallback = object : MediaProjection.Callback() {
+        override fun onStop() {
+            Log.d(logTag, "mediaProjection onStop")
+            // The system revoked the share. Drop the one-shot token. Do not
+            // reuse it: Android 14 throws if createVirtualDisplay runs again.
+            mediaProjection = null
+            virtualDisplay?.release()
+            virtualDisplay = null
+            stopCapture()
+            _isReady = false
+            checkMediaPermission()
+        }
+    }
     private var surface: Surface? = null
     private val sendVP9Thread = Executors.newSingleThreadExecutor()
     private var videoEncoder: MediaCodec? = null
@@ -337,10 +351,7 @@ class MainService : Service() {
                 getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
 
             intent.getParcelableExtra<Intent>(EXT_MEDIA_PROJECTION_RES_INTENT)?.let {
-                mediaProjection =
-                    mediaProjectionManager.getMediaProjection(Activity.RESULT_OK, it)
-                checkMediaPermission()
-                _isReady = true
+                adoptMediaProjection(mediaProjectionManager, it)
             } ?: let {
                 Log.d(logTag, "getParcelableExtra intent null, invoke requestMediaProjection")
                 requestMediaProjection()
@@ -352,6 +363,25 @@ class MainService : Service() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         updateScreenInfo(newConfig.orientation)
+    }
+
+    private fun adoptMediaProjection(manager: MediaProjectionManager, data: Intent) {
+        val projection = try {
+            manager.getMediaProjection(Activity.RESULT_OK, data)
+        } catch (e: SecurityException) {
+            Log.w(logTag, "getMediaProjection rejected: $e")
+            null
+        }
+        if (projection == null) {
+            requestMediaProjection()
+            return
+        }
+        // Required before createVirtualDisplay on Android 14+. Missing this
+        // callback is the crash right after the user taps Allow.
+        projection.registerCallback(mediaProjectionCallback, Handler(Looper.getMainLooper()))
+        mediaProjection = projection
+        _isReady = true
+        checkMediaPermission()
     }
 
     private fun requestMediaProjection() {
@@ -411,8 +441,11 @@ class MainService : Service() {
             Log.w(logTag, "startCapture fail,mediaProjection is null")
             return false
         }
-        
         updateScreenInfo(resources.configuration.orientation)
+        if (SCREEN_INFO.width <= 0 || SCREEN_INFO.height <= 0) {
+            Log.w(logTag, "startCapture fail, screen size unknown")
+            return false
+        }
         Log.d(logTag, "Start Capture")
         surface = createSurface()
 
@@ -486,6 +519,7 @@ class MainService : Service() {
             virtualDisplay = null
         }
 
+        mediaProjection?.unregisterCallback(mediaProjectionCallback)
         mediaProjection = null
         checkMediaPermission()
         stopForeground(true)
@@ -644,7 +678,15 @@ class MainService : Service() {
             .setColor(ContextCompat.getColor(this, R.color.primary))
             .setWhen(System.currentTimeMillis())
             .build()
-        startForeground(DEFAULT_NOTIFY_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                DEFAULT_NOTIFY_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            )
+        } else {
+            startForeground(DEFAULT_NOTIFY_ID, notification)
+        }
     }
 
     private fun loginRequestNotification(

@@ -1,15 +1,21 @@
 name: Play AAB
 
-# Signed Android App Bundle for Play Console internal testing.
-# Arm64 only for the first upload (phones we actually test). Do not tag.
+# Signed Android App Bundle for Play Console closed testing.
+# Arm64 only (the phones we test). Do not tag. Do not promote production.
+# versionCode must stay above the closed-testing package already on Play
+# (1.4.9-sc21 is 2084).
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version name stamped on the AAB, e.g. 1.4.9-sc21'
+        description: 'Version name stamped on the AAB, e.g. 1.4.9-sc26'
         required: true
-        default: '1.4.9-sc21'
+        default: '1.4.9-sc26'
+      build_number:
+        description: 'Android versionCode. Must be greater than the code already on Play (2084).'
+        required: true
+        default: '2086'
 
 env:
   VERSION: ${{ github.event.inputs.version }}
@@ -145,7 +151,7 @@ jobs:
              ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
           pushd flutter
           flutter build appbundle --release --target-platform android-arm64 \
-            --build-name "${{ env.VERSION }}" --build-number 2083
+            --build-name "${{ env.VERSION }}" --build-number "${{ github.event.inputs.build_number }}"
           popd
           mkdir -p signed-aab
           cp flutter/build/app/outputs/bundle/release/app-release.aab \

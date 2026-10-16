@@ -229,7 +229,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     'So a supporter can see this screen during a session. '
         'Android will show a system prompt. Tap Allow.',
     'So a supporter can tap and type when you ask for help. '
-        'In the list that opens, find ShamarrConnect and turn it ON.',
+        'In the list that opens, turn ShamarrConnect Input ON.',
     'So this phone stays online for help. '
         'Allow ShamarrConnect to run in the background (Unrestricted).',
     'So you get a clear alert when a help session starts.',
@@ -307,6 +307,24 @@ class _OnboardingPageState extends State<OnboardingPage>
                 style: const TextStyle(
                     fontSize: 16, color: Colors.black54, height: 1.45),
               ),
+              if (step == 1 && _oemTip.contains('Samsung')) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F1FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'If the switch is grey, go to Settings, Apps, ShamarrConnect, '
+                    'tap the menu at the top, and choose Allow restricted settings. '
+                    'Then come back and turn ShamarrConnect Input on.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 14, color: Colors.black87, height: 1.4),
+                  ),
+                ),
+              ],
               if (step == 2 && _oemTip.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Container(
