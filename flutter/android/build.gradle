@@ -28,6 +28,18 @@ subprojects { sub ->
         }
     }
 }
+// AGP 8 rejects a module whose Java target is 8 and Kotlin target is 17.
+subprojects { sub ->
+    sub.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
+    }
+    sub.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
+}
 subprojects {
     project.evaluationDependsOn(':app')
 }
