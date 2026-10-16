@@ -21,10 +21,12 @@ on:
 
 env:
   VERSION: ${{ github.event.inputs.version }}
-  RUST_VERSION: "1.75"
-  FLUTTER_VERSION: "3.24.5"
-  NDK_VERSION: "r28c"
-  CARGO_NDK_VERSION: "3.1.2"
+  # Latest stable on 16 October 2026. Desktop release workflows stay on
+  # their own pins. This job is the Play closed-testing app only.
+  RUST_VERSION: "1.99.1"
+  FLUTTER_VERSION: "3.47.7"
+  NDK_VERSION: "r30"
+  CARGO_NDK_VERSION: "4.1.2"
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
@@ -122,7 +124,7 @@ jobs:
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           prefix-key: shamarrconnect-lib-cache-android
-          key: aarch64-linux-android-aab
+          key: aarch64-linux-android-aab-${{ env.RUST_VERSION }}-${{ env.NDK_VERSION }}
 
       - name: Build rustdesk lib
         env:
