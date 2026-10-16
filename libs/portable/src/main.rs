@@ -216,26 +216,33 @@ mod win {
 
     // Used for privacy mode(magnifier impl).
     pub const RUNTIME_BROKER_EXE: &'static str = "C:\\Windows\\System32\\RuntimeBroker.exe";
-    pub const WIN_TOPMOST_INJECTED_PROCESS_EXE: &'static str = "RuntimeBroker_rustdesk.exe";
+    pub const WIN_TOPMOST_INJECTED_PROCESS_EXE: &'static str = "RuntimeBroker_shamarrconnect.exe";
+    const PREVIOUS_INJECTED_PROCESS_EXE: &str = "RuntimeBroker_rustdesk.exe";
 
     pub(super) fn copy_runtime_broker(dir: &Path) {
         let src = RUNTIME_BROKER_EXE;
         let tgt = WIN_TOPMOST_INJECTED_PROCESS_EXE;
         let target_file = dir.join(tgt);
-        if target_file.exists() {
-            if let (Ok(src_file), Ok(tgt_file)) = (fs::read(src), fs::read(&target_file)) {
-                let src_md5 = format!("{:x}", md5::compute(&src_file));
-                let tgt_md5 = format!("{:x}", md5::compute(&tgt_file));
-                if src_md5 == tgt_md5 {
-                    return;
+        let previous_file = dir.join(PREVIOUS_INJECTED_PROCESS_EXE);
+        let already_copied = target_file.exists()
+            && match (fs::read(src), fs::read(&target_file)) {
+                (Ok(src_file), Ok(tgt_file)) => {
+                    format!("{:x}", md5::compute(&src_file)) == format!("{:x}", md5::compute(&tgt_file))
                 }
+                _ => false,
+            };
+        if previous_file.exists() || !already_copied {
+            for image in [WIN_TOPMOST_INJECTED_PROCESS_EXE, PREVIOUS_INJECTED_PROCESS_EXE] {
+                let _allow_err = Command::new("taskkill")
+                    .args(&["/F", "/IM", image])
+                    .creation_flags(winapi::um::winbase::CREATE_NO_WINDOW)
+                    .output();
             }
         }
-        let _allow_err = Command::new("taskkill")
-            .args(&["/F", "/IM", "RuntimeBroker_rustdesk.exe"])
-            .creation_flags(winapi::um::winbase::CREATE_NO_WINDOW)
-            .output();
-        let _allow_err = std::fs::copy(src, &format!("{}\\{}", dir.to_string_lossy(), tgt));
+        if !already_copied {
+            let _allow_err = std::fs::copy(src, &format!("{}\\{}", dir.to_string_lossy(), tgt));
+        }
+        let _allow_err = fs::remove_file(previous_file);
     }
 
     /// Check if the executable is a Quick Support version.

@@ -1829,7 +1829,6 @@ fn get_uninstall(kill_self: bool, uninstall_printer: bool, clean_appdata: bool) 
                 "
     if exist \"%APPDATA%\\{app_name}\" rd /s /q \"%APPDATA%\\{app_name}\"
     if exist \"%LOCALAPPDATA%\\{app_name}\" rd /s /q \"%LOCALAPPDATA%\\{app_name}\"
-    if exist \"%APPDATA%\\RustDesk\" rd /s /q \"%APPDATA%\\RustDesk\"
                 "
             )
         } else {
@@ -2013,6 +2012,14 @@ fn get_public_base_dir() -> PathBuf {
 #[inline]
 pub fn get_custom_client_staging_dir() -> PathBuf {
     get_public_base_dir()
+        .join(crate::get_app_name())
+        .join("CustomClientStaging")
+}
+
+/// Folder written by builds that staged the update under the old name.
+/// The installed app writes this path, then the new build reads it.
+fn legacy_custom_client_staging_dir() -> PathBuf {
+    get_public_base_dir()
         .join("RustDesk")
         .join("RustDeskCustomClientStaging")
 }
@@ -2063,31 +2070,39 @@ pub fn remove_custom_client_staging_dir(staging_dir: &Path) -> ResultType<bool> 
 //    (e.g., is a symlink or has invalid contents).
 // 3. Err if any unexpected error occurs during file operations.
 pub fn prepare_custom_client_update() -> ResultType<bool> {
-    let custom_client_staging_dir = get_custom_client_staging_dir();
+    let custom_client_staging_dir = [get_custom_client_staging_dir(), legacy_custom_client_staging_dir()]
+        .into_iter()
+        .find(|dir| dir.join("custom.txt").exists())
+        .unwrap_or_else(get_custom_client_staging_dir);
     let current_exe = std::env::current_exe()?;
     let current_exe_dir = current_exe
         .parent()
         .ok_or(anyhow!("Cannot get parent directory of current exe"))?;
 
-    let staging_dir = custom_client_staging_dir.clone();
+    let staging_dirs = vec![
+        custom_client_staging_dir.clone(),
+        legacy_custom_client_staging_dir(),
+    ];
     let clear_staging_on_exit = crate::SimpleCallOnReturn {
         b: true,
-        f: Box::new(
-            move || match remove_custom_client_staging_dir(&staging_dir) {
-                Ok(existed) => {
-                    if existed {
-                        log::info!("Custom client staging directory removed successfully.");
+        f: Box::new(move || {
+            for staging_dir in &staging_dirs {
+                match remove_custom_client_staging_dir(staging_dir) {
+                    Ok(existed) => {
+                        if existed {
+                            log::info!("Custom client staging directory removed successfully.");
+                        }
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Failed to remove custom client staging directory {:?}: {}",
+                            staging_dir,
+                            e
+                        );
                     }
                 }
-                Err(e) => {
-                    log::error!(
-                        "Failed to remove custom client staging directory {:?}: {}",
-                        staging_dir,
-                        e
-                    );
-                }
-            },
-        ),
+            }
+        }),
     };
 
     if custom_client_staging_dir.exists() {
@@ -3861,7 +3876,7 @@ pub fn message_box(text: &str) {
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<u16>>();
-    let caption = "RustDesk Output"
+    let caption = crate::get_app_name()
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<u16>>();

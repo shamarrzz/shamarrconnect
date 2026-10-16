@@ -9,13 +9,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version name stamped on the AAB, e.g. 1.4.9-sc26'
+        description: 'Version name stamped on the AAB and APK, e.g. 1.4.9-sc27'
         required: true
-        default: '1.4.9-sc26'
+        default: '1.4.9-sc27'
       build_number:
         description: 'Android versionCode. Must be greater than the code already on Play (2084).'
         required: true
-        default: '2086'
+        default: '2087'
 
 env:
   VERSION: ${{ github.event.inputs.version }}
@@ -152,10 +152,14 @@ jobs:
           pushd flutter
           flutter build appbundle --release --target-platform android-arm64 \
             --build-name "${{ env.VERSION }}" --build-number "${{ github.event.inputs.build_number }}"
+          flutter build apk --release --target-platform android-arm64 --split-per-abi \
+            --build-name "${{ env.VERSION }}" --build-number "${{ github.event.inputs.build_number }}"
           popd
-          mkdir -p signed-aab
+          mkdir -p signed-aab signed-apk
           cp flutter/build/app/outputs/bundle/release/app-release.aab \
              signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
+          cp flutter/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+             signed-apk/ShamarrConnect-${{ env.VERSION }}-aarch64.apk
 
       - name: Sign AAB with upload keystore
         env:
@@ -178,9 +182,47 @@ jobs:
             exit 1
           fi
 
+      - name: Setup sign tool version variable
+        shell: bash
+        run: |
+          BUILD_TOOL_VERSION=$(ls /usr/local/lib/android/sdk/build-tools/ | tail -n 1)
+          echo "ANDROID_SIGN_TOOL_VERSION=$BUILD_TOOL_VERSION" >> $GITHUB_ENV
+
+      - uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
+        name: Sign test APK
+        id: sign-android
+        with:
+          releaseDirectory: ./signed-apk
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: ${{ env.ANDROID_SIGN_TOOL_VERSION }}
+
+      - name: Keep the signed APK name
+        shell: bash
+        run: |
+          TAGGED="signed-apk/ShamarrConnect-${{ env.VERSION }}-aarch64.apk"
+          cp "${{ steps.sign-android.outputs.signedReleaseFile }}" "$TAGGED"
+          APKSIGNER="/usr/local/lib/android/sdk/build-tools/${ANDROID_SIGN_TOOL_VERSION}/apksigner"
+          CERTS="$("$APKSIGNER" verify --print-certs "$TAGGED")"
+          echo "$CERTS"
+          if echo "$CERTS" | grep -q 'Android Debug'; then
+            echo "APK is still debug-signed" >&2
+            exit 1
+          fi
+
       - name: Upload AAB
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ShamarrConnect-${{ env.VERSION }}-play
           path: signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
+          if-no-files-found: error
+
+      - name: Upload APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ShamarrConnect-${{ env.VERSION }}-apk
+          path: signed-apk/ShamarrConnect-${{ env.VERSION }}-aarch64.apk
           if-no-files-found: error

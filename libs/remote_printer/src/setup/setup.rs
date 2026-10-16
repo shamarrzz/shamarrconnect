@@ -23,10 +23,11 @@ fn get_driver_inf_abs_path() -> ResultType<PathBuf> {
         ),
     };
     if !abs_path.exists() {
-        bail!(
-            "The driver inf file \"{}\" does not exists",
-            RD_DRIVER_INF_PATH
-        )
+        log::error!(
+            "Printer driver file is missing: {}",
+            abs_path.to_string_lossy()
+        );
+        bail!("The ShamarrConnect printer driver is not included in this install.")
     }
     Ok(abs_path)
 }

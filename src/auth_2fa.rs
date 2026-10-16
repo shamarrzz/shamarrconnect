@@ -14,8 +14,12 @@ lazy_static::lazy_static! {
     static ref CURRENT_2FA: Mutex<Option<(TOTPInfo, TOTP)>> = Mutex::new(None);
 }
 
-const ISSUER: &str = "RustDesk";
-const TAG_LOGIN: &str = "Connection";
+/// Name shown in an authenticator app for the code that approves a connection
+/// to this computer. Account sign-in uses the issuer "ShamarrConnect" and the
+/// email, so this one stays a word longer and the two entries do not match.
+fn connection_issuer() -> String {
+    format!("{} Approve", crate::get_app_name())
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TOTPInfo {
@@ -33,7 +37,7 @@ impl TOTPInfo {
             1,
             30,
             self.secret.clone(),
-            Some(format!("{} {}", ISSUER, TAG_LOGIN)),
+            Some(connection_issuer()),
             self.name.clone(),
         )?;
         Ok(totp)
@@ -201,4 +205,22 @@ pub fn get_chatid_telegram(bot_token: &str) -> ResultType<Option<String>> {
     }
 
     Ok(chat_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn connection_code_name_differs_from_account_sign_in() {
+        let issuer = connection_issuer();
+        assert_eq!(issuer, "ShamarrConnect Approve");
+        let info = TOTPInfo::gen_totp_info("117440516".into(), 6).unwrap();
+        let url = info.new_totp().unwrap().get_url();
+        assert!(
+            url.contains("ShamarrConnect%20Approve") || url.contains("ShamarrConnect+Approve"),
+            "{url}"
+        );
+        assert!(!url.to_ascii_lowercase().contains("rustdesk"), "{url}");
+    }
 }

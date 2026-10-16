@@ -46,7 +46,11 @@ fn get_driver_install_abs_path() -> ResultType<PathBuf> {
         ),
     };
     if !abs_path.exists() {
-        bail!("{} not exists", install_path)
+        hbb_common::log::error!(
+            "Virtual display driver file is missing: {}",
+            abs_path.to_string_lossy()
+        );
+        bail!("The ShamarrConnect virtual display driver is not included in this install.")
     }
     Ok(abs_path)
 }

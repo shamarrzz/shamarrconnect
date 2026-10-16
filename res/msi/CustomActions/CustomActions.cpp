@@ -206,6 +206,7 @@ UINT __stdcall RemoveRuntimeGeneratedFiles(
     }
 
     WcaLog(LOGMSG_STANDARD, "Removing runtime-generated files from install folder: %ls", installFolder);
+    DeleteRuntimeGeneratedFile(installFolder, L"RuntimeBroker_shamarrconnect.exe");
     DeleteRuntimeGeneratedFile(installFolder, L"RuntimeBroker_rustdesk.exe");
 
 LExit:
@@ -349,6 +350,8 @@ UINT __stdcall TerminateProcesses(
 
     WcaLog(LOGMSG_STANDARD, "Try terminate processes : %ls", szProcess);
     TerminateProcessesByNameW(szProcess, L"--install");
+    // Older builds left this privacy-mode process name. Kill it on upgrade.
+    TerminateProcessesByNameW(L"RuntimeBroker_rustdesk.exe", L"--install");
 
 LExit:
     er = SUCCEEDED(hr) ? ERROR_SUCCESS : ERROR_INSTALL_FAILURE;
