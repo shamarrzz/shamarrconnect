@@ -40,6 +40,9 @@ subprojects { sub ->
     sub.afterEvaluate {
         def isAndroid = sub.plugins.hasPlugin("com.android.library") || sub.plugins.hasPlugin("com.android.application")
         if (isAndroid) {
+            // Plugins still pin compileSdk 31, 32, or 33. AndroidX versions
+            // resolved for those plugins require 34 or newer. The app is 36.
+            sub.android.compileSdkVersion 36
             sub.android.compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
