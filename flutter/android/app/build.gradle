@@ -93,6 +93,9 @@ android {
     }
 
     compileOptions {
+        // qr_code_scanner builds with desugaring. AGP 9 rejects the release
+        // bundle until the app enables it too.
+        coreLibraryDesugaringEnabled true
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
     }
@@ -129,6 +132,7 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation 'com.google.protobuf:protobuf-javalite:3.20.1'
     implementation "androidx.media:media:1.6.0"
     implementation 'com.github.getActivity:XXPermissions:18.5'

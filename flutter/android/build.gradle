@@ -45,6 +45,11 @@ subprojects { sub ->
                 targetCompatibility JavaVersion.VERSION_17
             }
         }
+        // Setting compileOptions above does not clear this flag. Set it again
+        // on the app so a later plugin rewrite cannot drop it.
+        if (sub.plugins.hasPlugin("com.android.application")) {
+            sub.android.compileOptions.coreLibraryDesugaringEnabled = true
+        }
         sub.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
             sourceCompatibility = JavaVersion.VERSION_17.toString()
             targetCompatibility = JavaVersion.VERSION_17.toString()
