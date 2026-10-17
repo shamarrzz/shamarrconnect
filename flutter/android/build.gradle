@@ -33,15 +33,26 @@ subprojects { sub ->
         }
     }
 }
-// AGP 8 rejects a module whose Java target is 8 and Kotlin target is 17.
+// Kotlin 2.4 rejects a module whose Java target is 8 and Kotlin target is 17.
+// The Android plugin applies its own 1.8 compileOptions after an earlier
+// task hook, so set both again once the module has been evaluated.
 subprojects { sub ->
-    sub.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_17.toString()
-        targetCompatibility = JavaVersion.VERSION_17.toString()
-    }
-    sub.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    sub.afterEvaluate {
+        def isAndroid = sub.plugins.hasPlugin("com.android.library") || sub.plugins.hasPlugin("com.android.application")
+        if (isAndroid) {
+            sub.android.compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
+        sub.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+            sourceCompatibility = JavaVersion.VERSION_17.toString()
+            targetCompatibility = JavaVersion.VERSION_17.toString()
+        }
+        sub.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
         }
     }
 }
