@@ -12,7 +12,9 @@ fragment that does not implement SelectionHandler.contentLength or
 getSelection, added in Flutter 3.29. google_fonts 6.2.1 keeps a const map
 keyed by FontWeight, which Flutter 3.41 rejects because FontWeight.== is no
 longer a primitive constant operation. The same one-line change shipped in
-google_fonts 6.3.2.
+google_fonts 6.3.2. package_info_plus 4.2.0 treats Android package fields as
+non-null. API 36 marks applicationInfo, versionName, and signatures nullable,
+and Kotlin 2.4 rejects the old calls.
 """
 
 import json
@@ -97,6 +99,47 @@ def patch_selection(path):
     print("extended_text: added contentLength and getSelection")
 
 
+PACKAGE_INFO_EDITS = (
+    (
+        'put("appName", info.applicationInfo.loadLabel(packageManager).toString())',
+        'put("appName", info.applicationInfo?.loadLabel(packageManager)?.toString() ?: "")',
+    ),
+    (
+        'put("version", info.versionName)',
+        'put("version", info.versionName ?: "")',
+    ),
+    (
+        """                val signatures = packageInfo.signatures
+
+                if (signatures.isNullOrEmpty() || packageInfo.signatures.first() == null) {
+                    null
+                } else {
+                    signatureToSha1(signatures.first().toByteArray())
+                }""",
+        """                val signatures = packageInfo.signatures
+                val signature = signatures?.firstOrNull()
+                if (signature == null) {
+                    null
+                } else {
+                    signatureToSha1(signature.toByteArray())
+                }""",
+    ),
+)
+
+
+def patch_package_info(path):
+    text = path.read_text()
+    if all(new in text for _, new in PACKAGE_INFO_EDITS):
+        print("package_info_plus: already accepts the API 36 nullability")
+        return
+    for old, new in PACKAGE_INFO_EDITS:
+        if old not in text:
+            raise SystemExit(f"package_info_plus expected text was not found in {path}")
+        text = text.replace(old, new, 1)
+    path.write_text(text)
+    print("package_info_plus: accepted nullable package info from API 36")
+
+
 def patch_font_weight_map(path):
     text = path.read_text()
     old = "const _fontWeightToFilenameWeightParts = {"
@@ -118,6 +161,8 @@ def main():
     fonts = package_root("google_fonts") / "lib/src/google_fonts_variant.dart"
     patch_selection(extended)
     patch_font_weight_map(fonts)
+    package_info = package_root("package_info_plus") / "android/src/main/kotlin/dev/fluttercommunity/plus/packageinfo/PackageInfoPlugin.kt"
+    patch_package_info(package_info)
 
 
 if __name__ == "__main__":
