@@ -182,8 +182,13 @@ jobs:
 
       # Desktop still builds this tree with Flutter 3.24.5, so the 3.47
       # theme types and package versions are applied only here.
+      # Runner OTHER_LDFLAGS link every plugin as a CocoaPods framework.
+      # Flutter 3.47 moves SPM-capable plugins out of Pods by default.
       - name: Apply the Flutter 3.47 compatibility patch
-        run: git apply .github/patches/flutter_3.47_compat.diff
+        run: |
+          set -euo pipefail
+          git apply .github/patches/flutter_3.47_compat.diff
+          flutter config --no-enable-swift-package-manager
 
       - name: Build the signed IPA
         env:
