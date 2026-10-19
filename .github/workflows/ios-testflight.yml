@@ -65,8 +65,12 @@ jobs:
             echo "Xcode 27.1 is not on this runner"
             exit 1
           fi
-          xcodebuild -version
-          xcodebuild -version | grep -q 'Xcode 27.1'
+          ver=$(xcodebuild -version)
+          printf '%s\n' "$ver"
+          case "$ver" in
+            *"Xcode 27.1"*) ;;
+            *) echo "wanted Xcode 27.1"; exit 1 ;;
+          esac
           sudo xcodebuild -runFirstLaunch
 
       - name: Export GitHub Actions cache environment variables
