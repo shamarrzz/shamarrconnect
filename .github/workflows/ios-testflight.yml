@@ -32,12 +32,24 @@ permissions:
   contents: read
 
 jobs:
+  gate:
+    name: require custom-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse any branch except brand/custom-client
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/brand/custom-client" ]; then
+            echo "Select branch brand/custom-client. This run is ${{ github.ref }}."
+            exit 1
+          fi
+
   generate-bridge:
+    needs: gate
     uses: ./.github/workflows/bridge.yml
 
   ios:
     name: signed ipa
-    needs: [generate-bridge]
+    needs: [gate, generate-bridge]
     runs-on: xcode-27
     timeout-minutes: 180
     steps:
