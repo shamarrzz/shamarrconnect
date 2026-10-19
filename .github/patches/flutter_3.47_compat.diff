@@ -1,0 +1,57 @@
+diff --git a/flutter/lib/common.dart b/flutter/lib/common.dart
+index 81f350bf7..2d587634e 100644
+--- a/flutter/lib/common.dart
++++ b/flutter/lib/common.dart
+@@ -384,7 +384,7 @@ class MyTheme {
+     appBarTheme: AppBarTheme(
+       shadowColor: Colors.transparent,
+     ),
+-    dialogTheme: DialogTheme(
++    dialogTheme: DialogThemeData(
+       elevation: 15,
+       shape: RoundedRectangleBorder(
+         borderRadius: BorderRadius.circular(18.0),
+@@ -415,7 +415,7 @@ class MyTheme {
+     cardColor: grayBg,
+     hintColor: Color(0xFFAAAAAA),
+     visualDensity: VisualDensity.adaptivePlatformDensity,
+-    tabBarTheme: const TabBarTheme(
++    tabBarTheme: const TabBarThemeData(
+       labelColor: Colors.black87,
+     ),
+     tooltipTheme: tooltipTheme(),
+@@ -483,7 +483,7 @@ class MyTheme {
+     appBarTheme: AppBarTheme(
+       shadowColor: Colors.transparent,
+     ),
+-    dialogTheme: DialogTheme(
++    dialogTheme: DialogThemeData(
+       elevation: 15,
+       shape: RoundedRectangleBorder(
+         borderRadius: BorderRadius.circular(18.0),
+@@ -517,7 +517,7 @@ class MyTheme {
+     ),
+     cardColor: Color(0xFF24252B),
+     visualDensity: VisualDensity.adaptivePlatformDensity,
+-    tabBarTheme: const TabBarTheme(
++    tabBarTheme: const TabBarThemeData(
+       labelColor: Colors.white70,
+     ),
+     tooltipTheme: tooltipTheme(),
+diff --git a/flutter/pubspec.yaml b/flutter/pubspec.yaml
+index e1c9bae64..5236d4000 100644
+--- a/flutter/pubspec.yaml
++++ b/flutter/pubspec.yaml
+@@ -105,10 +105,10 @@ dependencies:
+   pull_down_button: ^0.9.3
+   device_info_plus: ^9.1.0
+   qr_flutter: ^4.1.0
+-  extended_text: 14.0.0
++  extended_text: 15.0.2
+   xterm: 4.0.0
+   sqflite: 2.2.0
+-  google_fonts: ^6.2.1
++  google_fonts: ^9.0.0
+   vector_math: ^2.1.4
+ 
+ dev_dependencies:

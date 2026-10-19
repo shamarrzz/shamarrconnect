@@ -180,6 +180,11 @@ jobs:
           cargo build --locked --features flutter,hwcodec --release --target aarch64-apple-ios --lib
           test -f target/aarch64-apple-ios/release/liblibrustdesk.a
 
+      # Desktop still builds this tree with Flutter 3.24.5, so the 3.47
+      # theme types and package versions are applied only here.
+      - name: Apply the Flutter 3.47 compatibility patch
+        run: git apply .github/patches/flutter_3.47_compat.diff
+
       - name: Build the signed IPA
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
