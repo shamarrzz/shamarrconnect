@@ -1,0 +1,216 @@
+name: iOS TestFlight
+
+# Signed iPhone and iPad IPA for internal TestFlight.
+# Dispatch this by hand. It does not run on a desktop tag, and it does
+# not upload the IPA to shamarrzz/shamarrconnect-releases.
+# Runner: xcode-27. The image defaults to Xcode 27.0, so the job selects
+# Xcode 27.1 before the build.
+# Signing uses the Apple Distribution certificate in the IOS_* secrets.
+# The Developer ID certificate in MACOS_P12_BASE64 is not used here.
+# TestFlight upload uses the existing MACOS_NOTARIZE_JSON API key.
+# A repeated upload of the same build number is rejected. Bump build_number.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: 'Apple short version. Must be x.y.z. 1.4.27 is the sc27 line.'
+        required: true
+        default: '1.4.27'
+      build_number:
+        description: 'CFBundleVersion. Must be higher than any build already uploaded.'
+        required: true
+        default: '2089'
+
+env:
+  RUST_VERSION: "1.99.1"
+  FLUTTER_VERSION: "3.47.7"
+  VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: require custom-client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse any branch except brand/custom-client
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/brand/custom-client" ]; then
+            echo "Select branch brand/custom-client. This run is ${{ github.ref }}."
+            exit 1
+          fi
+
+  generate-bridge:
+    needs: gate
+    uses: ./.github/workflows/bridge.yml
+
+  ios:
+    name: signed ipa
+    needs: [gate, generate-bridge]
+    runs-on: xcode-27
+    timeout-minutes: 180
+    steps:
+      - name: Select Xcode 27.1
+        run: |
+          set -euo pipefail
+          if [ -d /Applications/Xcode_27.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_27.1.app
+          elif [ -d /Applications/Xcode_27.1.0.app ]; then
+            sudo xcode-select -s /Applications/Xcode_27.1.0.app
+          else
+            ls -d /Applications/Xcode*.app
+            echo "Xcode 27.1 is not on this runner"
+            exit 1
+          fi
+          xcodebuild -version
+          xcodebuild -version | grep -q 'Xcode 27.1'
+          sudo xcodebuild -runFirstLaunch
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Checkout source code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+
+      - name: Import the distribution certificate
+        uses: apple-actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 # v1
+        with:
+          p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          keychain-password: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          keychain: shamarrconnect-ios
+
+      - name: Install the provisioning profile
+        env:
+          IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          security default-keychain -s shamarrconnect-ios.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" shamarrconnect-ios.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" shamarrconnect-ios.keychain
+          security find-identity -v -p codesigning
+          security find-identity -v -p codesigning | grep -F "Apple Distribution: SHAMARR INTEGRATED SERVICES LIMITED (DLMMXCSKJW)"
+          python3 -c 'import base64,os,pathlib; pathlib.Path(os.environ["RUNNER_TEMP"],"profile.mobileprovision").write_bytes(base64.b64decode(os.environ["IOS_PROVISION_PROFILE_BASE64"]))'
+          if ! openssl cms -inform DER -verify -noverify \
+            -in "$RUNNER_TEMP/profile.mobileprovision" \
+            -out "$RUNNER_TEMP/profile.plist"; then
+            openssl smime -inform DER -verify -noverify \
+              -in "$RUNNER_TEMP/profile.mobileprovision" \
+              -out "$RUNNER_TEMP/profile.plist"
+          fi
+          UUID=$(python3 -c 'import os,plistlib,pathlib; print(plistlib.loads(pathlib.Path(os.environ["RUNNER_TEMP"],"profile.plist").read_bytes())["UUID"])')
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+          echo "installed profile ${UUID}"
+
+      - name: Install flutter
+        uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225 # v2.12.0
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Setup vcpkg with Github Actions binary cache
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+
+      - name: Install vcpkg dependencies
+        run: |
+          set -euo pipefail
+          if ! $VCPKG_ROOT/vcpkg \
+            install \
+            --triplet arm64-ios \
+            --x-install-root="$VCPKG_ROOT/installed"; then
+            find "${VCPKG_ROOT}/" -name "*.log" | while read -r _1; do
+              echo "$_1:"
+              echo "======"
+              cat "$_1"
+              echo "======"
+              echo ""
+            done
+            exit 1
+          fi
+        shell: bash
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: aarch64-apple-ios
+          components: "rustfmt"
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          prefix-key: shamarrconnect-ios
+          key: aarch64-apple-ios-${{ env.RUST_VERSION }}
+
+      - name: Restore bridge files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bridge-artifact
+          path: ./
+
+      - name: Build the Rust library
+        run: |
+          set -euo pipefail
+          rustup target add aarch64-apple-ios
+          cargo build --locked --features flutter,hwcodec --release --target aarch64-apple-ios --lib
+          test -f target/aarch64-apple-ios/release/liblibrustdesk.a
+
+      - name: Build the signed IPA
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          security default-keychain -s shamarrconnect-ios.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" shamarrconnect-ios.keychain
+          cd flutter
+          flutter build ipa --release \
+            --build-name="${{ inputs.build_name }}" \
+            --build-number="${{ inputs.build_number }}" \
+            --export-options-plist=ios/exportOptions.plist
+          ls -l build/ios/ipa/*.ipa
+
+      - name: Upload the IPA artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ShamarrConnect-ios-${{ inputs.build_name }}-${{ inputs.build_number }}
+          path: flutter/build/ios/ipa/*.ipa
+          if-no-files-found: error
+
+      - name: Upload to TestFlight
+        env:
+          NOTARIZE_B64: ${{ secrets.MACOS_NOTARIZE_JSON }}
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import base64, json, os
+          from pathlib import Path
+          data = json.loads(base64.b64decode(os.environ["NOTARIZE_B64"]))
+          key = data["private_key"]
+          if "BEGIN PRIVATE KEY" not in key:
+              key = "-----BEGIN PRIVATE KEY-----\n" + key.strip() + "\n-----END PRIVATE KEY-----\n"
+          dest = Path.home() / ".private_keys"
+          dest.mkdir(mode=0o700, exist_ok=True)
+          path = dest / f"AuthKey_{data['key_id']}.p8"
+          path.write_text(key)
+          path.chmod(0o600)
+          Path(os.environ["RUNNER_TEMP"], "asc_key_id").write_text(data["key_id"])
+          Path(os.environ["RUNNER_TEMP"], "asc_issuer_id").write_text(data["issuer_id"])
+          print("api key", data["key_id"])
+          PY
+          IPA=$(ls flutter/build/ios/ipa/*.ipa)
+          xcrun altool --upload-app --type ios -f "$IPA" \
+            --apiKey "$(cat "$RUNNER_TEMP/asc_key_id")" \
+            --apiIssuer "$(cat "$RUNNER_TEMP/asc_issuer_id")"
