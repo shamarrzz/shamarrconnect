@@ -52,10 +52,6 @@ jobs:
     needs: [gate, generate-bridge]
     runs-on: xcode-27
     timeout-minutes: 180
-    env:
-      # Xcode 27 compiles C for the SDK version unless this is set.
-      # rustc then links that C as iOS 10 and ___chkstk_darwin is missing.
-      IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     steps:
       - name: Select Xcode 27.1
         run: |
@@ -174,6 +170,10 @@ jobs:
           path: ./
 
       - name: Build the Rust library
+        env:
+          # Only this step. The same variable on the whole job makes
+          # vcpkg compile its macOS host tools as iOS binaries.
+          IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         run: |
           set -euo pipefail
           rustup target add aarch64-apple-ios
