@@ -52,6 +52,10 @@ jobs:
     needs: [gate, generate-bridge]
     runs-on: xcode-27
     timeout-minutes: 180
+    env:
+      # Xcode 27 compiles C for the SDK version unless this is set.
+      # rustc then links that C as iOS 10 and ___chkstk_darwin is missing.
+      IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     steps:
       - name: Select Xcode 27.1
         run: |
@@ -138,6 +142,7 @@ jobs:
           if ! $VCPKG_ROOT/vcpkg \
             install \
             --triplet arm64-ios \
+            --overlay-triplets="${{ github.workspace }}/.github/ios" \
             --x-install-root="$VCPKG_ROOT/installed"; then
             find "${VCPKG_ROOT}/" -name "*.log" | while read -r _1; do
               echo "$_1:"
