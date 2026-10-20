@@ -156,7 +156,7 @@ jobs:
             echo "| Build | ${REL} ${ARCH} on ${{ inputs.runner }} ($(sw_vers -productVersion), $(uname -m)) |"
             echo "| Online for | ${{ inputs.minutes }} minutes (cancel the run to stop early) |"
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "ShamarrConnect ID: $ID"
+          echo "::notice title=ShamarrConnect ID::$ID"
 
       - name: Screenshot at start
         run: screencapture -x start.png || true
