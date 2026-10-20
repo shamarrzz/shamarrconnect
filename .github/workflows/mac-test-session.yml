@@ -75,9 +75,22 @@ jobs:
         run: sudo softwareupdate --install-rosetta --agree-to-license
 
       - name: Download DMG
+        env:
+          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          curl -fsSL -o sc.dmg \
-            "https://github.com/shamarrzz/shamarrconnect-releases/releases/download/${REL}/ShamarrConnect-${REL}-${ARCH}.dmg"
+          f="ShamarrConnect-${REL}-${ARCH}.dmg"
+          if ! curl -fsSL -o sc.dmg \
+            "https://github.com/shamarrzz/shamarrconnect-releases/releases/download/${REL}/${f}"; then
+            # Draft releases have no public URL; fetch through the API.
+            echo "Public download failed; trying draft release via API"
+            id=$(curl -fsSL -H "Authorization: Bearer ${RELEASES_TOKEN}" \
+              "https://api.github.com/repos/shamarrzz/shamarrconnect-releases/releases?per_page=30" \
+              | jq -r --arg t "$REL" --arg f "$f" \
+                '[.[] | select(.tag_name==$t) | .assets[] | select(.name==$f) | .id][0] // empty')
+            [ -n "$id" ] || { echo "::error::${f} not found in release ${REL}"; exit 1; }
+            curl -fsSL -H "Authorization: Bearer ${RELEASES_TOKEN}" -H "Accept: application/octet-stream" \
+              -o sc.dmg "https://api.github.com/repos/shamarrzz/shamarrconnect-releases/releases/assets/${id}"
+          fi
           shasum -a 256 sc.dmg
 
       - name: Install app and check signature / Gatekeeper
