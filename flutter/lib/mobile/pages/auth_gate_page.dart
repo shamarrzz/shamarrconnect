@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../common.dart';
 import '../../common/widgets/login.dart';
 import '../../common/widgets/s_mark.dart';
 import '../../models/platform_model.dart';
@@ -50,7 +51,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
     if (mounted) setState(() => _registrationOpen = open);
   }
 
-  Widget _next(Widget home) => OnboardingPage.done
+  // The setup steps are Android permissions; iOS cannot be controlled.
+  Widget _next(Widget home) => (!isAndroid || OnboardingPage.done)
       ? home
       : OnboardingPage(destination: (_) => home);
 
@@ -271,17 +273,19 @@ class _AuthGatePageState extends State<AuthGatePage> {
                   ),
                 ),
                 const Spacer(flex: 1),
-                const Divider(color: Colors.white24),
-                TextButton.icon(
-                  onPressed: _getHelp,
-                  icon: const Icon(Icons.support_agent,
-                      color: Color(0xFF00BFE1)),
-                  label: const Text(
-                    'Get help now. Let a supporter connect to this phone',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 15),
+                if (!isIOS) ...[
+                  const Divider(color: Colors.white24),
+                  TextButton.icon(
+                    onPressed: _getHelp,
+                    icon: const Icon(Icons.support_agent,
+                        color: Color(0xFF00BFE1)),
+                    label: const Text(
+                      'Get help now. Let a supporter connect to this phone',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 15),
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 12),
               ],
             ),

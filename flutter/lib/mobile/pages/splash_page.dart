@@ -58,7 +58,8 @@ class _SplashPageState extends State<SplashPage>
       dest = const DesktopTabPage();
     } else if (gFFI.userModel.isLogin) {
       dest = HomePage();
-    } else if (bind.mainGetLocalOption(key: 'get_help_mode') == 'Y') {
+    } else if (!isIOS &&
+        bind.mainGetLocalOption(key: 'get_help_mode') == 'Y') {
       dest = const GetHelpPage();
     } else {
       dest = const AuthGatePage();

@@ -96,7 +96,8 @@ class _DeskPageState extends State<DeskPage> {
     if (gFFI.userModel.isLogin) {
       gFFI.fleetModel.pull();
     }
-    if (widget.helpMode || !bind.isOutgoingOnly()) {
+    // iOS is a controller only: it has no screen capture or input service.
+    if (!isIOS && (widget.helpMode || !bind.isOutgoingOnly())) {
       gFFI.serverModel.startService();
     }
   }
@@ -525,7 +526,7 @@ class _DeskPageState extends State<DeskPage> {
         .length;
     final onlineN =
         others.where((d) => _awake(d) && !_isHidden(d.deviceId)).length +
-            ((!stopped) ? 1 : 0);
+            ((!stopped && !isIOS) ? 1 : 0);
     final muted = Theme.of(context).textTheme.bodySmall?.color;
     if (_peekHidden) {
       return Padding(
@@ -822,7 +823,8 @@ class _DeskPageState extends State<DeskPage> {
     final others =
         (loggedIn && !widget.helpMode) ? _others(devices) : <FleetDevice>[];
     final q = _search.text.trim().toLowerCase();
-    final showThis = !_peekHidden &&
+    final showThis = !isIOS &&
+        !_peekHidden &&
         (q.isEmpty ||
             _thisName().toLowerCase().contains(q) ||
             'this computer'.contains(q));
