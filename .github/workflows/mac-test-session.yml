@@ -1,0 +1,201 @@
+# Free manual Mac test: borrows a GitHub-hosted macOS VM (free for this
+# public repo), installs a released ShamarrConnect DMG, and keeps it online
+# so a tester can connect to it from another device with ShamarrConnect.
+#
+# Before the first run, set repo secret MAC_TEST_PASSWORD (the permanent
+# password for the VM). Never echo it: this repo's logs are public.
+# Connect with the ID printed in the run summary. Cancel the run to end early.
+name: Mac test session
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release tag in shamarrzz/shamarrconnect-releases"
+        default: "1.4.9-sc25"
+        required: true
+      arch:
+        description: "DMG to install (x86_64 on an Apple Silicon runner = Rosetta pass)"
+        type: choice
+        options: [aarch64, x86_64]
+        default: aarch64
+      runner:
+        description: "GitHub macOS image"
+        type: choice
+        options: [macos-15, macos-26, macos-15-intel]
+        default: macos-15
+      minutes:
+        description: "Minutes to stay online after setup (max 330)"
+        default: "90"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mac-test-session
+  cancel-in-progress: false
+
+jobs:
+  session:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 350
+    env:
+      REL: ${{ inputs.release }}
+      ARCH: ${{ inputs.arch }}
+      APP: /Applications/ShamarrConnect.app
+      BIN: /Applications/ShamarrConnect.app/Contents/MacOS/ShamarrConnect
+      # crate::get_full_name() = ORG + "." + APP_NAME; launchd plist names must match it.
+      FULL: com.shamarrconnect.ShamarrConnect
+    steps:
+      - name: Check password secret
+        env:
+          PW: ${{ secrets.MAC_TEST_PASSWORD }}
+        run: |
+          if [ -z "$PW" ]; then
+            echo "::error::Set repo secret MAC_TEST_PASSWORD first."
+            exit 1
+          fi
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          sparse-checkout: src/platform/privileges_scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Machine info
+        run: |
+          sw_vers
+          uname -m
+          sysctl -n machdep.cpu.brand_string
+          csrutil status || true
+          system_profiler SPDisplaysDataType | grep -i resolution || true
+
+      - name: Install Rosetta for x86_64 on Apple Silicon
+        if: inputs.arch == 'x86_64' && inputs.runner != 'macos-15-intel'
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Download DMG
+        run: |
+          curl -fsSL -o sc.dmg \
+            "https://github.com/shamarrzz/shamarrconnect-releases/releases/download/${REL}/ShamarrConnect-${REL}-${ARCH}.dmg"
+          shasum -a 256 sc.dmg
+
+      - name: Install app and check signature / Gatekeeper
+        run: |
+          set -x
+          hdiutil attach -nobrowse -readonly -mountpoint /Volumes/sc sc.dmg
+          sudo ditto /Volumes/sc/ShamarrConnect.app "$APP"
+          hdiutil detach /Volumes/sc
+          codesign --verify --deep --strict -vv "$APP"
+          codesign -dv "$APP" 2>&1 | grep -E "Authority|TeamIdentifier|Identifier="
+          spctl -a -vv -t exec "$APP"
+          xcrun stapler validate "$APP" || echo "::warning::Notarization ticket not stapled to the app"
+          lipo -archs "$BIN"
+          defaults read "$APP/Contents/Info.plist" CFBundleIdentifier
+
+      - name: Grant screen recording and accessibility (TCC)
+        run: |
+          BUNDLE=$(defaults read "$APP/Contents/Info.plist" CFBundleIdentifier)
+          REQ=$(codesign -d -r- "$APP" 2>&1 | sed -n 's/^designated => //p')
+          echo "$REQ" | csreq -r- -b /tmp/csreq.bin
+          HEX=$(xxd -p /tmp/csreq.bin | tr -d '\n')
+          NOW=$(date +%s)
+          SYS="/Library/Application Support/com.apple.TCC/TCC.db"
+          USR="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
+          for svc in kTCCServiceScreenCapture kTCCServiceAccessibility kTCCServicePostEvent kTCCServiceListenEvent; do
+            row="'$svc','$BUNDLE',0,2,4,1,X'$HEX',NULL,0,'UNUSED',NULL,0,$NOW,NULL,NULL,'UNUSED',$NOW"
+            sudo sqlite3 "$SYS" "INSERT OR REPLACE INTO access VALUES($row);" || echo "::warning::system TCC insert failed for $svc"
+            sqlite3 "$USR" "INSERT OR REPLACE INTO access VALUES($row);" || echo "::warning::user TCC insert failed for $svc"
+          done
+          sudo sqlite3 "$SYS" "SELECT service, client, auth_value FROM access WHERE client='$BUNDLE';"
+
+      - name: Install background service and start app
+        run: |
+          BUNDLE=$(defaults read "$APP/Contents/Info.plist" CFBundleIdentifier)
+          fix() {
+            sed -e "s/com\.carriez\.rustdesk/${BUNDLE}/g" \
+                -e "s/com\.carriez\.RustDesk/${FULL}/g" \
+                -e "s/rustdesk/shamarrconnect/g" \
+                -e "s/RustDesk/ShamarrConnect/g" "$1"
+          }
+          D="/Library/LaunchDaemons/${FULL}_service.plist"
+          A="/Library/LaunchAgents/${FULL}_server.plist"
+          fix src/platform/privileges_scripts/daemon.plist | sudo tee "$D" >/dev/null
+          fix src/platform/privileges_scripts/agent.plist | sudo tee "$A" >/dev/null
+          sudo chown root:wheel "$D" "$A"
+          sudo chmod 644 "$D" "$A"
+          sudo launchctl load -w "$D"
+          launchctl bootstrap "gui/$(id -u)" "$A" || launchctl load -w "$A"
+          open -a "$APP"
+          sleep 20
+          pgrep -fl ShamarrConnect || { echo "::error::ShamarrConnect is not running"; exit 1; }
+
+      - name: Set password and get ID
+        env:
+          PW: ${{ secrets.MAC_TEST_PASSWORD }}
+        run: |
+          out=$(sudo "$BIN" --password "$PW" 2>&1 | tail -1)
+          echo "set password: $out"
+          [ "$out" = "Done!" ] || { echo "::error::Could not set the permanent password"; exit 1; }
+          sudo "$BIN" --option approve-mode password || true
+          ID=""
+          for i in $(seq 1 30); do
+            ID=$("$BIN" --get-id 2>/dev/null | tail -1 | tr -d '[:space:]')
+            [ -n "$ID" ] && break
+            sleep 5
+          done
+          [ -n "$ID" ] || { echo "::error::No ID after 150 s"; exit 1; }
+          echo "ID=$ID" >> "$GITHUB_ENV"
+          {
+            echo "## Mac test session is online"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **ShamarrConnect ID** | \`$ID\` |"
+            echo "| Password | repo secret \`MAC_TEST_PASSWORD\` |"
+            echo "| Build | ${REL} ${ARCH} on ${{ inputs.runner }} ($(sw_vers -productVersion), $(uname -m)) |"
+            echo "| Online for | ${{ inputs.minutes }} minutes (cancel the run to stop early) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "ShamarrConnect ID: $ID"
+
+      - name: Screenshot at start
+        run: screencapture -x start.png || true
+
+      - name: Upload start screenshot
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screen-start
+          path: start.png
+          if-no-files-found: ignore
+
+      - name: Stay online
+        env:
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          m=$MINUTES
+          [ "$m" -gt 330 ] && m=330
+          end=$((SECONDS + m * 60))
+          while [ $SECONDS -lt $end ]; do
+            left=$(( (end - SECONDS) / 60 ))
+            if pgrep -qf "ShamarrConnect --server"; then s=up; else s="SERVER DOWN"; fi
+            echo "$(date -u +%H:%M) ID $ID, server $s, ${left} min left"
+            sleep 300
+          done
+
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p out
+          screencapture -x out/end.png || true
+          cp -R "$HOME/Library/Logs/ShamarrConnect" out/user-logs 2>/dev/null || true
+          sudo cp -R /var/root/Library/Logs/ShamarrConnect out/root-logs 2>/dev/null || true
+          sudo cp /tmp/shamarrconnect_service.* out/ 2>/dev/null || true
+          sudo chown -R "$(id -u)" out
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mac-session-logs
+          path: out
+          if-no-files-found: ignore
