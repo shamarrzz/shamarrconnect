@@ -10,7 +10,7 @@ if [ "$1" = configure ]; then
 	if [ "systemd" == "$INITSYS" ]; then
 
 		if [ -e /etc/systemd/system/shamarrconnect.service ]; then
-			rm /etc/systemd/system/shamarrconnect.service /usr/lib/systemd/system/shamarrconnect.service /usr/lib/systemd/user/shamarrconnect.service >/dev/null  2>&1
+			rm -f /etc/systemd/system/shamarrconnect.service /usr/lib/systemd/system/shamarrconnect.service /usr/lib/systemd/user/shamarrconnect.service >/dev/null 2>&1 || true
 		fi
 		mkdir -p /usr/lib/systemd/system/
 		cp /usr/share/shamarrconnect/files/systemd/shamarrconnect.service /usr/lib/systemd/system/shamarrconnect.service

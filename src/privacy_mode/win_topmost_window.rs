@@ -32,6 +32,7 @@ pub const ORIGIN_PROCESS_EXE: &'static str = "C:\\Windows\\System32\\RuntimeBrok
 pub const WIN_TOPMOST_INJECTED_PROCESS_EXE: &'static str = "RuntimeBroker_shamarrconnect.exe";
 pub const INJECTED_PROCESS_EXE: &'static str = WIN_TOPMOST_INJECTED_PROCESS_EXE;
 pub(super) const PRIVACY_WINDOW_NAME: &'static str = "ShamarrConnectPrivacyWindow";
+pub(super) const LEGACY_PRIVACY_WINDOW_NAME: &'static str = "RustDeskPrivacyWindow";
 
 struct WindowHandlers {
     hthread: u64,
@@ -296,8 +297,9 @@ impl PrivacyModeImpl {
             self.handlers.hthread = proc_info.hThread as _;
             self.handlers.hprocess = proc_info.hProcess as _;
 
-            let hwnd = wait_find_privacy_hwnd(1_000)?;
+            let hwnd = wait_find_privacy_hwnd(5_000)?;
             if hwnd.is_null() {
+                self.handlers.reset();
                 bail!("Failed to get hwnd after started");
             }
         }
@@ -366,9 +368,13 @@ unsafe fn inject_dll<'a>(hproc: HANDLE, hthread: HANDLE, dll_file: &'a str) -> R
 pub(super) fn wait_find_privacy_hwnd(msecs: u128) -> ResultType<HWND> {
     let tm_begin = Instant::now();
     let wndname = CString::new(PRIVACY_WINDOW_NAME)?;
+    let legacy_wndname = CString::new(LEGACY_PRIVACY_WINDOW_NAME)?;
     loop {
         unsafe {
-            let hwnd = FindWindowA(NULL as _, wndname.as_ptr() as _);
+            let mut hwnd = FindWindowA(NULL as _, wndname.as_ptr() as _);
+            if hwnd.is_null() {
+                hwnd = FindWindowA(NULL as _, legacy_wndname.as_ptr() as _);
+            }
             if !hwnd.is_null() {
                 return Ok(hwnd);
             }

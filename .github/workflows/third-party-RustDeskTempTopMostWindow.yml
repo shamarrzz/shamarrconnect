@@ -49,6 +49,15 @@ jobs:
       - name: Build the project
         run: |
           cd RustDeskTempTopMostWindow && git checkout 53b548a5398624f7149a382000397993542ad796
+          python -c '
+          p = "WindowInjection/dllmain.cpp"
+          s = open(p, "r", encoding="utf-8", errors="ignore").read()
+          s = s.replace("RustDeskPrivacyWindow", "ShamarrConnectPrivacyWindow")
+          old_band = "if (!hwnd)\n\t{\n\t\tShowErrorMsg(_T(\"CreateWindowInBand\"));\n\t\treturn nullptr;\n\t}"
+          new_band = "if (!hwnd && zbid != ZBID_DESKTOP)\n\t{\n\t\thwnd = pCreateWindowInBand(WS_EX_TOPMOST | WS_EX_NOACTIVATE, res, NULL, 0x80000000, 0, 0, 0, 0, NULL, NULL, wndParentClass.hInstance, LPVOID(res), ZBID_DESKTOP);\n\t}\n\tif (!hwnd)\n\t{\n\t\thwnd = CreateWindowEx(WS_EX_TOPMOST | WS_EX_NOACTIVATE, classname, title, 0x80000000, 0, 0, 0, 0, NULL, NULL, wndParentClass.hInstance, NULL);\n\t}\n\tif (!hwnd)\n\t{\n\t\treturn nullptr;\n\t}"
+          s = s.replace(old_band.replace("\n", "\r\n"), new_band.replace("\n", "\r\n")).replace(old_band, new_band)
+          open(p, "w", encoding="utf-8").write(s)
+          '
           msbuild ${{ env.project_path }} -p:Configuration=${{ inputs.configuration }} -p:Platform=${{ inputs.platform }} /p:TargetVersion=${{ inputs.target_version }}
 
       - name: Archive build artifacts

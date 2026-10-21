@@ -1236,15 +1236,73 @@ pub fn update_to(file: &str) -> ResultType<()> {
     if !file.ends_with(".deb") {
         bail!("Unsupported update file format: {}", file);
     }
+    if !std::path::Path::new(file).exists() {
+        bail!("Update file not found: {}", file);
+    }
+    let script_path = "/tmp/shamarrconnect-deb-update.sh";
     let file_quoted = shell_quote(file);
-    let cmd = format!("dpkg -i {file_quoted}; rm -f {file_quoted}");
+    let user_quoted = shell_quote(&get_active_username());
+    let display_quoted = shell_quote(&std::env::var("DISPLAY").unwrap_or_default());
+    let wayland_quoted = shell_quote(&std::env::var("WAYLAND_DISPLAY").unwrap_or_default());
+    let xauth_quoted = shell_quote(&std::env::var("XAUTHORITY").unwrap_or_default());
+    let xdg_runtime_quoted = shell_quote(&std::env::var("XDG_RUNTIME_DIR").unwrap_or_default());
+    let dbus_quoted = shell_quote(&std::env::var("DBUS_SESSION_BUS_ADDRESS").unwrap_or_default());
+
+    let script_body = format!(
+        "#!/bin/sh\n\
+        exec >/tmp/shamarrconnect-update.log 2>&1\n\
+        sleep 1\n\
+        export DEBIAN_FRONTEND=noninteractive\n\
+        dpkg --configure -a || true\n\
+        dpkg -i {file_quoted} || apt-get install -f -y || true\n\
+        if [ -x /usr/share/shamarrconnect/shamarrconnect ]; then\n\
+            ln -sf /usr/share/shamarrconnect/shamarrconnect /usr/bin/shamarrconnect\n\
+        fi\n\
+        if command -v systemctl >/dev/null 2>&1; then\n\
+            if [ -f /usr/share/shamarrconnect/files/systemd/shamarrconnect.service ]; then\n\
+                mkdir -p /usr/lib/systemd/system\n\
+                cp -f /usr/share/shamarrconnect/files/systemd/shamarrconnect.service /usr/lib/systemd/system/shamarrconnect.service\n\
+                if [ -e /usr/bin/pkill ]; then\n\
+                    sed -i 's|pkill|/usr/bin/pkill|g' /usr/lib/systemd/system/shamarrconnect.service || true\n\
+                fi\n\
+            fi\n\
+            systemctl daemon-reload || true\n\
+            systemctl enable shamarrconnect || true\n\
+            systemctl start shamarrconnect || true\n\
+        fi\n\
+        rm -f {file_quoted} {script_path}\n\
+        if [ -x /usr/bin/shamarrconnect ] && [ -n {user_quoted} ]; then\n\
+            if command -v runuser >/dev/null 2>&1; then\n\
+                runuser -u {user_quoted} -- env DISPLAY={display_quoted} WAYLAND_DISPLAY={wayland_quoted} XAUTHORITY={xauth_quoted} XDG_RUNTIME_DIR={xdg_runtime_quoted} DBUS_SESSION_BUS_ADDRESS={dbus_quoted} nohup /usr/bin/shamarrconnect >/dev/null 2>&1 &\n\
+            else\n\
+                su - {user_quoted} -c \"DISPLAY={display_quoted} WAYLAND_DISPLAY={wayland_quoted} XAUTHORITY={xauth_quoted} XDG_RUNTIME_DIR={xdg_runtime_quoted} DBUS_SESSION_BUS_ADDRESS={dbus_quoted} nohup /usr/bin/shamarrconnect >/dev/null 2>&1 &\" || true\n\
+            fi\n\
+        fi\n"
+    );
+    std::fs::write(script_path, script_body)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(script_path, std::fs::Permissions::from_mode(0o755));
+    }
+
+    // Launch the upgrade in a transient systemd unit (or setsid background process)
+    // outside shamarrconnect.service so stopping the service during preinst/prerm
+    // never kills dpkg mid-upgrade.
+    let cmd = format!(
+        "if command -v systemd-run >/dev/null 2>&1; then \
+            systemd-run --no-block --quiet /bin/sh {script_path}; \
+        else \
+            nohup setsid /bin/sh {script_path} >/dev/null 2>&1 </dev/null & \
+        fi"
+    );
     let path_owned = file.to_string();
     std::thread::spawn(move || {
         if run_cmds_privileged(&cmd) {
-            run_me_with(2);
             std::process::exit(0);
         } else {
             log::error!("Linux deb update cancelled or failed for {}", path_owned);
+            std::fs::remove_file(script_path).ok();
             std::fs::remove_file(&path_owned).ok();
         }
     });
@@ -2047,9 +2105,19 @@ pub fn run_me_with(secs: u32) {
         }
     };
 
+    let mut exe_str = exe.to_string_lossy().to_string();
+    if let Some(stripped) = exe_str.strip_suffix(" (deleted)") {
+        exe_str = stripped.to_string();
+    }
+    if !std::path::Path::new(&exe_str).exists()
+        && std::path::Path::new("/usr/bin/shamarrconnect").exists()
+    {
+        exe_str = "/usr/bin/shamarrconnect".to_string();
+    }
+
     // SECURITY: Use shell_quote to safely escape the executable path,
     // preventing command injection even if the path contains special characters.
-    let exe_quoted = shell_quote(&exe.to_string_lossy());
+    let exe_quoted = shell_quote(&exe_str);
 
     // Spawn a background process that sleeps and then executes.
     // The child process is automatically orphaned when parent exits,

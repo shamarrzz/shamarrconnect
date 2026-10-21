@@ -1,4 +1,4 @@
-use super::win_topmost_window::PRIVACY_WINDOW_NAME;
+use super::win_topmost_window::{LEGACY_PRIVACY_WINDOW_NAME, PRIVACY_WINDOW_NAME};
 use hbb_common::{bail, log, ResultType};
 use std::time::Instant;
 
@@ -21,12 +21,14 @@ pub fn create_capturer(
             let mut ok = false;
             let check_begin = Instant::now();
             while check_begin.elapsed().as_secs() < 5 {
-                match c1.exclude("", PRIVACY_WINDOW_NAME) {
-                    Ok(false) => {
-                        ok = false;
-                        std::thread::sleep(std::time::Duration::from_millis(500));
+                let primary_res = c1.exclude("", PRIVACY_WINDOW_NAME);
+                let legacy_res = c1.exclude("", LEGACY_PRIVACY_WINDOW_NAME);
+                match (primary_res, legacy_res) {
+                    (Ok(true), _) | (_, Ok(true)) => {
+                        ok = true;
+                        break;
                     }
-                    Err(e) => {
+                    (Err(e), _) => {
                         bail!(
                             "Failed to exclude privacy window {} - {}, err: {}",
                             "",
@@ -34,9 +36,17 @@ pub fn create_capturer(
                             e
                         );
                     }
+                    (_, Err(e)) => {
+                        bail!(
+                            "Failed to exclude privacy window {} - {}, err: {}",
+                            "",
+                            LEGACY_PRIVACY_WINDOW_NAME,
+                            e
+                        );
+                    }
                     _ => {
-                        ok = true;
-                        break;
+                        ok = false;
+                        std::thread::sleep(std::time::Duration::from_millis(500));
                     }
                 }
             }
