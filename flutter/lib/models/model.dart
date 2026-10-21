@@ -1423,7 +1423,133 @@ class FfiModel with ChangeNotifier {
 
     if (!isCache) {
       tryUseAllMyDisplaysForTheRemoteSession(peerId);
+      if (connType == ConnType.defaultConn) {
+        _maybePromptPrivacyOnConnect(peerId);
+      }
     }
+  }
+
+  bool _privacyPromptShown = false;
+
+  Future<void> _maybePromptPrivacyOnConnect(String peerId) async {
+    if (_privacyPromptShown) return;
+    if (!_pi.features.privacyMode || !keyboard || viewOnly) return;
+    final hasPerm = permissions['privacy_mode'] != false;
+    if (!hasPerm) return;
+    if (PrivacyModeState.find(peerId).isNotEmpty) return;
+    if (bind.sessionGetToggleOptionSync(
+        sessionId: sessionId, arg: kOptionPrivacyMode)) {
+      return;
+    }
+
+    final peerPref =
+        await bind.sessionGetFlutterOption(sessionId: sessionId, k: 'privacy-on-connect') ?? '';
+    if (peerPref == 'never') return;
+
+    final impls = _pi
+            .platformAdditions[kPlatformAdditionsSupportedPrivacyModeImpl]
+        as List<dynamic>?;
+    if (peerPref.isNotEmpty && peerPref != 'ask') {
+      _privacyPromptShown = true;
+      bind.sessionTogglePrivacyMode(
+          sessionId: sessionId, implKey: peerPref, on: true);
+      return;
+    }
+
+    final globalOpt = bind.mainGetLocalOption(key: 'prompt-privacy-on-connect');
+    if (globalOpt == 'N') return;
+
+    _privacyPromptShown = true;
+    final dm = parent.target?.dialogManager;
+    if (dm == null) return;
+
+    String defaultImpl = 'privacy_mode_impl_mag';
+    if (impls != null && impls.isNotEmpty) {
+      defaultImpl = (impls.first as List<dynamic>)[0] as String;
+    }
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (PrivacyModeState.find(peerId).isNotEmpty) return;
+      String selectedImpl = defaultImpl;
+      bool rememberForPeer = false;
+
+      dm.show((setState, close, context) {
+        return CustomAlertDialog(
+          title: const Text('Remote Screen Privacy'),
+          contentBoxConstraints:
+              const BoxConstraints(minWidth: 340, maxWidth: 460),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Turn off or blank the remote monitor while you work so people near ${_pi.hostname.isNotEmpty ? _pi.hostname : peerId} cannot see the screen?',
+                style: const TextStyle(fontSize: 13.5),
+              ),
+              const SizedBox(height: 10),
+              if (impls != null && impls.isNotEmpty)
+                ...impls.map((e) {
+                  final item = e as List<dynamic>;
+                  final k = item[0] as String;
+                  final label = translate(item[1] as String);
+                  return RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: k,
+                    groupValue: selectedImpl,
+                    title: Text(label, style: const TextStyle(fontSize: 13)),
+                    onChanged: (v) {
+                      if (v != null) setState(() => selectedImpl = v);
+                    },
+                  );
+                }),
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: rememberForPeer,
+                title: const Text(
+                  'Remember my choice for this computer',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+                onChanged: (v) =>
+                    setState(() => rememberForPeer = v ?? false),
+              ),
+            ],
+          ),
+          actions: [
+            dialogButton(
+              'Keep Screen On',
+              isOutline: true,
+              onPressed: () async {
+                if (rememberForPeer) {
+                  await bind.sessionSetFlutterOption(
+                      sessionId: sessionId,
+                      k: 'privacy-on-connect',
+                      v: 'never');
+                }
+                close();
+              },
+            ),
+            dialogButton(
+              'Enable Privacy Mode',
+              onPressed: () async {
+                if (rememberForPeer) {
+                  await bind.sessionSetFlutterOption(
+                      sessionId: sessionId,
+                      k: 'privacy-on-connect',
+                      v: selectedImpl);
+                }
+                bind.sessionTogglePrivacyMode(
+                    sessionId: sessionId, implKey: selectedImpl, on: true);
+                close();
+              },
+            ),
+          ],
+          onCancel: close,
+        );
+      });
+    });
   }
 
   checkDesktopKeyboardMode() async {

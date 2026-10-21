@@ -1100,8 +1100,14 @@ impl Connection {
             raii::AuthedConnID::check_remove_session(conn.inner.id(), conn.session_key());
         }
 
+        let (scr_idx, scr_virt, scr_name, priv_on, priv_impl) = conn.current_screen_audit_info();
         conn.post_conn_audit(json!({
             "action": "close",
+            "display": scr_idx,
+            "is_virtual": scr_virt,
+            "display_name": scr_name,
+            "privacy_mode": priv_on,
+            "privacy_impl": priv_impl,
         }));
         if let Some(s) = conn.server.upgrade() {
             let mut s = s.write().unwrap();
@@ -1369,6 +1375,38 @@ impl Connection {
         );
     }
 
+    fn current_screen_audit_info(&self) -> (usize, bool, String, bool, String) {
+        let idx = self.display_idx;
+        #[allow(unused_mut)]
+        let mut is_virtual = false;
+        #[allow(unused_mut)]
+        let mut disp_name = String::new();
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        if let Ok(displays) = display_service::try_get_displays() {
+            if let Some(d) = displays.get(idx) {
+                disp_name = d.name();
+                #[cfg(windows)]
+                {
+                    is_virtual =
+                        virtual_display_manager::rustdesk_idd::is_virtual_display(&disp_name)
+                            || virtual_display_manager::amyuni_idd::is_my_display(&disp_name);
+                }
+            }
+        }
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        let priv_on = privacy_mode::is_in_privacy_mode();
+        #[cfg(any(target_os = "android", target_os = "ios"))]
+        let priv_on = false;
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        let priv_impl = privacy_mode::get_cur_impl_key().unwrap_or_default();
+        #[cfg(any(target_os = "android", target_os = "ios"))]
+        let priv_impl = String::new();
+        if priv_on && priv_impl.contains("virtual_display") {
+            is_virtual = true;
+        }
+        (idx, is_virtual, disp_name, priv_on, priv_impl)
+    }
+
     fn post_conn_audit(&self, v: Value) {
         if self.server_audit_conn.is_empty() {
             return;
@@ -1583,9 +1621,17 @@ impl Connection {
             .unwrap()
             .get(&self.session_key())
             .map(|s| s.last_recv_time.clone());
-        self.post_conn_audit(
-            json!({"peer": ((&self.lr.my_id, &self.lr.my_name)), "type": conn_type}),
-        );
+        let (scr_idx, scr_virt, scr_name, priv_on, priv_impl) = self.current_screen_audit_info();
+        self.post_conn_audit(json!({
+            "action": "auth",
+            "peer": ((&self.lr.my_id, &self.lr.my_name)),
+            "type": conn_type,
+            "display": scr_idx,
+            "is_virtual": scr_virt,
+            "display_name": scr_name,
+            "privacy_mode": priv_on,
+            "privacy_impl": priv_impl,
+        }));
         #[allow(unused_mut)]
         let mut username = crate::platform::get_active_username();
         let mut res = LoginResponse::new();
@@ -4317,6 +4363,16 @@ impl Connection {
             {
                 self.send(msg_out).await;
             }
+            let (scr_idx, scr_virt, scr_name, priv_on, priv_impl) =
+                self.current_screen_audit_info();
+            self.post_conn_audit(json!({
+                "action": "switch_display",
+                "display": scr_idx,
+                "is_virtual": scr_virt,
+                "display_name": scr_name,
+                "privacy_mode": priv_on,
+                "privacy_impl": priv_impl,
+            }));
         }
     }
 
@@ -4435,6 +4491,12 @@ impl Connection {
                         e
                     )))
                     .await;
+                } else {
+                    self.post_conn_audit(json!({
+                        "action": "virtual_display",
+                        "display": t.display,
+                        "on": true,
+                    }));
                 }
             }
         } else {
@@ -4445,6 +4507,12 @@ impl Connection {
                     e
                 )))
                 .await;
+            } else {
+                self.post_conn_audit(json!({
+                    "action": "virtual_display",
+                    "display": t.display,
+                    "on": false,
+                }));
             }
         }
     }
@@ -4838,6 +4906,16 @@ impl Connection {
                             5_000,
                         );
                         if err_msg.is_empty() {
+                            let (scr_idx, scr_virt, scr_name, _, _) =
+                                self.current_screen_audit_info();
+                            self.post_conn_audit(json!({
+                                "action": "privacy_mode",
+                                "on": true,
+                                "impl_key": &impl_key,
+                                "display": scr_idx,
+                                "is_virtual": scr_virt || impl_key.contains("virtual_display"),
+                                "display_name": scr_name,
+                            }));
                             crate::common::make_privacy_mode_msg(
                                 back_notification::PrivacyModeState::PrvOnSucceeded,
                                 impl_key,
@@ -4894,7 +4972,19 @@ impl Connection {
                 impl_key,
             )
         } else {
-            Self::turn_off_privacy_to_msg(self.inner.id, impl_key)
+            let msg = Self::turn_off_privacy_to_msg(self.inner.id, impl_key.clone());
+            if !privacy_mode::is_in_privacy_mode() {
+                let (scr_idx, scr_virt, scr_name, _, _) = self.current_screen_audit_info();
+                self.post_conn_audit(json!({
+                    "action": "privacy_mode",
+                    "on": false,
+                    "impl_key": &impl_key,
+                    "display": scr_idx,
+                    "is_virtual": scr_virt,
+                    "display_name": scr_name,
+                }));
+            }
+            msg
         };
         self.send(msg_out).await;
     }

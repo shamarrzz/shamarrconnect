@@ -378,12 +378,29 @@
     });
   }
 
+  var TEAM_PHRASES = {
+    remote_session: "Remote session",
+    login: "Signed in",
+    device_joined: "New device joined",
+    device_removed: "Device removed",
+    devices_signed_out_others: "Signed out other devices",
+    member_invited: "Member invited",
+    member_joined: "Member joined",
+    member_removed: "Member removed",
+    role_changed: "Role changed",
+    payment: "Payment",
+    mfa_enabled: "Two-step sign-in turned on",
+    mfa_disabled: "Two-step sign-in turned off",
+    password_changed: "Password changed"
+  };
+
   function renderActivity(v){
     var evs = v.events || [];
     if (!evs.length){ $("activity").innerHTML = '<div class="empty">No team activity yet</div>'; return; }
     $("activity").innerHTML = evs.map(function(e){
+      var label = TEAM_PHRASES[e.kind] || e.kind;
       return "<div style='display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px'>"+
-        "<div style='flex:1'><strong>"+esc(e.email)+"</strong> · "+esc(e.kind)+
+        "<div style='flex:1'><strong>"+esc(e.email)+"</strong> · "+esc(label)+
         (e.detail ? " — "+esc(e.detail) : "")+"</div>"+
         "<div style='color:var(--muted);font-size:12px;white-space:nowrap'>"+esc(e.at)+"</div></div>";
     }).join("");

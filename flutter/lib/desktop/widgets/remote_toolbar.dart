@@ -812,7 +812,7 @@ class _RemoteToolbarState extends State<RemoteToolbar> {
     toolbarItems.add(Obx(() {
       if ((PrivacyModeState.find(widget.id).isEmpty ||
               allowDisplaySwitchInPrivacyMode(pi)) &&
-          pi.displaysCount.value > 1) {
+          (pi.displaysCount.value > 1 || showVirtualDisplayMenu(widget.ffi))) {
         return _MonitorMenu(
             id: widget.id,
             ffi: widget.ffi,
@@ -1018,12 +1018,16 @@ class _MonitorMenu extends StatelessWidget {
   }
 
   Widget buildMonitorSubmenuWidget(BuildContext context) {
+    final virtualChildren = getVirtualDisplayMenuChildren(ffi, id, null);
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: buildMonitorList(context, false)),
         supportIndividualWindows ? Divider() : Offstage(),
         supportIndividualWindows ? chooseDisplayBehavior() : Offstage(),
+        if (virtualChildren.isNotEmpty) Divider(),
+        if (virtualChildren.isNotEmpty) ...virtualChildren,
       ],
     );
   }

@@ -1982,15 +1982,11 @@ class _DisplayState extends State<_Display> {
 
   Widget privacyModeImpl(BuildContext context) {
     final supportedPrivacyModeImpls = bind.mainSupportedPrivacyModeImpls();
-    late final List<dynamic> privacyModeImpls;
+    List<dynamic> privacyModeImpls = [];
     try {
       privacyModeImpls = jsonDecode(supportedPrivacyModeImpls);
     } catch (e) {
       debugPrint('failed to parse supported privacy mode impls, err=$e');
-      return Offstage();
-    }
-    if (privacyModeImpls.length < 2) {
-      return Offstage();
     }
 
     final key = 'privacy-mode-impl-key';
@@ -2003,16 +1999,91 @@ class _DisplayState extends State<_Display> {
     if (groupValue.isEmpty) {
       groupValue = bind.mainDefaultPrivacyModeImpl();
     }
+
+    const promptKey = 'prompt-privacy-on-connect';
+    final promptVal = bind.mainGetLocalOption(key: promptKey);
+    final promptEnabled = promptVal.isEmpty || promptVal == 'Y';
+    onPromptChanged(bool b) async {
+      await bind.mainSetLocalOption(key: promptKey, value: b ? 'Y' : 'N');
+      setState(() {});
+    }
+
+    final autoPrivacy =
+        bind.mainGetUserDefaultOption(key: kOptionPrivacyMode) == 'Y';
+    onAutoPrivacyChanged(bool b) async {
+      await bind.mainSetUserDefaultOption(
+          key: kOptionPrivacyMode, value: b ? 'Y' : defaultOptionNo);
+      setState(() {});
+    }
+
     return _Card(
-      title: 'Privacy mode',
-      children: privacyModeImpls.map((impl) {
-        final d = impl as List<dynamic>;
-        return _Radio(context,
-            value: d[0] as String,
-            groupValue: groupValue,
-            label: d[1] as String,
-            onChanged: onChanged);
-      }).toList(),
+      title: 'Privacy Mode & Virtual Display',
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+              left: _kContentHMargin, right: 16, bottom: 8),
+          child: Text(
+            'Protect computers in non-private offices or shops by blanking the remote monitor or switching to a virtual display while connected. Which screen and privacy mode was used is logged in account & admin activity.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
+        ),
+        GestureDetector(
+          child: Row(
+            children: [
+              Checkbox(
+                      value: promptEnabled,
+                      onChanged: (_) => onPromptChanged(!promptEnabled))
+                  .marginOnly(right: 5),
+              const Expanded(
+                child: Text(
+                    'Ask to blank or turn off remote screen when connecting'),
+              )
+            ],
+          ).marginOnly(left: _kCheckBoxLeftMargin),
+          onTap: () => onPromptChanged(!promptEnabled),
+        ),
+        GestureDetector(
+          child: Row(
+            children: [
+              Checkbox(
+                      value: autoPrivacy,
+                      onChanged: isOptionFixed(kOptionPrivacyMode)
+                          ? null
+                          : (_) => onAutoPrivacyChanged(!autoPrivacy))
+                  .marginOnly(right: 5),
+              const Expanded(
+                child: Text(
+                    'Automatically enable privacy mode on every connection'),
+              )
+            ],
+          ).marginOnly(left: _kCheckBoxLeftMargin),
+          onTap: isOptionFixed(kOptionPrivacyMode)
+              ? null
+              : () => onAutoPrivacyChanged(!autoPrivacy),
+        ),
+        if (privacyModeImpls.isNotEmpty) ...[
+          const Divider(height: 16),
+          Padding(
+            padding: const EdgeInsets.only(
+                left: _kContentHMargin, right: 16, bottom: 4),
+            child: Text(
+              'Incoming connections to this computer — screen privacy engine:',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ...privacyModeImpls.map((impl) {
+            final d = impl as List<dynamic>;
+            return _Radio(context,
+                value: d[0] as String,
+                groupValue: groupValue,
+                label: d[1] as String,
+                onChanged: onChanged);
+          }),
+        ],
+      ],
     );
   }
 

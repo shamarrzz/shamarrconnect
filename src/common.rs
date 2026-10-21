@@ -2178,6 +2178,13 @@ pub fn load_custom_client() {
         let mut local = config::OVERWRITE_LOCAL_SETTINGS.write().unwrap();
         local.insert("enable-show-terminal-extra-keys".to_owned(), "N".to_owned());
     }
+    {
+        let mut display = config::DEFAULT_DISPLAY_SETTINGS.write().unwrap();
+        display.insert(
+            config::keys::OPTION_VIEW_STYLE.to_owned(),
+            "adaptive".to_owned(),
+        );
+    }
     hbb_common::config::Config::set_socks(None);
 
     #[cfg(debug_assertions)]

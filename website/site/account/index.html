@@ -399,7 +399,8 @@
     mfa_enabled: function(){ return "Two-step sign-in turned on"; },
     mfa_disabled: function(){ return "Two-step sign-in turned off"; },
     password_changed: function(d){ return "Password changed" + (d ? " · " + d : ""); },
-    profile_updated: function(){ return "Name updated"; }
+    profile_updated: function(){ return "Name updated"; },
+    remote_session: function(d){ return "Remote session" + (d ? " · " + d : ""); }
   };
   function phrase(ev){
     var f = PHRASES[ev.kind];
