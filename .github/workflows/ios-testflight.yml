@@ -21,6 +21,10 @@ on:
         description: 'CFBundleVersion. Must be higher than any build already uploaded.'
         required: true
         default: '2089'
+      release_tag:
+        description: 'Tag baked into About, e.g. 1.4.9-sc32. Apple build_name stays x.y.z.'
+        required: false
+        default: ''
 
 env:
   RUST_VERSION: "1.99.1"
@@ -84,6 +88,13 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Stamp release version into version.rs and pubspec.yaml
+        if: ${{ inputs.release_tag != '' }}
+        shell: bash
+        env:
+          VERSION: ${{ inputs.release_tag }}
+        run: python3 scripts/stamp_release_version.py
 
       - name: Import the distribution certificate
         uses: apple-actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 # v1
@@ -174,6 +185,8 @@ jobs:
           # Only this step. The same variable on the whole job makes
           # vcpkg compile its macOS host tools as iOS binaries.
           IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+          VERSION: ${{ inputs.release_tag }}
+          SC_RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
           rustup target add aarch64-apple-ios

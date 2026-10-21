@@ -30,6 +30,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../../common/widgets/account_mfa.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
+import '../../common/widgets/software_update.dart';
 
 
 const double _kTabWidth = 220;
@@ -2763,6 +2764,42 @@ class _AboutState extends State<_About> {
               SelectionArea(
                   child: Text('${translate('Version')}: $version')
                       .marginSymmetric(vertical: 4.0)),
+              Obx(() {
+                final updateUrl = stateGlobal.updateUrl.value.trim();
+                if (!softwareUpdateVisible(updateUrl)) {
+                  return const Text('You are up to date')
+                      .marginSymmetric(vertical: 4.0);
+                }
+                final newer = bind.mainGetNewVersion().trim();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SelectionArea(
+                      child: Text('New version: $newer')
+                          .marginSymmetric(vertical: 4.0),
+                    ),
+                    const Text(
+                      "What's New",
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ).marginSymmetric(vertical: 4.0),
+                    SelectionArea(
+                      child: Text(softwareUpdateNotes())
+                          .marginSymmetric(vertical: 4.0),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: const Color(0xFF2B5CE6),
+                        ),
+                        onPressed: () => openSoftwareUpdate(updateUrl),
+                        child: const Text('Update'),
+                      ),
+                    ),
+                  ],
+                );
+              }),
               SelectionArea(
                   child: Text('${translate('Build Date')}: $buildDate')
                       .marginSymmetric(vertical: 4.0)),

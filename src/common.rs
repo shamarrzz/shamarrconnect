@@ -94,6 +94,7 @@ pub mod input {
 
 lazy_static::lazy_static! {
     pub static ref SOFTWARE_UPDATE_URL: Arc<Mutex<String>> = Default::default();
+    pub static ref SOFTWARE_UPDATE_NOTES: Arc<Mutex<String>> = Default::default();
     pub static ref DEVICE_ID: Arc<Mutex<String>> = Default::default();
     pub static ref DEVICE_NAME: Arc<Mutex<String>> = Default::default();
     static ref PUBLIC_IPV6_ADDR: Arc<Mutex<(Option<SocketAddr>, Option<Instant>)>> = Default::default();
@@ -1014,26 +1015,38 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     };
     let bytes = latest_release_response.bytes().await?;
     let resp: hbb_common::VersionCheckResponse = serde_json::from_slice(&bytes)?;
-    let response_url = resp.url;
-    let latest_release_version = response_url.rsplit('/').next().unwrap_or_default();
+    let response_url = resp.url.trim().to_string();
+    let latest_release_version = if resp.version.trim().is_empty() {
+        response_url
+            .rsplit('/')
+            .next()
+            .unwrap_or_default()
+            .to_string()
+    } else {
+        resp.version.trim().to_string()
+    };
+    let notes = resp.notes;
 
     let stamped = option_env!("SC_STAMPED_TAG").unwrap_or(crate::RELEASE_TAG);
     let current = sc_release_rank(crate::RELEASE_TAG)
         .max(sc_release_rank(crate::VERSION))
         .max(sc_release_rank(stamped));
-    if sc_release_rank(latest_release_version) > current {
+    if sc_release_rank(&latest_release_version) > current {
         #[cfg(feature = "flutter")]
         {
             let mut m = HashMap::new();
             m.insert("name", "check_software_update_finish");
-            m.insert("url", &response_url);
+            m.insert("url", response_url.as_str());
+            m.insert("notes", notes.as_str());
             if let Ok(data) = serde_json::to_string(&m) {
                 let _ = crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, data);
             }
         }
         *SOFTWARE_UPDATE_URL.lock().unwrap() = response_url;
+        *SOFTWARE_UPDATE_NOTES.lock().unwrap() = notes;
     } else {
         *SOFTWARE_UPDATE_URL.lock().unwrap() = "".to_string();
+        *SOFTWARE_UPDATE_NOTES.lock().unwrap() = "".to_string();
     }
     Ok(())
 }
@@ -2157,10 +2170,22 @@ pub fn load_custom_client() {
     *config::PROD_RENDEZVOUS_SERVER.write().unwrap() = "connect.shamarrconnect.com".to_owned();
     {
         let mut overwrite = config::OVERWRITE_SETTINGS.write().unwrap();
-        overwrite.insert("custom-rendezvous-server".to_owned(), "connect.shamarrconnect.com".to_owned());
-        overwrite.insert("relay-server".to_owned(), "connect.shamarrconnect.com".to_owned());
-        overwrite.insert("api-server".to_owned(), "https://api.shamarrconnect.com".to_owned());
-        overwrite.insert("key".to_owned(), "JfyPD2rFXBvBipAn8bfICvPocBqects1mLC2qiHIu0c=".to_owned());
+        overwrite.insert(
+            "custom-rendezvous-server".to_owned(),
+            "connect.shamarrconnect.com".to_owned(),
+        );
+        overwrite.insert(
+            "relay-server".to_owned(),
+            "connect.shamarrconnect.com".to_owned(),
+        );
+        overwrite.insert(
+            "api-server".to_owned(),
+            "https://api.shamarrconnect.com".to_owned(),
+        );
+        overwrite.insert(
+            "key".to_owned(),
+            "JfyPD2rFXBvBipAn8bfICvPocBqects1mLC2qiHIu0c=".to_owned(),
+        );
         overwrite.insert("allow-insecure-tls-fallback".to_owned(), "N".to_owned());
         overwrite.insert("disable-udp".to_owned(), "N".to_owned());
         overwrite.insert("allow-websocket".to_owned(), "N".to_owned());

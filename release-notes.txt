@@ -1,0 +1,5 @@
+• Fixed Windows Privacy Mode screen curtain (ShamarrConnectPrivacyWindow HWND lookup & fallback)
+• Fixed Linux .deb in-app updater detaching outside systemd cgroup so upgrades complete cleanly
+• Added "What's New" update preview dialog and release notes in Settings → About
+• Stamped exact release version across Windows, macOS, Linux, iOS, and Android builds
+• Added Virtual Display, on-connect Privacy Mode prompt, adaptive scaling default, and screen audit history

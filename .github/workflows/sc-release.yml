@@ -35,9 +35,14 @@ on:
         description: 'Build signed Mac DMGs only; skip Windows/Linux/Android'
         type: boolean
         default: false
+      release_notes:
+        description: 'What''s New text. Use \n for a new line. Empty uses release-notes.txt.'
+        required: false
+        default: ''
 
 env:
   VERSION: ${{ github.event.inputs.version || github.ref_name }}
+  RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
   SCITER_RUST_VERSION: "1.75"
   RUST_VERSION: "1.75"
   MAC_RUST_VERSION: "1.81"
@@ -80,6 +85,10 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Stamp release version into version.rs and pubspec.yaml
+        shell: pwsh
+        run: python scripts/stamp_release_version.py
 
       - name: Restore bridge files
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -256,7 +265,7 @@ jobs:
               --repo shamarrzz/shamarrconnect-releases \
               --draft \
               --title "ShamarrConnect ${{ env.VERSION }}" \
-              --notes "Windows build. Draft, not latest."
+              --notes-file release-notes.txt
           fi
           gh release upload "${{ env.VERSION }}" \
             SignOutput/ShamarrConnect-${{ env.VERSION }}-x86_64.exe \
@@ -272,6 +281,7 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          body_path: release-notes.txt
           # Tag-named file feeds the auto-updater; the stable alias feeds
           # the website /releases/latest/download/ deep links.
           files: |
@@ -303,7 +313,7 @@ jobs:
               --repo shamarrzz/shamarrconnect-releases \
               --draft \
               --title "ShamarrConnect ${{ env.VERSION }}" \
-              --notes "Windows build. Draft, not latest."
+              --notes-file release-notes.txt
           fi
           gh release upload "${{ env.VERSION }}" \
             SignOutput/SiSLLC.ShamarrConnect_*.msix \
@@ -344,6 +354,15 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Stamp release version into version.rs and pubspec.yaml
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null 2>&1; then
+            python3 scripts/stamp_release_version.py
+          else
+            python scripts/stamp_release_version.py
+          fi
 
       - name: Import the codesign cert
         if: env.MACOS_P12_BASE64 != ''
@@ -537,6 +556,7 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          body_path: release-notes.txt
           files: |
             ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
             ShamarrConnect-macos-${{ matrix.job.arch }}.dmg
@@ -565,6 +585,15 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Stamp release version into version.rs and pubspec.yaml
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null 2>&1; then
+            python3 scripts/stamp_release_version.py
+          else
+            python scripts/stamp_release_version.py
+          fi
 
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c # v1.0
@@ -632,6 +661,8 @@ jobs:
           dockerRunArgs: |
             --volume "${PWD}:/workspace"
             --volume "/opt/artifacts:/opt/artifacts"
+            --env "VERSION=${{ env.VERSION }}"
+            --env "SC_RELEASE_TAG=${{ env.VERSION }}"
           shell: /bin/bash
           install: |
             apt-get update -y
@@ -685,6 +716,8 @@ jobs:
               registry = 'https://github.com/rust-lang/crates.io-index'
             """ > ~/.cargo/config
             pushd /workspace
+            export VERSION="${{ env.VERSION }}"
+            export SC_RELEASE_TAG="${{ env.VERSION }}"
             export VCPKG_ROOT=/opt/artifacts/vcpkg
             cargo build --locked --lib --features hwcodec,flutter,unix-file-copy-paste --release
             rm -rf target/release/deps target/release/build
@@ -723,6 +756,7 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          body_path: release-notes.txt
           files: |
             ShamarrConnect-${{ env.VERSION }}-x86_64.deb
             shamarrconnect-linux-amd64.deb
@@ -742,6 +776,15 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Stamp release version into version.rs and pubspec.yaml
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null 2>&1; then
+            python3 scripts/stamp_release_version.py
+          else
+            python scripts/stamp_release_version.py
+          fi
 
       - name: Download deb artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -793,6 +836,7 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          body_path: release-notes.txt
           files: |
             ./appimage/ShamarrConnect-${{ env.VERSION }}-x86_64.AppImage
             ./appimage/ShamarrConnect-linux-x86_64.AppImage
@@ -868,6 +912,15 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+
+      - name: Stamp release version into version.rs and pubspec.yaml
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null 2>&1; then
+            python3 scripts/stamp_release_version.py
+          else
+            python scripts/stamp_release_version.py
+          fi
 
       - name: Install flutter
         uses: subosito/flutter-action@2783a3f08e1baf891508463f8c6653c258246225 # v2.12.0
@@ -1005,6 +1058,7 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          body_path: release-notes.txt
           # Tag-named file is the canonical artifact; the stable alias feeds
           # the website /releases/latest/download/ deep links.
           files: |
@@ -1021,6 +1075,15 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Stamp release version into version.rs and pubspec.yaml
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null 2>&1; then
+            python3 scripts/stamp_release_version.py
+          else
+            python scripts/stamp_release_version.py
+          fi
+
       - name: Create source tarballs (AGPL-3.0 corresponding-source offer)
         run: |
           git archive --format=tar.gz --prefix=shamarrconnect/ -o shamarrconnect-${{ env.VERSION }}-src.tar.gz HEAD
@@ -1036,6 +1099,7 @@ jobs:
           draft: true
           tag_name: ${{ env.VERSION }}
           name: ShamarrConnect ${{ env.VERSION }}
+          body_path: release-notes.txt
           files: |
             shamarrconnect-${{ env.VERSION }}-src.tar.gz
             hbb_common-${{ env.VERSION }}-src.tar.gz

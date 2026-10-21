@@ -4,10 +4,8 @@ import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/formatter/id_formatter.dart';
 import 'package:flutter_hbb/common/widgets/connection_page_title.dart';
-import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
 
 import '../../common.dart';
@@ -85,8 +83,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
       slivers: [
         SliverList(
             delegate: SliverChildListDelegate([
-          if (!bind.isCustomClient() && !isIOS)
-            Obx(() => _buildUpdateUI(stateGlobal.updateUrl.value)),
+          if (!isIOS) const SoftwareUpdateBanner(),
           _buildRemoteIDTextField(),
         ])),
         SliverFillRemaining(
@@ -116,23 +113,6 @@ class _ConnectionPageState extends State<ConnectionPage> {
       _idEditingController.selection =
           TextSelection(baseOffset: 0, extentOffset: textLength);
     }
-  }
-
-  /// UI for software update.
-  /// If _updateUrl] is not empty, shows a button to update the software.
-  Widget _buildUpdateUI(String updateUrl) {
-    return updateUrl.isEmpty
-        ? const SizedBox(height: 0)
-        : InkWell(
-            onTap: () => openSoftwareUpdate(updateUrl),
-            child: Container(
-                alignment: AlignmentDirectional.center,
-                width: double.infinity,
-                color: const Color(0xFF0071FF),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(translate('Download new version'),
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold))));
   }
 
   /// UI for the remote ID TextField.

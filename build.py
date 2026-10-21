@@ -46,6 +46,11 @@ def system2(cmd):
 
 
 def get_version():
+    # CI sets VERSION to the release tag. Cargo.toml stays at 1.4.9, which
+    # would otherwise land in DEBIAN/control as Version: 1.4.9.
+    env_ver = os.environ.get("VERSION", "").strip()
+    if env_ver:
+        return env_ver
     with open("Cargo.toml", encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("version"):

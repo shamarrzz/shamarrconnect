@@ -2838,6 +2838,8 @@ pub fn main_get_common(key: String) -> String {
         return ui_interface::is_permanent_password_set().to_string();
     } else if key == "local-permanent-password-set" {
         return ui_interface::is_local_permanent_password_set().to_string();
+    } else if key == "software-update-notes" {
+        return crate::common::SOFTWARE_UPDATE_NOTES.lock().unwrap().clone();
     } else {
         if key.starts_with("download-data-") {
             let id = key.replace("download-data-", "");
@@ -2875,7 +2877,8 @@ pub fn main_get_common(key: String) -> String {
             }
             #[cfg(target_os = "linux")]
             {
-                return if cfg!(target_arch = "x86_64") && crate::platform::linux::is_deb_installed() {
+                return if cfg!(target_arch = "x86_64") && crate::platform::linux::is_deb_installed()
+                {
                     format!("ShamarrConnect-{_version}-x86_64.deb")
                 } else {
                     "error:unsupported".to_owned()
