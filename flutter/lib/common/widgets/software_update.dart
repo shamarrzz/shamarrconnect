@@ -8,14 +8,41 @@ import '../../models/platform_model.dart';
 import '../../models/state_model.dart';
 
 const _brand = Color(0xFF2B5CE6);
+const _kIosAppStoreUrl = 'https://apps.apple.com/app/id6824360752';
+const _kAndroidPlayStoreUrl =
+    'https://play.google.com/store/apps/details?id=com.shamarrconnect.mobile';
+const _kAndroidMarketUrl = 'market://details?id=com.shamarrconnect.mobile';
 
-/// In-place install (installed Windows/macOS) or open the GitHub release page.
+/// In-place install (installed Windows/macOS/Linux .deb), mobile store, or release page.
 void openSoftwareUpdate([String? url]) {
+  if (isIOS) {
+    launchUrl(Uri.parse(_kIosAppStoreUrl),
+        mode: LaunchMode.externalApplication);
+    return;
+  }
+  if (isAndroid) {
+    launchUrl(Uri.parse(_kAndroidMarketUrl),
+            mode: LaunchMode.externalApplication)
+        .then((ok) {
+      if (!ok) {
+        launchUrl(Uri.parse(_kAndroidPlayStoreUrl),
+            mode: LaunchMode.externalApplication);
+      }
+    }).catchError((_) {
+      launchUrl(Uri.parse(_kAndroidPlayStoreUrl),
+          mode: LaunchMode.externalApplication);
+    });
+    return;
+  }
   final u = (url ?? stateGlobal.updateUrl.value).trim();
   if (u.isEmpty) return;
-  if ((isWindows || isMacOS) && bind.mainIsInstalled()) {
-    handleUpdate(u);
-    return;
+  if ((isWindows || isMacOS || isLinux) && bind.mainIsInstalled()) {
+    final ver = u.substring(u.lastIndexOf('/') + 1);
+    final dlFile = bind.mainGetCommonSync(key: 'download-file-$ver');
+    if (!dlFile.startsWith('error:') && dlFile.isNotEmpty) {
+      handleUpdate(u);
+      return;
+    }
   }
   launchUrl(Uri.parse(u));
 }

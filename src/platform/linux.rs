@@ -1221,6 +1221,36 @@ pub fn is_installed() -> bool {
     }
 }
 
+pub fn is_deb_installed() -> bool {
+    if std::env::var_os("APPIMAGE").is_some() {
+        return false;
+    }
+    is_installed()
+        && has_cmd("dpkg")
+        && (std::path::Path::new("/var/lib/dpkg/info/shamarrconnect.list").exists()
+            || std::path::Path::new("/var/lib/dpkg/info/shamarrconnect:amd64.list").exists()
+            || std::path::Path::new("/usr/share/shamarrconnect/shamarrconnect").exists())
+}
+
+pub fn update_to(file: &str) -> ResultType<()> {
+    if !file.ends_with(".deb") {
+        bail!("Unsupported update file format: {}", file);
+    }
+    let file_quoted = shell_quote(file);
+    let cmd = format!("dpkg -i {file_quoted}; rm -f {file_quoted}");
+    let path_owned = file.to_string();
+    std::thread::spawn(move || {
+        if run_cmds_privileged(&cmd) {
+            run_me_with(2);
+            std::process::exit(0);
+        } else {
+            log::error!("Linux deb update cancelled or failed for {}", path_owned);
+            std::fs::remove_file(&path_owned).ok();
+        }
+    });
+    Ok(())
+}
+
 /// Get multiple environment variables from a process matching the given criteria.
 /// This version reads /proc directly instead of spawning shell commands.
 ///

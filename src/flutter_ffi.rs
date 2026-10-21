@@ -2873,7 +2873,15 @@ pub fn main_get_common(key: String) -> String {
                     "error:unsupported".to_owned()
                 };
             }
-            #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+            #[cfg(target_os = "linux")]
+            {
+                return if cfg!(target_arch = "x86_64") && crate::platform::linux::is_deb_installed() {
+                    format!("ShamarrConnect-{_version}-x86_64.deb")
+                } else {
+                    "error:unsupported".to_owned()
+                };
+            }
+            #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
             {
                 "error:unsupported".to_owned()
             }
@@ -2923,7 +2931,7 @@ pub fn main_set_common(_key: String, _value: String) {
             );
         });
     }
-    #[cfg(any(target_os = "windows", target_os = "macos"))]
+    #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
     {
         use crate::updater::get_download_file_from_url;
         if _key == "download-new-version" {
@@ -2959,7 +2967,7 @@ pub fn main_set_common(_key: String, _value: String) {
                     // 1.4.0 does not support "--update"
                     // But we can assume that the new version supports it.
 
-                    #[cfg(any(target_os = "windows", target_os = "macos"))]
+                    #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
                     match crate::platform::update_to(f) {
                         Ok(_) => {
                             log::info!("Update process is launched successfully!");
