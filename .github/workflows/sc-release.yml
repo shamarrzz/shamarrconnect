@@ -847,6 +847,10 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+      RUST_VERSION: "1.99.1"
+      FLUTTER_VERSION: "3.47.7"
+      NDK_VERSION: "r30"
+      CARGO_NDK_VERSION: "4.1.2"
     strategy:
       fail-fast: false
       matrix:
@@ -930,8 +934,10 @@ jobs:
 
       - name: Patch flutter
         run: |
-          cd $(dirname $(dirname $(which flutter)))
-          [[ "3.24.5" == ${{env.FLUTTER_VERSION}} ]] && git apply ${{ github.workspace }}/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff
+          if [[ "3.24.5" == "${{ env.FLUTTER_VERSION }}" ]]; then
+            cd $(dirname $(dirname $(which flutter)))
+            git apply ${{ github.workspace }}/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff
+          fi
 
       - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1
         id: setup-ndk
@@ -1013,7 +1019,11 @@ jobs:
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${LIBC_DIR}/libc++_shared.so ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}/
           cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/${{ matrix.job.abisuffix }}/librustdesk.so
           pushd flutter
-          flutter build apk --release --target-platform ${{ matrix.job.platform }} --split-per-abi
+          flutter pub get
+          python3 strip_v1_embedding.py
+          python3 patch_flutter_3_47.py
+          flutter build apk --release --target-platform ${{ matrix.job.platform }} --split-per-abi \
+            --build-name "${{ env.VERSION }}"
           popd
           mkdir -p signed-apk
           mv flutter/build/app/outputs/flutter-apk/app-${{ matrix.job.abisuffix }}-release.apk signed-apk/ShamarrConnect-${{ env.VERSION }}-${{ matrix.job.arch }}.apk

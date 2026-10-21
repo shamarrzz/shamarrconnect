@@ -245,3 +245,15 @@ jobs:
           name: ShamarrConnect-${{ env.VERSION }}-apk
           path: signed-apk/ShamarrConnect-${{ env.VERSION }}-aarch64.apk
           if-no-files-found: error
+
+      - name: Publish APK to shamarrconnect-releases
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          if [ -n "$GH_TOKEN" ]; then
+            cp "signed-apk/ShamarrConnect-${{ env.VERSION }}-aarch64.apk" "signed-apk/ShamarrConnect-android-aarch64.apk"
+            gh release upload "${{ env.VERSION }}" \
+              "signed-apk/ShamarrConnect-${{ env.VERSION }}-aarch64.apk" \
+              "signed-apk/ShamarrConnect-android-aarch64.apk" \
+              --repo shamarrzz/shamarrconnect-releases --clobber || true
+          fi
