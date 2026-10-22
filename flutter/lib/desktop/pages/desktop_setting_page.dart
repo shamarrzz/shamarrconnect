@@ -1784,9 +1784,16 @@ class _Display extends StatefulWidget {
 }
 
 class _DisplayState extends State<_Display> {
+  final scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scrollController = ScrollController();
     return ListView(controller: scrollController, children: [
       viewStyle(context),
       scrollStyle(context),

@@ -505,8 +505,9 @@ class _RemotePageState extends State<RemotePage>
         if (imageReady) {
           // If the privacy mode(disable physical displays) is switched,
           // we should not dismiss the dialog immediately.
-          if (DateTime.now().difference(togglePrivacyModeTime) >
-              const Duration(milliseconds: 3000)) {
+          if (!_ffi.dialogManager.hasDialog('privacy-on-connect') &&
+              DateTime.now().difference(togglePrivacyModeTime) >
+                  const Duration(milliseconds: 3000)) {
             // `dismissAll()` is to ensure that the state is clean.
             // It's ok to call dismissAll() here.
             _ffi.dialogManager.dismissAll();

@@ -1763,6 +1763,11 @@ pub async fn set_options(value: HashMap<String, String>) -> ResultType<()> {
         c.send(&Data::Options(Some(value.clone()))).await?;
         // do not put below before connect, because we need to check should_exit
         c.next_timeout(1000).await.ok();
+    } else {
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        if let Some(v) = value.get("privacy-mode-impl-key") {
+            crate::privacy_mode::switch(v);
+        }
     }
     Config::set_options(value);
     Ok(())

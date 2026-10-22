@@ -1599,6 +1599,8 @@ class _DisplayPage extends StatefulWidget {
 }
 
 class __DisplayPageState extends State<_DisplayPage> {
+  final RxBool showCustomImageQuality = false.obs;
+
   @override
   Widget build(BuildContext context) {
     final Map codecsJson = jsonDecode(bind.mainSupportedHwdecodings());
@@ -1612,7 +1614,6 @@ class __DisplayPageState extends State<_DisplayPage> {
       if (h264) _RadioEntry('H264', 'h264'),
       if (h265) _RadioEntry('H265', 'h265')
     ];
-    RxBool showCustomImageQuality = false.obs;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(

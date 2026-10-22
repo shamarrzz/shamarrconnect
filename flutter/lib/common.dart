@@ -815,12 +815,21 @@ class OverlayDialogManager {
     _overlayKeyState = overlayKeyState;
   }
 
-  void dismissAll() {
+  bool hasDialog(String tag) => _dialogs.containsKey(tag);
+
+  void dismissAll({bool force = false}) {
+    final keysToRemove = <String>[];
     _dialogs.forEach((key, value) {
+      if (!force && key == 'privacy-on-connect') {
+        return;
+      }
       value.complete(null);
       BackButtonInterceptor.removeByName(key);
+      keysToRemove.add(key);
     });
-    _dialogs.clear();
+    for (final k in keysToRemove) {
+      _dialogs.remove(k);
+    }
   }
 
   void dismissByTag(String tag) {
