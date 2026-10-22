@@ -320,6 +320,91 @@ jobs:
             SignOutput/SiSLLC.ShamarrConnect_*.msixupload \
             --repo shamarrzz/shamarrconnect-releases --clobber
 
+      - name: Submit Store MSIX to Microsoft Partner Center
+        env:
+          MSSTORE_CREDENTIALS_JSON: ${{ secrets.MSSTORE_CREDENTIALS_JSON }}
+        shell: bash
+        run: |
+          if [ -z "$MSSTORE_CREDENTIALS_JSON" ]; then
+            echo "MSSTORE_CREDENTIALS_JSON not set; skipping Microsoft Store API submission."
+            exit 0
+          fi
+          python3 - << 'PY'
+          import glob, json, os, re, tempfile, urllib.error, urllib.parse, urllib.request, zipfile
+
+          creds = json.loads(os.environ["MSSTORE_CREDENTIALS_JSON"])
+          pkg_files = sorted(glob.glob("SignOutput/SiSLLC.ShamarrConnect_*.msixupload"))
+          if not pkg_files:
+              raise SystemExit("No .msixupload found in SignOutput/")
+          pkg_path = pkg_files[-1]
+          pkg_name = os.path.basename(pkg_path)
+          m = re.search(r"_(\d+\.\d+\.\d+\.\d+)_", pkg_name)
+          pkg_ver = m.group(1) if m else "1.0.0.0"
+
+          tok_req = urllib.request.Request(
+              f"https://login.microsoftonline.com/{creds['tenant_id']}/oauth2/token",
+              data=urllib.parse.urlencode({
+                  "grant_type": "client_credentials",
+                  "client_id": creds["client_id"],
+                  "client_secret": creds["client_secret"],
+                  "resource": "https://manage.devcenter.microsoft.com",
+              }).encode(),
+              method="POST",
+          )
+          token = json.loads(urllib.request.urlopen(tok_req).read().decode())["access_token"]
+          base = f"https://manage.devcenter.microsoft.com/v1.0/my/applications/{creds['store_id']}"
+
+          def call(url, method="GET", body=None):
+              hdrs = {"Authorization": f"Bearer {token}"}
+              if body is not None:
+                  hdrs["Content-Type"] = "application/json"
+              req = urllib.request.Request(url, data=body, headers=hdrs, method=method)
+              with urllib.request.urlopen(req, timeout=300) as r:
+                  raw = r.read().decode()
+                  return json.loads(raw) if raw else {}
+
+          app = call(base)
+          pending = app.get("pendingApplicationSubmission")
+          if pending:
+              print(f"Pending submission {pending['id']} already in progress on Partner Center; skipping auto-submit.")
+              raise SystemExit(0)
+
+          sub = call(f"{base}/submissions", "POST", b"")
+          sub_id = sub["id"]
+          pkgs = sub.get("applicationPackages", [])
+          for p in pkgs:
+              if p.get("fileStatus") != "PendingDelete":
+                  p["fileStatus"] = "PendingDelete"
+          pkgs.append({
+              "fileName": pkg_name,
+              "fileStatus": "PendingUpload",
+              "version": pkg_ver,
+              "architecture": "x64",
+              "minimumDirectXVersion": "None",
+              "minimumSystemRam": "None",
+          })
+          sub["applicationPackages"] = pkgs
+          sub["targetPublishMode"] = "Immediate"
+          updated = call(f"{base}/submissions/{sub_id}", "PUT", json.dumps(sub).encode())
+          upload_url = updated["fileUploadUrl"]
+
+          with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
+              zpath = tmp.name
+          with zipfile.ZipFile(zpath, "w", compression=zipfile.ZIP_STORED) as zf:
+              zf.write(pkg_path, arcname=pkg_name)
+          with open(zpath, "rb") as zf_in:
+              ureq = urllib.request.Request(
+                  upload_url,
+                  data=zf_in.read(),
+                  headers={"x-ms-blob-type": "BlockBlob", "Content-Type": "application/zip"},
+                  method="PUT",
+              )
+              urllib.request.urlopen(ureq, timeout=600)
+          os.remove(zpath)
+          call(f"{base}/submissions/{sub_id}/commit", "POST", b"")
+          print(f"Submitted {pkg_name} to Microsoft Store (submission {sub_id}).")
+          PY
+
   macos:
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' }}
     needs: [generate-bridge]
