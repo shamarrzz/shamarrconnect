@@ -418,9 +418,6 @@ class ServerModel with ChangeNotifier {
       if (bind.mainGetLocalOption(key: kOptionDisableFloatingWindow) != 'Y') {
         await checkFloatingWindowPermission();
       }
-      if (!await AndroidPermissionManager.check(kManageExternalStorage)) {
-        await AndroidPermissionManager.request(kManageExternalStorage);
-      }
       final res = await parent.target?.dialogManager
           .show<bool>((setState, close, context) {
         submit() => close(true);

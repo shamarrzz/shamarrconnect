@@ -261,7 +261,7 @@ jobs:
               bundle = call(f"{up_base}/edits/{edit_id}/bundles?uploadType=media", "POST", f.read(), "application/octet-stream")
           vc = str(bundle["versionCode"])
           print(f"Uploaded bundle versionCode={vc}")
-          for track in ("alpha", "internal"):
+          for track in ("production", "alpha", "internal"):
               call(
                   f"{base}/edits/{edit_id}/tracks/{track}",
                   "PUT",
@@ -276,7 +276,7 @@ jobs:
                   }).encode(),
               )
           call(f"{base}/edits/{edit_id}:commit", "POST")
-          print(f"Published versionCode={vc} to alpha + internal tracks.")
+          print(f"Published versionCode={vc} to production + alpha + internal tracks.")
           PY
 
       - name: Setup sign tool version variable
