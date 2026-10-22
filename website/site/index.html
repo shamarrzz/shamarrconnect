@@ -4,14 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShamarrConnect: remote desktop, hosted for you</title>
-<meta name="description" data-region="ng" content="Hosted remote desktop for your own devices. Private by design, monthly plans, free tier included.">
-<meta name="description" data-region="intl" content="Hosted remote desktop for your own devices. Private by design, monthly plans, free tier included.">
-<meta name="robots" content="noindex">
+<meta name="description" data-region="ng" content="Hosted remote desktop for Windows, macOS, Linux, Android, and iOS. Privacy Curtain screen blanking, virtual displays, and self-hosted option.">
+<meta name="description" data-region="intl" content="Hosted remote desktop for Windows, macOS, Linux, Android, and iOS. Privacy Curtain screen blanking, virtual displays, and self-hosted option.">
+<link rel="canonical" href="https://shamarrconnect.com/">
+<meta property="og:title" content="ShamarrConnect — Remote desktop for your own devices">
+<meta property="og:description" content="Connect to your shop PC, server, or Mac from Windows, macOS, Linux, Android, and iPhone. Blank the remote monitor with Privacy Curtain.">
+<meta property="og:url" content="https://shamarrconnect.com/">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="light dark">
 <script>
+/* Theme: an explicit choice wins; otherwise follow the OS, live. */
 (function(){
-  try{
-    if(localStorage.getItem('sc-landing-theme')!=='light') document.documentElement.classList.add('dark');
-  }catch(e){ document.documentElement.classList.add('dark'); }
+  var root=document.documentElement;
+  var KEY='sc-theme';
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  root.classList.add('js');
+  try{ localStorage.removeItem('sc-landing-theme'); }catch(e){}
+  function stored(){
+    try{ var v=localStorage.getItem(KEY); return (v==='light'||v==='dark')?v:null; }catch(e){ return null; }
+  }
+  function apply(){
+    var s=stored();
+    var dark = s ? (s==='dark') : mq.matches;
+    root.classList.toggle('dark', dark);
+    root.setAttribute('data-theme-source', s ? 'user' : 'os');
+    try{ document.dispatchEvent(new CustomEvent('sc-themechange',{detail:{dark:dark,source:s?'user':'os'}})); }catch(e){}
+  }
+  window.scTheme={
+    apply:apply,
+    set:function(dark){ try{ localStorage.setItem(KEY, dark?'dark':'light'); }catch(e){} apply(); },
+    followOS:function(){ try{ localStorage.removeItem(KEY); }catch(e){} apply(); }
+  };
+  apply();
+  if(mq.addEventListener) mq.addEventListener('change', apply);
+  else if(mq.addListener) mq.addListener(apply);
+  window.addEventListener('storage', function(e){ if(e.key===KEY) apply(); });
 })();
 </script>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
@@ -256,8 +283,14 @@
 
   /* STEPS */
   .steps{background:var(--page-2)}
-  .steprow{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
-  @media(max-width:780px){.steprow{grid-template-columns:1fr}}
+  .steprow{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .step-open{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:40px;align-items:center}
+  .step-open .still{margin-top:0}
+  @media(max-width:780px){
+    .steprow{grid-template-columns:1fr}
+    .step-open{display:block;grid-column:auto}
+    .step-open .still{margin-top:18px}
+  }
   .step{position:relative;padding:8px 4px}
   .stepnum{width:44px;height:44px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;
     display:grid;place-items:center;font-size:18px;margin-bottom:18px;box-shadow:0 8px 18px rgba(43,92,230,.3)}
@@ -276,9 +309,10 @@
   .seclist .chk{flex:none;width:24px;height:24px;border-radius:7px;background:rgba(22,163,74,.18);display:grid;place-items:center;margin-top:1px}
 
   /* DOWNLOAD */
-  .dlcards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:8px}
-  @media(max-width:880px){.dlcards{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:480px){.dlcards{grid-template-columns:1fr}}
+  .dlcards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:8px}
+  @media(max-width:980px){.dlcards{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.dlcards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:420px){.dlcards{grid-template-columns:1fr}}
   .dl{border:1px solid var(--page-line);border-radius:var(--radius);padding:26px 22px;text-align:center;background:var(--page-card);transition:transform .18s,box-shadow .18s,border-color .18s;display:block;color:var(--page-ink)}
   .dl:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--brand)}
   .dl .os{font-weight:700;font-size:17px;margin:14px 0 4px;color:var(--page-ink)}
@@ -310,6 +344,118 @@
   .fbottom{border-top:1px solid var(--page-line);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--page-muted);font-size:13.5px}
   .disclaimer{max-width:620px}
 
+
+  /* Story frame starts under the full-bleed hero so the constellation stays edge to edge. */
+  .skip{position:absolute;left:16px;top:-48px;z-index:80;background:var(--brand);color:#fff;font-weight:700;font-size:14px;padding:8px 12px;border-radius:8px}
+  .skip:focus{top:12px}
+  #top,section[id],#speed{scroll-margin-top:76px}
+  .story-frame{max-width:1120px;margin:18px auto 0;position:relative;border-left:1px solid rgba(255,255,255,.08);border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)}
+  @media(max-width:1152px){.story-frame{margin:18px 16px 0}}
+  html:not(.dark) .story-frame{border-color:rgba(7,14,34,.08)}
+  .story-frame > section{position:relative;border-top:1px solid rgba(255,255,255,.08)}
+  html:not(.dark) .story-frame > section{border-top-color:rgba(7,14,34,.08)}
+  .story-frame > section.block{padding:72px 0}
+  .story-frame > section::before,.story-frame > section::after,.story-frame::before,.story-frame::after{content:"+";position:absolute;font-size:13px;line-height:1;font-weight:500;color:rgba(255,255,255,.55);pointer-events:none}
+  .story-frame > section::before{left:0;top:0;transform:translate(-50%,-50%)}
+  .story-frame > section::after{right:0;top:0;transform:translate(50%,-50%)}
+  .story-frame::before{left:0;bottom:0;transform:translate(-50%,50%)}
+  .story-frame::after{right:0;bottom:0;transform:translate(50%,50%)}
+  html:not(.dark) .story-frame > section::before,html:not(.dark) .story-frame > section::after,html:not(.dark) .story-frame::before,html:not(.dark) .story-frame::after{color:rgba(7,14,34,.45)}
+  #who{background:transparent}
+  #stakes,#industries,#compare{background:var(--page-2)}
+
+  .scenes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:800px){.scenes{grid-template-columns:1fr}}
+  .scene-card{background:var(--page-card);border:1px solid var(--page-line);border-radius:16px;padding:22px 20px;box-shadow:var(--shadow)}
+  .kicker{display:inline-flex;align-items:center;gap:9px;background:rgba(43,92,230,.14);border:1px solid var(--page-line);color:var(--page-ink);font-weight:600;font-size:13px;line-height:1.3;padding:7px 14px;border-radius:100px;margin:0 0 16px}
+  .kicker .dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;box-shadow:0 0 10px rgba(74,222,128,.9)}
+  html:not(.dark) .kicker .dot{background:#16A34A;box-shadow:none}
+  .scene-n{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;color:#B9CBFF;margin-bottom:12px}
+  html:not(.dark) .scene-n{color:var(--brand)}
+  .scene-card p{font-size:16.5px;font-weight:650;line-height:1.45;color:var(--page-ink)}
+
+  .stakes-board{display:grid;grid-template-columns:1fr 1px 1fr;gap:28px;align-items:stretch}
+  @media(max-width:800px){.stakes-board{grid-template-columns:1fr;gap:18px}}
+  .stakes-col h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--page-muted);margin-bottom:14px}
+  .stakes-col ol{list-style:none;display:grid;gap:12px}
+  .stakes-col li{background:var(--page-card);border:1px solid var(--page-line);border-radius:14px;padding:16px;font-size:15.5px;color:var(--page-ink);line-height:1.45}
+  .stakes-divider{background:var(--page-line);width:1px;justify-self:center;transform-origin:top center}
+  @media(max-width:800px){.stakes-divider{width:100%;height:1px}}
+
+  .turn-still{max-width:520px;margin:0 auto}
+  .gift{display:grid;grid-template-columns:2fr 3fr;gap:40px;align-items:center;margin:0 0 64px}
+  .gift.flip{grid-template-columns:3fr 2fr}
+  .gift.flip .gift-copy{order:2}
+  @media(max-width:880px){
+    .gift,.gift.flip{grid-template-columns:1fr;gap:22px;margin-bottom:48px}
+    .gift.flip .gift-copy,.gift .still{order:0}
+    .gift .still{order:1}
+  }
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#B9CBFF;background:rgba(43,92,230,.22);padding:4px 10px;border-radius:100px;margin-bottom:12px}
+  html:not(.dark) .pill{color:var(--brand-dark);background:var(--brand-soft)}
+  .gift h3{font-size:clamp(26px,3vw,34px);letter-spacing:-.025em;font-weight:800;margin:0 0 12px;color:var(--page-ink)}
+  .gift .lead{font-size:17px;color:var(--page-muted);margin-bottom:18px}
+  .ticks.dots{gap:12px}
+  .dot-pulse{flex:none;width:8px;height:8px;border-radius:50%;margin-top:8px;background:#7DA2FF}
+  html:not(.dark) .dot-pulse{background:var(--brand)}
+
+
+  .still.loop-still{padding:0;line-height:0;background:#F8FAFF}
+  html.dark .still.loop-still{background:#0B1430}
+  .sc-loop{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:cover}
+  .sc-loop[data-clip="l3b-file-transfer"]{aspect-ratio:16/9}
+  .sc-loop[hidden]{display:none}
+  .loop-seq{position:relative}
+  .still{margin:0;background:#fff;color:#0F1B33;--ink:#0F1B33;--muted:#5A6B85;--line:#E6ECF5;--bg-soft:#F8FAFF;border:1px solid rgba(255,255,255,.4);border-radius:18px;box-shadow:0 24px 60px rgba(2,8,30,.35);overflow:hidden}
+  html:not(.dark) .still{border-color:#E6ECF5;box-shadow:0 18px 40px rgba(20,40,90,.12)}
+  .still .win-body{padding:16px 16px 14px}
+  .still .dcard{pointer-events:none;min-height:0}
+  .still .dcard:hover{transform:none;box-shadow:0 6px 16px rgba(20,40,90,.05)}
+  .choice{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-weight:650;font-size:14.5px;color:var(--ink)}
+  .choice:last-of-type{border-bottom:0}
+  .choice i{width:8px;height:8px;border-radius:50%;background:var(--brand);flex:none}
+  .still-note{margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .oslist{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .oslist li{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-weight:700;font-size:13.5px;color:var(--ink);background:var(--bg-soft)}
+  .step .still{margin-top:18px}
+  .step.step-open .still{margin-top:0}
+  .steprow{align-items:start}
+  @media(max-width:780px){.step.step-open .still{margin-top:18px}}
+
+  .mini{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.mini{grid-template-columns:1fr}}
+  .mini .card h3{font-size:16px}
+
+  .bento{display:grid;grid-template-columns:1.25fr 1fr;gap:18px}
+  .bento .lead{grid-column:1;grid-row:1}
+  .bento .card:nth-child(2){grid-column:2;grid-row:1}
+  .bento .card:nth-child(3){grid-column:2;grid-row:2}
+  .bento .card:nth-child(4){grid-column:1;grid-row:2}
+  @media(max-width:880px){
+    .bento{grid-template-columns:1fr}
+    .bento .lead,.bento .card:nth-child(2),.bento .card:nth-child(3),.bento .card:nth-child(4){grid-column:auto;grid-row:auto}
+  }
+  .card p.scene{font-size:15.5px;font-weight:650;color:var(--page-ink);margin:0 0 8px;line-height:1.4}
+
+  .chiprow{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{font:inherit;font-weight:650;font-size:14px;color:var(--page-ink);background:var(--page-card);border:1px solid var(--page-line);border-radius:100px;padding:8px 14px;cursor:pointer}
+  .chip:hover{border-color:var(--brand)}
+  .chip[aria-expanded="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+  .chip-panel{flex:1 0 100%;margin:2px 0 8px;padding:4px 6px 8px;color:var(--page-muted);font-size:15.5px;line-height:1.5;display:none}
+  html:not(.js) .chip-panel{display:block}
+  .chip[aria-expanded="true"] + .chip-panel{display:block}
+
+  .sec-links{margin-top:18px;display:grid;gap:8px;font-size:15px;color:#E6ECFA}
+  .sec-links a{color:#B9CBFF;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+  .sec-links a:hover{color:#fff}
+  .dl{cursor:default}
+  .dl:hover{transform:none;box-shadow:none;border-color:var(--page-line)}
+  .at-launch{display:inline-block;margin-top:2px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7DA2FF}
+  html:not(.dark) .at-launch{color:var(--brand-dark)}
+  .wl-closer{text-align:center;color:var(--page-ink);font-size:17px;font-weight:650;margin:-8px auto 22px;max-width:540px}
+  .wl-form{max-width:440px;margin:0 auto}
+  .wl-label{display:block;font-size:13px;font-weight:700;color:var(--page-muted);margin:0 0 8px}
+
   @media (prefers-reduced-motion: no-preference){
     .window{animation:rise .7s ease both}
     @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
@@ -320,10 +466,120 @@
       0%,100%{background:#D4DCEA;box-shadow:none}
       50%{background:var(--brand);box-shadow:0 0 9px rgba(43,92,230,.65)}
     }
+
+    html.js .reveal{opacity:0;transform:translateY(16px)}
+    html.js .reveal.in{opacity:1;transform:none;transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1)}
+    .reveal-set .reveal.in:nth-child(2){transition-delay:.08s}
+    .reveal-set .reveal.in:nth-child(3){transition-delay:.16s}
+    .dot-pulse{animation:dotpulse 2.6s ease-in-out infinite}
+    @keyframes dotpulse{
+      0%,100%{box-shadow:none}
+      50%{box-shadow:0 0 9px rgba(43,92,230,.65)}
+    }
+    @supports (animation-timeline: view()){
+      .stakes-divider{animation:grow linear both;animation-timeline:view();animation-range:entry 10% cover 40%}
+      @keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+    }
   }
+  /* Dark mode for the hero desk and the two stills that are not videos. */
+  html.dark .window,
+  html.dark .still:not(.loop-still){
+    background:#101A36;color:#E8EEFA;
+    --ink:#E8EEFA;--muted:#9AABC8;--line:rgba(255,255,255,.10);--bg-soft:#0B1430;
+    border-color:rgba(255,255,255,.12);
+  }
+  html.dark .titlebar .tdot{background:#33415F}
+  html.dark .dcard,
+  html.dark .dcard .act.share,html.dark .dcard .act.ghost,
+  html.dark .desk-panel,html.dark .desk-panel .actions .act.ghost,
+  html.dark .desk-idrow input{background:#0F1A38;color:var(--ink)}
+  html.dark .dcard.is-this{background:linear-gradient(180deg,#16244A 0%,#0F1A38 72%);border-color:#2A3B66}
+  html.dark .dcard.is-slot{background:repeating-linear-gradient(-45deg,#0F1A38,#0F1A38 8px,#13204A 8px,#13204A 16px)}
+  html.dark .dcard:hover{border-color:#3A5BB8}
+  html.dark .dcard .act.share:hover,html.dark .dcard .act.ghost:hover{background:#0F1A38}
+  html.dark .dcard .badge{background:#2B5CE6}
+  html.dark .dcard .light.asleep{background:#5A6B85}
+
+  /* INTERACTIVE FEATURE DECK (Privacy Curtain · Virtual Display · Permissions & What's New) */
+  .sc-deck{padding:0;overflow:hidden;position:relative;user-select:none}
+  .sc-deck-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--bg-soft);flex-wrap:wrap}
+  .sc-deck-dots{display:flex;align-items:center;gap:6px}
+  .sc-deck-tabs{display:flex;gap:5px;flex-wrap:wrap}
+  .sc-dtab{font:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:100px;border:1px solid var(--line);background:rgba(43,92,230,.06);color:var(--muted);cursor:pointer;transition:all .18s ease;display:inline-flex;align-items:center;gap:6px}
+  .sc-dtab:hover{border-color:var(--brand);color:var(--ink)}
+  .sc-dtab[aria-selected="true"]{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(43,92,230,.32)}
+  .sc-deck-stage{padding:18px;min-height:336px;display:flex;flex-direction:column;justify-content:space-between;position:relative;background:radial-gradient(circle at 85% 15%,rgba(43,92,230,.08),transparent 55%)}
+  .sc-slide{display:none;flex-direction:column;gap:14px;animation:scSlideIn .32s cubic-bezier(.2,.7,.2,1) both}
+  .sc-slide.active{display:flex}
+  @keyframes scSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* Slide 1: Privacy Curtain Split View */
+  .sc-prompt-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border-radius:12px;background:rgba(43,92,230,.1);border:1px solid rgba(43,92,230,.28);font-size:12.5px}
+  .sc-prompt-banner b{color:var(--ink);display:block;font-size:13px}
+  .sc-prompt-banner span{color:var(--muted);font-size:12px}
+  .sc-pbtn{font:inherit;font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;border:0;background:var(--brand);color:#fff;cursor:pointer;white-space:nowrap;transition:transform .15s,background .15s;box-shadow:0 4px 12px rgba(43,92,230,.28)}
+  .sc-pbtn:hover{background:var(--brand-dark)}
+  .sc-pbtn.is-on{background:#16A34A;box-shadow:0 4px 12px rgba(22,163,74,.28)}
+  .sc-dual{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:520px){.sc-dual{grid-template-columns:1fr}}
+  .sc-mon{border:1px solid var(--line);border-radius:13px;padding:11px;background:var(--bg-soft);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px;min-height:178px}
+  .sc-mon-head{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--muted)}
+  .sc-mon-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:100px;background:rgba(22,163,74,.15);color:#16A34A}
+  .sc-mon-tag.warn{background:rgba(245,158,11,.16);color:#D97706}
+  .sc-mon-tag.curtain{background:rgba(43,92,230,.22);color:#7DA2FF}
+  html:not(.dark) .sc-mon-tag.curtain{color:var(--brand-dark)}
+  .sc-mon-screen{flex:1;border-radius:9px;background:#0D1832;border:1px solid rgba(255,255,255,.08);padding:10px;color:#E8EEFA;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}
+  .sc-pos-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 6px;border-radius:5px;background:rgba(255,255,255,.06);margin-bottom:4px}
+  .sc-pos-total{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:#4ADE80;padding-top:4px;border-top:1px solid rgba(255,255,255,.1)}
+  .sc-curtain-overlay{position:absolute;inset:0;background:linear-gradient(145deg,#050B1A,#0D1B3E);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;opacity:0;transform:translateY(-100%);transition:opacity .38s ease,transform .38s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+  .sc-deck[data-curtain="on"] .sc-curtain-overlay{opacity:1;transform:translateY(0)}
+  .sc-curtain-shield{width:34px;height:34px;border-radius:10px;background:rgba(43,92,230,.25);border:1px solid rgba(125,162,255,.4);display:grid;place-items:center;margin-bottom:7px;color:#7DA2FF}
+  .sc-curtain-overlay strong{font-size:12px;color:#fff;display:block;margin-bottom:2px}
+  .sc-curtain-overlay span{font-size:10.5px;color:#9AABC8;line-height:1.3}
+
+  /* Slide 2: Virtual Display & Multi-Monitor */
+  .sc-monbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-radius:11px;background:var(--bg-soft);border:1px solid var(--line);flex-wrap:wrap}
+  .sc-mpills{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .sc-mpill{font:inherit;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;transition:.15s}
+  .sc-mpill.active{background:var(--brand);border-color:var(--brand);color:#fff}
+  .sc-mpill.vadd{border-style:dashed;color:var(--brand)}
+  html.dark .sc-mpill.vadd{color:#7DA2FF}
+  .sc-vstage{border:1px solid var(--line);border-radius:13px;padding:14px;background:#0D1832;color:#E8EEFA;min-height:190px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+  .sc-vhead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+  .sc-vbadge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;background:rgba(43,92,230,.25);color:#93B4FF}
+  .sc-vgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin:10px 0}
+  @media(max-width:520px){.sc-vgrid{grid-template-columns:1fr}}
+  .sc-vwin{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:10px;font-size:11.5px}
+  .sc-vwin strong{display:block;color:#fff;margin-bottom:4px;font-size:12px}
+  .sc-vwin p{color:#9AABC8;font-size:11px;line-height:1.35}
+  .sc-vfoot{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#9AABC8;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+
+  /* Slide 3: Permissions & What's New */
+  .sc-perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:520px){.sc-perm-grid{grid-template-columns:1fr}}
+  .sc-pbox{border:1px solid var(--line);border-radius:13px;padding:12px;background:var(--bg-soft);display:flex;flex-direction:column;gap:8px}
+  .sc-pbox h4{font-size:12.5px;font-weight:750;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+  .sc-ptoggle{display:flex;align-items:center;justify-content:space-between;padding:7px 9px;border-radius:8px;background:rgba(43,92,230,.06);border:1px solid var(--line);font-size:12px;font-weight:650;color:var(--ink);cursor:pointer}
+  .sc-pswitch{width:30px;height:17px;border-radius:100px;background:#5A6B85;position:relative;transition:.18s;flex:none}
+  .sc-pswitch::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:.18s}
+  .sc-ptoggle[aria-pressed="true"] .sc-pswitch{background:#16A34A}
+  .sc-ptoggle[aria-pressed="true"] .sc-pswitch::after{transform:translateX(13px)}
+  .sc-whatsnew{background:linear-gradient(135deg,#0D1832,#162852);color:#E8EEFA;border-color:rgba(125,162,255,.25)}
+  .sc-whatsnew h4{color:#fff}
+  .sc-wn-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:100px;background:rgba(74,222,128,.16);color:#4ADE80}
+  .sc-wn-list{list-style:none;display:grid;gap:5px;font-size:11.5px;color:#C3CEE8}
+  .sc-wn-list li::before{content:"✓ ";color:#4ADE80;font-weight:700}
+
+  .sc-deck-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .sc-progress{display:flex;gap:6px;align-items:center}
+  .sc-pdot{width:22px;height:4px;border-radius:100px;background:var(--line);overflow:hidden;position:relative;cursor:pointer;border:0;padding:0}
+  .sc-pdot.active::after{content:"";position:absolute;inset:0;background:var(--brand);animation:scProg 5.5s linear forwards}
+  .sc-deck[data-paused="true"] .sc-pdot.active::after{animation-play-state:paused;width:100%}
+  @keyframes scProg{from{width:0}to{width:100%}}
 </style>
 </head>
 <body>
+<a class="skip" href="#top">Skip to content</a>
 
 <header>
   <div class="wrap">
@@ -353,7 +609,7 @@
   </div>
 </header>
 
-<a id="top"></a>
+<a id="top" tabindex="-1"></a>
 <section class="hero">
   <canvas class="hero-stars" id="hero-stars" aria-hidden="true"></canvas>
   <div class="hero-veil" aria-hidden="true"></div>
@@ -367,7 +623,7 @@
           <a class="btn btn-primary btn-lg" href="#waitlist">Join the waitlist</a>
           <a class="btn btn-light btn-lg" href="/pricing">See pricing</a>
         </div>
-        <p class="micro"><b>One app for every platform.</b> Windows, macOS, Linux and Android.</p>
+        <p class="micro"><b>One app for every platform.</b> Windows, macOS, Linux, Android and iOS.</p>
       </div>
 
       <div class="hero-art">
@@ -432,9 +688,11 @@
       </div>
     </div>
   </div>
+  <!-- Monthly plans are live on Paystack in naira. Pricing opens on the annual price. International card checkout is not open. -->
   <div class="facts">
     <div class="wrap">
-      <span>Set up in 3 minutes</span>
+      <!-- 3-minute setup has no source. Replaced with the server line already on this page. -->
+      <span>Nothing to install on a server</span>
       <span>Free tier included</span>
       <span>Monthly billing</span>
       <span>Simple pricing</span>
@@ -443,156 +701,423 @@
   </div>
 </section>
 
+<div class="story-frame">
+
+<section class="block" id="shift">
+  <div class="wrap">
+    <div class="center reveal">
+      <!-- DRAFT: landing-story 2026-09-26 -->
+      <div class="kicker"><span class="dot" aria-hidden="true"></span>Something changed</div>
+      <h2>Work moved. The computers <span class="grad">didn't</span>.</h2>
+      <p>A computer you need is somewhere you are not.</p>
+    </div>
+    <div class="scenes reveal-set">
+      <article class="scene-card reveal">
+        <span class="scene-n">01</span>
+        <!-- DRAFT: landing-story 2026-09-26 -->
+        <p>The shop's sales computer, and you're across town.</p>
+      </article>
+      <article class="scene-card reveal">
+        <span class="scene-n">02</span>
+        <!-- DRAFT: landing-story 2026-09-26 -->
+        <p>The farm office PC, and you're in the city on a thin connection.</p>
+      </article>
+      <article class="scene-card reveal">
+        <span class="scene-n">03</span>
+        <!-- DRAFT: landing-story 2026-09-26 -->
+        <p>A client's machine, and the client can't describe what's on screen.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="stakes">
+  <div class="wrap">
+    <div class="center reveal">
+      <!-- DRAFT: landing-story 2026-09-26 -->
+      <h2>Two ways to reach a computer that <span class="grad">isn't in front of you</span>.</h2>
+    </div>
+    <!-- Right column is copy already on this page: the IT support card, the small-business card, "Nothing to set up", and the security list. -->
+    <div class="stakes-board">
+      <div class="stakes-col">
+        <h3>The old way</h3>
+        <ol class="reveal-set">
+          <li class="reveal"><!-- DRAFT: landing-story 2026-09-26 --> Drive over, or talk someone through it by phone</li>
+          <li class="reveal"><!-- DRAFT: landing-story 2026-09-26 --> Pay for a year up front</li>
+          <li class="reveal"><!-- DRAFT: landing-story 2026-09-26 --> Or host your own server and keep it patched</li>
+          <li class="reveal"><!-- DRAFT: landing-story 2026-09-26 --> Trust a closed box</li>
+        </ol>
+      </div>
+      <div class="stakes-divider" aria-hidden="true"></div>
+      <div class="stakes-col">
+        <h3>With ShamarrConnect</h3>
+        <ol class="reveal-set">
+          <li class="reveal">Open a client’s computer when they share it.</li>
+          <li class="reveal">Monthly billing, cancel any month.</li>
+          <li class="reveal">No server to install or look after. We run everything and keep it updated.</li>
+          <li class="reveal">Open source, so anyone can check how it works.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="turn">
+  <div class="wrap">
+    <div class="center reveal">
+      <!-- DRAFT: landing-story 2026-09-26 -->
+      <h2>Tap it. You're <span class="grad">there</span>.</h2>
+      <p>Your computers show up with last seen, like WhatsApp. Tap one to open it.</p>
+    </div>
+    <div class="turn-still">
+      <figure class="still loop-still" aria-hidden="true"><video class="sc-loop" data-clip="l1-open-device" width="1600" height="1000" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"></video></figure>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="center reveal">
+      <h2>The remote desktop experience, <span class="grad">without the server work</span>.</h2>
+      <p>Everything you expect from a modern remote desktop tool, with everything run for you and billing that fits how you actually budget.</p>
+    </div>
+
+    <div class="gift" id="speed">
+      <div class="gift-copy reveal">
+        <span class="pill">Private by design</span>
+        <h3>Every session is locked end-to-end.</h3>
+        <p class="lead">Only the people in it can see what happens, on the wire and in the room.</p>
+        <ul class="ticks dots">
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>We cannot see your screen or files.</b></span></li>
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>Blank the remote screen (Privacy Mode).</b> Hide the shop or office monitor from people in the room while you work from home.</span></li>
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>Open source, so anyone can check how it works.</b></span></li>
+        </ul>
+      </div>
+      <figure class="still loop-still" aria-hidden="true"><video class="sc-loop" data-clip="l4-shield" width="1600" height="1000" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"></video></figure>
+    </div>
+
+    <div class="gift flip">
+      <div class="gift-copy reveal">
+        <span class="pill">Your session, your rules</span>
+        <h3>You choose what a partner may do.</h3>
+        <p class="lead">View only, keyboard and mouse, file transfer, or a private screen only you can see.</p>
+        <ul class="ticks dots">
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>On-connect privacy prompt.</b> Blank the remote monitor the moment you connect so nobody in the room can watch.</span></li>
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>All your screens &amp; Virtual Display.</b> Switch between physical monitors seamlessly, or create a virtual screen even on a headless PC.</span></li>
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>Live permissions &amp; audit trail.</b> Toggle control at any time and review which screen mode was used in your account history.</span></li>
+        </ul>
+      </div>
+      <figure class="still sc-deck" id="sc-feature-deck" data-curtain="on" aria-label="Interactive preview of Privacy Mode, Virtual Display, and Session Controls">
+        <div class="sc-deck-bar">
+          <div class="sc-deck-dots" aria-hidden="true">
+            <span class="tdot" style="width:10px;height:10px;border-radius:50%;background:#D4DCEA;display:inline-block"></span>
+            <span class="tdot" style="width:10px;height:10px;border-radius:50%;background:#D4DCEA;display:inline-block"></span>
+            <span class="tdot" style="width:10px;height:10px;border-radius:50%;background:#D4DCEA;display:inline-block"></span>
+          </div>
+          <div class="sc-deck-tabs" role="tablist" aria-label="Session features">
+            <button type="button" class="sc-dtab" role="tab" aria-selected="true" data-slide="0">1. Privacy Curtain</button>
+            <button type="button" class="sc-dtab" role="tab" aria-selected="false" data-slide="1">2. Virtual Display</button>
+            <button type="button" class="sc-dtab" role="tab" aria-selected="false" data-slide="2">3. Permissions &amp; Updates</button>
+          </div>
+        </div>
+
+        <div class="sc-deck-stage">
+          <!-- SLIDE 1: PRIVACY CURTAIN -->
+          <div class="sc-slide active" data-panel="0">
+            <div class="sc-prompt-banner">
+              <div>
+                <b>Connected to Shop POS · Turn off remote screen?</b>
+                <span>Hide the physical monitor on-site while you work from home.</span>
+              </div>
+              <button type="button" class="sc-pbtn is-on" id="sc-curtain-btn">Privacy Curtain: ON</button>
+            </div>
+            <div class="sc-dual">
+              <div class="sc-mon">
+                <div class="sc-mon-head">
+                  <span>Your screen (At home)</span>
+                  <span class="sc-mon-tag">Live · Adaptive scale</span>
+                </div>
+                <div class="sc-mon-screen">
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:#93B4FF;margin-bottom:6px">Shop POS · Daily Register</div>
+                    <div class="sc-pos-row"><span>Card settlements</span><span>$4,820.00</span></div>
+                    <div class="sc-pos-row"><span>Cash drawer</span><span>$1,140.50</span></div>
+                    <div class="sc-pos-row"><span>Staff payroll export</span><span>Ready</span></div>
+                  </div>
+                  <div class="sc-pos-total"><span>End-of-day net</span><span>$5,960.50</span></div>
+                </div>
+              </div>
+              <div class="sc-mon">
+                <div class="sc-mon-head">
+                  <span>Shop monitor (In the room)</span>
+                  <span class="sc-mon-tag curtain" id="sc-remote-status">Screen blanked</span>
+                </div>
+                <div class="sc-mon-screen">
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:#93B4FF;margin-bottom:6px">Shop POS · Daily Register</div>
+                    <div class="sc-pos-row"><span>Card settlements</span><span>$4,820.00</span></div>
+                    <div class="sc-pos-row"><span>Cash drawer</span><span>$1,140.50</span></div>
+                    <div class="sc-pos-row"><span>Staff payroll export</span><span>Ready</span></div>
+                  </div>
+                  <div class="sc-pos-total"><span>End-of-day net</span><span>$5,960.50</span></div>
+                  <div class="sc-curtain-overlay">
+                    <div class="sc-curtain-shield">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <strong>Privacy Mode Active</strong>
+                    <span>Physical monitor is hidden &amp; input is locked while you work remotely.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 2: VIRTUAL DISPLAY -->
+          <div class="sc-slide" data-panel="1">
+            <div class="sc-monbar">
+              <div class="sc-mpills">
+                <button type="button" class="sc-mpill" data-mon="1">Monitor 1 (Main)</button>
+                <button type="button" class="sc-mpill active" data-mon="2">Display 2 · Virtual</button>
+                <button type="button" class="sc-mpill vadd" id="sc-add-vmon">+ New Virtual Screen</button>
+              </div>
+              <span style="font-size:11.5px;font-weight:700;color:#16A34A">● Adaptive Fit</span>
+            </div>
+            <div class="sc-vstage" id="sc-vstage">
+              <div class="sc-vhead">
+                <strong id="sc-vtitle">Display 2 · Isolated Virtual Workspace (1920×1080)</strong>
+                <span class="sc-vbadge" id="sc-vbadge">Virtual Display</span>
+              </div>
+              <div class="sc-vgrid">
+                <div class="sc-vwin">
+                  <strong id="sc-vw1-t">Back-office Accounting &amp; Reports</strong>
+                  <p id="sc-vw1-p">Runs on a private virtual monitor, even if the office PC has no physical screen plugged in.</p>
+                </div>
+                <div class="sc-vwin">
+                  <strong id="sc-vw2-t">Session Screen Audit</strong>
+                  <p id="sc-vw2-p">Logged in your account console: <em>Office PC · Virtual Display 2 · Encrypted</em>.</p>
+                </div>
+              </div>
+              <div class="sc-vfoot">
+                <span>Switch monitors anytime from the top bar</span>
+                <span>Zero extra hardware needed</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 3: PERMISSIONS & WHAT'S NEW -->
+          <div class="sc-slide" data-panel="2">
+            <div class="sc-perm-grid">
+              <div class="sc-pbox">
+                <h4>Live session permissions <span style="font-size:11px;color:var(--brand);font-weight:700">Instant</span></h4>
+                <button type="button" class="sc-ptoggle" aria-pressed="true">
+                  <span>Keyboard &amp; mouse</span><span class="sc-pswitch"></span>
+                </button>
+                <button type="button" class="sc-ptoggle" aria-pressed="true">
+                  <span>Clipboard &amp; file transfer</span><span class="sc-pswitch"></span>
+                </button>
+                <button type="button" class="sc-ptoggle" aria-pressed="true">
+                  <span>Prompt for Privacy Mode</span><span class="sc-pswitch"></span>
+                </button>
+              </div>
+              <div class="sc-pbox sc-whatsnew">
+                <h4>What’s New · v1.4.9-sc32 <span class="sc-wn-tag">Ready</span></h4>
+                <ul class="sc-wn-list">
+                  <li>Privacy Curtain mode for shared rooms</li>
+                  <li>On-demand Virtual Display &amp; monitor switch</li>
+                  <li>Adaptive scaling enabled by default</li>
+                  <li>Available on Windows, Mac, Linux, Android &amp; iOS</li>
+                </ul>
+                <div style="margin-top:auto;padding-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#93B4FF">
+                  <span>One-click in-app update</span>
+                  <strong style="color:#fff">Up to date ✓</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sc-deck-foot">
+            <span id="sc-deck-caption">Click any tab or button above to test how session controls work.</span>
+            <div class="sc-progress" aria-hidden="true">
+              <button type="button" class="sc-pdot active" data-slide="0" tabindex="-1"></button>
+              <button type="button" class="sc-pdot" data-slide="1" tabindex="-1"></button>
+              <button type="button" class="sc-pdot" data-slide="2" tabindex="-1"></button>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <div class="gift">
+      <div class="gift-copy reveal">
+        <span class="pill">Built for real work</span>
+        <h3>Quality and scaling that adapt to you.</h3>
+        <p class="lead">Adaptive scaling fits any monitor or phone screen by default, and picture quality adjusts to match slow connections.</p>
+        <ul class="ticks dots">
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>Direct connections.</b> No detours through far-away servers when your devices can reach each other directly.</span></li>
+          <li><span class="dot-pulse" aria-hidden="true"></span><span><b>Clear ”What’s New” updates.</b> See what changed before you update, with one-click in-app upgrades.</span></li>
+        </ul>
+      </div>
+      <figure class="still loop-still" aria-hidden="true"><video class="sc-loop" data-clip="l5-quality" width="1600" height="1000" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"></video></figure>
+    </div>
+
+    <div class="gift flip" id="files">
+      <div class="gift-copy reveal">
+        <span class="pill">File transfer</span>
+        <h3>Move files both ways.</h3>
+        <p class="lead">Send documents to and from the remote computer.</p>
+      </div>
+      <figure class="still loop-still" aria-hidden="true"><video class="sc-loop" data-clip="l3b-file-transfer" width="1600" height="900" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"></video></figure>
+    </div>
+
+    <div class="mini">
+      <article class="card"><h3>Shared-room screen privacy</h3><p>Work on a shop or front-desk PC from home without passersby watching. Blank the physical monitor or use a private virtual display.</p></article>
+      <article class="card"><h3>See your machines &amp; screen history</h3><p>Your web console shows every computer on your account, which are online, and an audit log of recent sessions and displays used.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="block steps" id="how">
+  <div class="wrap">
+    <div class="center reveal">
+      <h2>Up and running in <span class="grad">three steps</span>.</h2>
+      <p>No server to install, nothing to configure. The app is ready the moment you open it.</p>
+    </div>
+    <div class="steprow">
+      <div class="step">
+        <div class="stepnum">1</div>
+        <h3>Download the app</h3>
+        <!-- LOOP PLACEHOLDER: l2a-install (not recorded). -->
+        <p>One small download for Windows, macOS, Linux, Android or iOS. Nothing else to install.</p>
+        <figure class="still" aria-hidden="true">
+            <div class="titlebar">
+              <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+              <span style="margin-left:8px;font-size:13px;font-weight:600;color:var(--muted)">ShamarrConnect</span>
+            </div>
+            <div class="win-body desk-stage">
+              <p class="still-note" style="margin-top:0;margin-bottom:10px;font-weight:700;color:var(--ink)">One small download</p>
+              <ul class="oslist"><li>Windows</li><li>macOS</li><li>Linux</li><li>Android &amp; iOS</li></ul></div>
+          </figure>
+      </div>
+      <div class="step">
+        <div class="stepnum">2</div>
+        <h3>Create your account</h3>
+        <!-- LOOP PLACEHOLDER: l2b-sign-up (sign-up disabled pre-launch). -->
+        <p>Sign up with your email. Devices you save stay with your account, on every computer.</p>
+        <figure class="still" aria-hidden="true">
+            <div class="titlebar">
+              <span class="tdot"></span><span class="tdot"></span><span class="tdot"></span>
+              <span style="margin-left:8px;font-size:13px;font-weight:600;color:var(--muted)">ShamarrConnect</span>
+            </div>
+            <div class="win-body desk-stage">
+              <div class="desk-chrome">
+                <div class="brandish"><img src="/logo-mark.svg" width="22" height="22" alt="">Your computers</div>
+              </div>
+              <div class="dcard is-slot">+ Add a new computer</div></div>
+          </figure>
+      </div>
+      <div class="step step-open">
+        <div>
+          <div class="stepnum">3</div>
+          <h3>Open one</h3>
+          <p>Your computers show up with last seen, like WhatsApp. Tap one to open it.</p>
+        </div>
+        <figure class="still loop-still" aria-hidden="true"><video class="sc-loop" data-clip="l1-device-list" width="1600" height="1000" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" tabindex="-1"></video></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="block who" id="who">
   <div class="wrap">
-    <div class="center">
+    <div class="center reveal">
       <h2>Made for how <span class="grad">you</span> work.</h2>
       <p>One tool for personal use, small teams, and IT support, with billing that fits how you budget.</p>
     </div>
-    <div class="cards">
-      <div class="card">
-        <span class="tag">Personal use</span>
-        <h3>Your own computers, when you need them</h3>
-        <p>Work on your home or office PC from your phone or laptop. Free for personal use, with nothing to set up.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Small business</span>
-        <h3>Support your team yourself</h3>
-        <p>Help a colleague with their computer without leaving your desk. Monthly billing, cancel any month.</p>
-      </div>
-      <div class="card">
-        <span class="tag">IT support &amp; freelancers</span>
-        <h3>Help clients efficiently</h3>
-        <p>Open a client’s computer when they share it. Manage every client from one account.</p>
-      </div>
-      <div class="card">
-        <span class="tag">Schools &amp; labs</span>
-        <h3>Manage every machine</h3>
-        <p>See which computers on your account are online from the browser, and help when something goes wrong.</p>
-      </div>
+    <div class="bento reveal-set">
+        <article class="card lead reveal">
+          <span class="tag">IT support &amp; freelancers</span>
+          <!-- DRAFT: landing-story 2026-09-26 -->
+          <p class="scene">A client calls. You're already looking at their screen.</p>
+          <h3>Help clients efficiently</h3>
+          <p>Open a client’s computer when they share it. Manage every client from one account.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">Personal use</span>
+          <!-- DRAFT: landing-story 2026-09-26 -->
+          <p class="scene">Your office PC is at home. You're on your phone.</p>
+          <h3>Your own computers, when you need them</h3>
+          <p>Work on your home or office PC from your phone or laptop. Free for personal use, with nothing to set up.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">Small business</span>
+          <!-- DRAFT: landing-story 2026-09-26 -->
+          <p class="scene">A colleague is stuck. You stay at your desk.</p>
+          <h3>Support your team yourself</h3>
+          <p>Help a colleague with their computer without leaving your desk. Monthly billing, cancel any month.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag">Schools &amp; labs</span>
+          <!-- DRAFT: landing-story 2026-09-26 -->
+          <p class="scene">A lab machine is stuck. You see it from the browser.</p>
+          <h3>Manage every machine</h3>
+          <p>See which computers on your account are online from the browser, and help when something goes wrong.</p>
+        </article>
     </div>
   </div>
 </section>
 
 <section class="block" id="industries">
   <div class="wrap">
-    <div class="center">
+    <div class="center reveal">
       <h2>Every line of work, <span class="grad">same problem solved</span>.</h2>
       <p>A computer you need is somewhere you are not. Here is what that looks like in your line of work.</p>
     </div>
-    <div class="cards ind">
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M5 15l1.6-4.6A2 2 0 0 1 8.5 9h7a2 2 0 0 1 1.9 1.4L19 15" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="15" width="16" height="4" rx="1.5" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="8" cy="19.4" r="1.3" fill="#2B5CE6"/><circle cx="16" cy="19.4" r="1.3" fill="#2B5CE6"/></svg></div>
-        <h3>Automotive</h3>
-        <p>Reach the workshop's diagnostic and records computer without being on-site.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 21v-8" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><path d="M12 13c0-3 2.5-5 6-5 0 3-2.5 5-6 5Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 13c0-3-2.5-5-6-5 0 3 2.5 5 6 5Z" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
-        <h3>Agriculture</h3>
-        <p>Reach the farm office computer from the city, even on a thin connection.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="12" height="9" rx="1.5" stroke="#2B5CE6" stroke-width="1.8"/><path d="M14.5 10.5h3.8l2.7 3v2.5h-6.5" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="18.5" r="1.5" stroke="#2B5CE6" stroke-width="1.6"/><circle cx="17.5" cy="18.5" r="1.5" stroke="#2B5CE6" stroke-width="1.6"/></svg></div>
-        <h3>Logistics &amp; transport</h3>
-        <p>Keep the dispatch computer healthy while your vehicles are on the road.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#2B5CE6" stroke-width="1.8"/><path d="M12 3v2.6M12 18.4V21M3 12h2.6M18.4 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-        <h3>Manufacturing</h3>
-        <p>Reach the computer on the factory floor without stopping the line.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 10l1.2-5h13.6L20 10" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 10v9.5h14V10" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 19.5v-5h5v5" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
-        <h3>Retail &amp; POS</h3>
-        <p>Help with the shop's sales computer remotely and resolve issues without a trip.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#2B5CE6" stroke-width="1.8"/><path d="M12 8.5v7M8.5 12h7" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-        <h3>Clinics &amp; healthcare</h3>
-        <p>Expert help for the records computer without an on-site visit. Sessions stay locked end-to-end.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="19" height="10" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" stroke="#2B5CE6" stroke-width="1.6"/><path d="M6 10.5v3M18 10.5v3" stroke="#2B5CE6" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-        <h3>Financial services</h3>
-        <p>Support the computers your agents and branches rely on, all from one account.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4 20h16" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><path d="M5.5 20v-8.5M10 20v-8.5M14 20v-8.5M18.5 20v-8.5" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 9 12 4.5 20.5 9" stroke="#2B5CE6" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
-        <h3>Public sector &amp; NGOs</h3>
-        <p>Monthly plans that fit tight budgets, and field offices supported without travel.</p>
-      </div>
+    <div class="chiprow">
+        <button type="button" class="chip" id="ind-automotive-btn" aria-expanded="false" aria-controls="ind-automotive">Automotive</button>
+        <p class="chip-panel" id="ind-automotive">Reach the workshop's diagnostic and records computer without being on-site.</p>
+        <button type="button" class="chip" id="ind-agriculture-btn" aria-expanded="false" aria-controls="ind-agriculture">Agriculture</button>
+        <p class="chip-panel" id="ind-agriculture">Reach the farm office computer from the city, even on a thin connection.</p>
+        <button type="button" class="chip" id="ind-logistics-transport-btn" aria-expanded="false" aria-controls="ind-logistics-transport">Logistics &amp; transport</button>
+        <p class="chip-panel" id="ind-logistics-transport">Keep the dispatch computer healthy while your vehicles are on the road.</p>
+        <button type="button" class="chip" id="ind-manufacturing-btn" aria-expanded="false" aria-controls="ind-manufacturing">Manufacturing</button>
+        <p class="chip-panel" id="ind-manufacturing">Reach the computer on the factory floor without stopping the line.</p>
+        <button type="button" class="chip" id="ind-retail-pos-btn" aria-expanded="false" aria-controls="ind-retail-pos">Retail &amp; POS</button>
+        <p class="chip-panel" id="ind-retail-pos">Help with the shop's sales computer remotely and resolve issues without a trip.</p>
+        <button type="button" class="chip" id="ind-clinics-healthcare-btn" aria-expanded="false" aria-controls="ind-clinics-healthcare">Clinics &amp; healthcare</button>
+        <p class="chip-panel" id="ind-clinics-healthcare">Expert help for the records computer without an on-site visit. Sessions stay locked end-to-end.</p>
+        <button type="button" class="chip" id="ind-financial-services-btn" aria-expanded="false" aria-controls="ind-financial-services">Financial services</button>
+        <p class="chip-panel" id="ind-financial-services">Support the computers your agents and branches rely on, all from one account.</p>
+        <button type="button" class="chip" id="ind-public-sector-ngos-btn" aria-expanded="false" aria-controls="ind-public-sector-ngos">Public sector &amp; NGOs</button>
+        <p class="chip-panel" id="ind-public-sector-ngos">Monthly plans that fit tight budgets, and field offices supported without travel.</p>
     </div>
   </div>
 </section>
 
-<section class="block" id="speed" style="padding-top:0">
+<section class="block" id="security">
   <div class="wrap">
-    <div class="split">
+    <div class="secband">
       <div>
-        <h2>Made for speed.<br>Built for <span class="grad">real work</span>.</h2>
-        <p class="lead">Your devices talk directly to each other whenever they can, so the session feels responsive. When the network is tight, you decide what matters.</p>
-        <ul class="ticks">
-          <li><span class="tk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#2B5CE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Direct connections.</b> No detours through far-away servers when your devices can reach each other directly.</span></li>
-          <li><span class="tk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#2B5CE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Quality you choose.</b> Turn the picture quality up or down to match your connection, so work continues on slow networks.</span></li>
-          <li><span class="tk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#2B5CE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Your session, your rules.</b> You choose what a partner may do in a session: view only, keyboard and mouse, file transfer, or limited access.</span></li>
-        </ul>
+        <h2>Your sessions stay private.</h2>
+        <p>Sessions are locked end-to-end between your devices. Our servers only pass along scrambled data they cannot read: not your screen, not your files, not what you type. The client is powered by RustDesk (open source), so the protocol is open to review.</p>
+          <div class="sec-links">
+            <a href="https://github.com/shamarrzz/shamarrconnect" rel="noopener">Read the code on GitHub</a>
+            <span>Powered by RustDesk (AGPL)</span>
+            <a href="/refund">Paid plans include a 14-day money-back guarantee.</a>
+          </div>
       </div>
-      <div class="panel">
-        <div class="prow">
-          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M13 3 4 14h7l-1 7 9-11h-7l1-7Z" stroke="#B9CBFF" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
-          <span><span class="pt">Feels instant</span><br><span class="ps">One small app, light on data and memory</span></span>
-        </div>
-        <div class="prow">
-          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="#B9CBFF" stroke-width="1.8"/><path d="M8 21h8M12 17v4" stroke="#B9CBFF" stroke-width="1.8" stroke-linecap="round"/></svg></span>
-          <span><span class="pt">All your screens</span><br><span class="ps">Move between monitors like you are sitting there</span></span>
-        </div>
-        <div class="prow">
-          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0 4-4m-4 4-4-4" stroke="#B9CBFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="#B9CBFF" stroke-width="1.8" stroke-linecap="round"/></svg></span>
-          <span><span class="pt">Move files both ways</span><br><span class="ps">Send documents to and from the remote computer</span></span>
-        </div>
-        <div class="prow">
-          <span class="pic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2.5" stroke="#B9CBFF" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#B9CBFF" stroke-width="1.8"/></svg></span>
-          <span><span class="pt">Access devices on your account</span><br><span class="ps">Saved computers on your plan stay available when you need them</span></span>
-        </div>
-      </div>
+      <ul class="seclist">
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Every session locked end-to-end</li>
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> We cannot see your screen or files</li>
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Open source, so anyone can check how it works</li>
+        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> The app checks it is talking to the real ShamarrConnect</li>
+      </ul>
     </div>
   </div>
 </section>
 
-<section class="block" id="features" style="padding-top:0">
+<section class="block" id="compare">
   <div class="wrap">
-    <div class="center">
-      <h2>The remote desktop experience, <span class="grad">without the server work</span>.</h2>
-      <p>Everything you expect from a modern remote desktop tool, with everything run for you and billing that fits how you actually budget.</p>
-    </div>
-    <div class="cards">
-      <div class="card">
-        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2.5" stroke="#2B5CE6" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="12" cy="15.5" r="1.6" fill="#2B5CE6"/></svg></div>
-        <h3>Private by design</h3>
-        <p>Every session is locked end-to-end. Only the people in it can see what happens. Not even us.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="6" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><rect x="4" y="14" width="16" height="6" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><circle cx="8" cy="7" r="1" fill="#2B5CE6"/><circle cx="8" cy="17" r="1" fill="#2B5CE6"/></svg></div>
-        <h3>Nothing to set up</h3>
-        <p>No server to install or look after. We run everything and keep it updated. You just use the app.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <h3>See your machines at a glance</h3>
-        <p>Your own web page shows every computer on your account, which are online, and what happened recently.</p>
-      </div>
-      <div class="card">
-        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="13" rx="2" stroke="#2B5CE6" stroke-width="1.8"/><path d="M8 21h8M12 17v4" stroke="#2B5CE6" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-        <h3>Built for real work</h3>
-        <p>Work on computers linked to your account. Move files, use all your screens, keep everything in sync. Windows, macOS, Linux and Android.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="block" id="compare" style="padding-top:0">
-  <div class="wrap">
-    <div class="center">
+    <div class="center reveal">
       <h2>Why people switch to <span class="grad">ShamarrConnect</span>.</h2>
       <p>The same job the big tools do, without the parts that frustrate you.</p>
     </div>
@@ -606,103 +1131,75 @@
           <tr><td>Free tier for personal use</td><td class="us"><span class="yes">Yes</span></td><td>Limited</td><td>Limited</td></tr>
           <tr><td>Local-currency options where available</td><td class="us"><span class="yes">Yes</span></td><td>Varies</td><td>Varies</td></tr>
           <tr><td>Sessions locked end-to-end</td><td class="us"><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td></tr>
+          <tr><td>Privacy curtain &amp; virtual display</td><td class="us"><span class="yes">Included</span></td><td>Paid tiers</td><td>Paid tiers</td></tr>
           <tr><td>Open-source app you can inspect</td><td class="us"><span class="yes">Yes</span></td><td><span class="no">No</span></td><td><span class="no">No</span></td></tr>
           <tr><td>Everything run for you, no server</td><td class="us"><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="cmp-note">Checked on their public pages, August 2026. TeamViewer and AnyDesk are trademarks of their owners.</p>
+    <p class="cmp-note">Checked on their public pages, October 2026. TeamViewer and AnyDesk are trademarks of their owners.</p>
   </div>
 </section>
 
-<section class="block steps" id="how">
+<section class="block" id="download">
   <div class="wrap">
-    <div class="center">
-      <h2>Up and running in <span class="grad">three steps</span>.</h2>
-      <p>No server to install, nothing to configure. The app is ready the moment you open it.</p>
-    </div>
-    <div class="steprow">
-      <div class="step">
-        <div class="stepnum">1</div>
-        <h3>Download the app</h3>
-        <p>One small download for Windows, macOS, Linux or Android. Nothing else to install.</p>
-      </div>
-      <div class="step">
-        <div class="stepnum">2</div>
-        <h3>Create your account</h3>
-        <p>Sign up with your email. Devices you save stay with your account, on every computer.</p>
-      </div>
-      <div class="step">
-        <div class="stepnum">3</div>
-        <h3>Open one</h3>
-        <p>Your computers show up with last seen, like WhatsApp. Tap one to open it.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="block" id="security">
-  <div class="wrap">
-    <div class="secband">
-      <div>
-        <h2>Your sessions stay private.</h2>
-        <p>Sessions are locked end-to-end between your devices. Our servers only pass along scrambled data they cannot read: not your screen, not your files, not what you type. The client is powered by RustDesk (open source), so the protocol is open to review.</p>
-      </div>
-      <ul class="seclist">
-        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Every session locked end-to-end</li>
-        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> We cannot see your screen or files</li>
-        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Open source, so anyone can check how it works</li>
-        <li><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4 10-10" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span> The app checks it is talking to the real ShamarrConnect</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section class="block" id="download" style="padding-top:40px">
-  <div class="wrap">
-    <div class="center">
+    <div class="center reveal">
       <h2>One app, every platform</h2>
       <p>Already set up and ready to go. Download, sign in, connect.</p>
     </div>
     <div class="dlcards">
-      <a class="dl" href="/download">
+      <div class="dl">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6" aria-hidden="true"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13L10.5 19.6v-7H3v5.9Zm8.5 1.3L21 21V12.5h-9.5v7.3Zm0-15.6V11.5H21V3l-9.5 1.2Z"/></svg>
         <div class="os">Windows</div>
         <div class="sub">Windows 10 and 11, 64-bit</div>
-      </a>
-      <a class="dl" href="/download">
+      <div class="at-launch">At launch</div></div>
+<div class="dl">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
         <div class="os">macOS</div>
         <div class="sub">Apple Silicon and Intel</div>
-      </a>
-      <a class="dl" href="/download">
+      <div class="at-launch">At launch</div></div>
+<div class="dl">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6" aria-hidden="true"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.005c-.4-.246-.616-.512-.686-.71-.07-.268-.005-.47.193-.6.224-.135.38-.271.483-.336.104-.074.143-.102.176-.131h.002v-.003c.169-.202.436-.47.839-.601.139-.036.294-.065.466-.065zm2.8 2.142c.358 1.417 1.196 3.475 1.735 4.473.286.534.855 1.659 1.102 3.024.156-.005.33.018.513.064.646-1.671-.546-3.467-1.089-3.966-.22-.2-.232-.335-.123-.335.59.534 1.365 1.572 1.646 2.757.13.535.16 1.104.021 1.67.067.028.135.06.205.067 1.032.534 1.413.938 1.23 1.537v-.043c-.06-.003-.12 0-.18 0h-.016c.151-.467-.182-.825-1.065-1.224-.915-.4-1.646-.336-1.77.465-.008.043-.013.066-.018.135-.068.023-.139.053-.209.064-.43.268-.662.669-.793 1.187-.13.533-.17 1.156-.205 1.869v.003c-.02.334-.17.838-.319 1.35-1.5 1.072-3.58 1.538-5.348.334a2.645 2.645 0 00-.402-.533 1.45 1.45 0 00-.275-.333c.182 0 .338-.03.465-.067a.615.615 0 00.314-.334c.108-.267 0-.697-.345-1.163-.345-.467-.931-.995-1.788-1.521-.63-.4-.986-.87-1.15-1.396-.165-.534-.143-1.085-.015-1.645.245-1.07.873-2.11 1.274-2.763.107-.065.037.135-.408.974-.396.751-1.14 2.497-.122 3.854a8.123 8.123 0 01.647-2.876c.564-1.278 1.743-3.504 1.836-5.268.048.036.217.135.289.202.218.133.38.333.59.465.21.201.477.335.876.335.039.003.075.006.11.006.412 0 .73-.134.997-.268.29-.134.52-.334.74-.4h.005c.467-.135.835-.402 1.044-.7zm2.185 8.958c.037.6.343 1.245.882 1.377.588.134 1.434-.333 1.791-.765l.211-.01c.315-.007.577.01.847.268l.003.003c.208.199.305.53.391.876.085.4.154.78.409 1.066.486.527.645.906.636 1.14l.003-.007v.018l-.003-.012c-.015.262-.185.396-.498.595-.63.401-1.746.712-2.457 1.57-.618.737-1.37 1.14-2.036 1.191-.664.053-1.237-.2-1.574-.898l-.005-.003c-.21-.4-.12-1.025.056-1.69.176-.668.428-1.344.463-1.897.037-.714.076-1.335.195-1.814.12-.465.308-.797.641-.984l.045-.022zm-10.814.049h.01c.053 0 .105.005.157.014.376.055.706.333 1.023.752l.91 1.664.003.003c.243.533.754 1.064 1.189 1.637.434.598.77 1.131.729 1.57v.006c-.057.744-.48 1.148-1.125 1.294-.645.135-1.52.002-2.395-.464-.968-.536-2.118-.469-2.857-.602-.369-.066-.61-.2-.723-.4-.11-.2-.113-.602.123-1.23v-.004l.002-.003c.117-.334.03-.752-.027-1.118-.055-.401-.083-.71.043-.94.16-.334.396-.4.69-.533.294-.135.64-.202.915-.47h.002v-.002c.256-.268.445-.601.668-.838.19-.201.38-.336.663-.336zm7.159-9.074c-.435.201-.945.535-1.488.535-.542 0-.97-.267-1.28-.466-.154-.134-.28-.268-.373-.335-.164-.134-.144-.333-.074-.333.109.016.129.134.199.2.096.066.215.2.36.333.292.2.68.467 1.167.467.485 0 1.053-.267 1.398-.466.195-.135.445-.334.648-.467.156-.136.149-.267.279-.267.128.016.034.134-.147.332a8.097 8.097 0 01-.69.468zm-1.082-1.583V5.64c-.006-.02.013-.042.029-.05.074-.043.18-.027.26.004.063 0 .16.067.15.135-.006.049-.085.066-.135.066-.055 0-.092-.043-.141-.068-.052-.018-.146-.008-.163-.065zm-.551 0c-.02.058-.113.049-.166.066-.047.025-.086.068-.14.068-.05 0-.13-.02-.136-.068-.01-.066.088-.133.15-.133.08-.031.184-.047.259-.005.019.009.036.03.03.05v.02h.003z"/></svg>
         <div class="os">Linux</div>
         <div class="sub">Most distributions</div>
-      </a>
-      <a class="dl" href="/download">
+      <div class="at-launch">At launch</div></div>
+<div class="dl">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6" aria-hidden="true"><path d="M17.6 9.48 19.44 6.3c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.47 11.47 0 0 0-8.94 0L5.65 5.67c-.19-.28-.54-.36-.85-.22-.3.16-.42.54-.26.85l1.84 3.18C4.22 11.15 2.5 14.14 2.5 17.5h19c0-3.36-1.72-6.35-3.9-8.02ZM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z"/></svg>
         <div class="os">Android</div>
         <div class="sub">Phones and tablets</div>
-      </a>
+      <div class="at-launch">At launch</div></div>
+<div class="dl">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="#2B5CE6" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        <div class="os">iOS</div>
+        <div class="sub">iPhone and iPad</div>
+      <div class="at-launch">At launch</div></div>
     </div>
   </div>
 </section>
 
 <section class="block waitlist" id="waitlist">
   <div class="wrap">
-    <div class="center" style="margin-bottom:32px">
+    <div class="center reveal" style="margin-bottom:28px">
       <h2>Launching soon</h2>
       <p>Public downloads open at launch. Leave your email and we will tell you the moment they do.</p>
     </div>
-    <form class="wl" id="waitlist-form" novalidate>
-      <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" aria-label="Email address">
-      <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button type="submit">Notify me</button>
+    <!-- DRAFT: landing-story 2026-09-26 -->
+    <p class="wl-closer">Be the first to reach your computers from anywhere.</p>
+    <form class="wl-form" id="waitlist-form" novalidate>
+      <label class="wl-label" for="wl-email">Email</label>
+      <div class="wl">
+        <input id="wl-email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+        <input type="text" name="company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit">Notify me</button>
+      </div>
     </form>
     <div class="wlmsg" id="wlmsg" role="status"></div>
+    <!-- DRAFT: landing-story 2026-09-26 -->
+    <noscript><p class="wlmsg">Enable JavaScript to join, or email us at <a href="mailto:support@shamarrconnect.com">support@shamarrconnect.com</a>.</p></noscript>
   </div>
 </section>
+
+</div>
 
 <a class="fab-icon" href="#waitlist" aria-label="Join the waitlist">
   <img src="/logo-mark.svg" width="52" height="52" alt="">
@@ -745,21 +1242,43 @@
 
 <script>
 (function(){
+
+  /* SC_FLAGS off, and those sections are not in the HTML:
+     founderNote, stats, testimonials, waitlistCount, countdown, stickyCta.
+     loops are stills until a demo recording exists. */
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(en){
+        if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}
+      });
+    },{rootMargin:'0px 0px -10% 0px',threshold:0.15});
+    document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  }else{
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in');});
+  }
+  document.querySelectorAll('.chiprow .chip').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var open=btn.getAttribute('aria-expanded')==='true';
+      document.querySelectorAll('.chiprow .chip').forEach(function(other){
+        other.setAttribute('aria-expanded','false');
+      });
+      if(!open) btn.setAttribute('aria-expanded','true');
+    });
+  });
   var themeBtn=document.getElementById('theme-switch');
-  function setTheme(dark){
-    document.documentElement.classList.toggle('dark', dark);
-    if(themeBtn){
-      themeBtn.setAttribute('aria-pressed', dark?'true':'false');
-      var lab=themeBtn.querySelector('.theme-label');
-      if(lab) lab.textContent=dark?'Dark':'Light';
-    }
-    try{ localStorage.setItem('sc-landing-theme', dark?'dark':'light'); }catch(e){}
+  function syncThemeBtn(){
+    if(!themeBtn) return;
+    var dark=document.documentElement.classList.contains('dark');
+    themeBtn.setAttribute('aria-pressed', dark?'true':'false');
+    var lab=themeBtn.querySelector('.theme-label');
+    if(lab) lab.textContent=dark?'Dark':'Light';
   }
   if(themeBtn){
-    setTheme(document.documentElement.classList.contains('dark'));
+    syncThemeBtn();
     themeBtn.addEventListener('click', function(){
-      setTheme(!document.documentElement.classList.contains('dark'));
+      window.scTheme.set(!document.documentElement.classList.contains('dark'));
     });
+    document.addEventListener('sc-themechange', syncThemeBtn);
   }
 
   var hero=document.querySelector('.hero');
@@ -885,7 +1404,7 @@
   var sheet=document.getElementById('desk-sheet');
   var panel=document.getElementById('desk-panel');
   var fct=document.getElementById('fc-title');
-  var idNg='234 801 234', idIntl='812 345 678';
+  var idNg='1 234 801 234', idIntl='1 812 345 678';
   var region=(window.SC_REGION||'intl');
   var fakeId=region==='ng'?idNg:idIntl;
 
@@ -897,6 +1416,9 @@
     var em=document.querySelector('#waitlist-form input[type=email]');
     if(em)setTimeout(function(){em.focus({preventScroll:true});},smooth?600:0);
   }
+  document.querySelectorAll('a[href="#waitlist"]').forEach(function(a){
+    a.addEventListener('click', function(){ waitlist(); });
+  });
   function closeSheet(){
     if(sheet) sheet.hidden=true;
   }
@@ -933,7 +1455,7 @@
     openSheet(
       '<h3>Connect by ID</h3>'+
       '<p>For a computer that is not on your desk yet.</p>'+
-      '<div class="desk-idrow"><input id="desk-id-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Nine-digit ID" aria-label="Nine-digit ID"></div>'+
+      '<div class="desk-idrow"><input id="desk-id-input" type="text" inputmode="numeric" autocomplete="off" placeholder="10-digit ID" aria-label="10-digit ID"></div>'+
       '<div class="actions">'+
         '<button class="act" type="button" data-desk="waitlist">Connect</button>'+
         '<button class="act ghost" type="button" data-desk="close">Close</button>'+
@@ -987,23 +1509,145 @@
     });
   }
 
+  /* Interactive 3-slide feature deck (Privacy Curtain, Virtual Display, Permissions) */
+  var deck=document.getElementById('sc-feature-deck');
+  if(deck){
+    var tabs=deck.querySelectorAll('.sc-dtab');
+    var slides=deck.querySelectorAll('.sc-slide');
+    var pdots=deck.querySelectorAll('.sc-pdot');
+    var curSlide=0, deckTimer=0, userPaused=false;
+    var captions=[
+      'Click "Privacy Curtain" to see how the shop monitor blanks while you work from home.',
+      'Switch between physical monitors or spin up a private Virtual Display.',
+      'Toggle live permissions or preview What\'s New before updating.'
+    ];
+    var capEl=document.getElementById('sc-deck-caption');
+
+    function showSlide(idx, manual){
+      curSlide=(idx+slides.length)%slides.length;
+      tabs.forEach(function(t,i){ t.setAttribute('aria-selected', i===curSlide?'true':'false'); });
+      slides.forEach(function(s,i){ s.classList.toggle('active', i===curSlide); });
+      pdots.forEach(function(d,i){
+        d.classList.remove('active');
+        if(i===curSlide){ void d.offsetWidth; d.classList.add('active'); }
+      });
+      if(capEl && captions[curSlide]) capEl.textContent=captions[curSlide];
+      if(manual){
+        userPaused=true;
+        deck.setAttribute('data-paused','true');
+        if(deckTimer) clearInterval(deckTimer);
+      }
+    }
+
+    tabs.forEach(function(t){
+      t.addEventListener('click', function(){
+        showSlide(parseInt(t.getAttribute('data-slide'),10)||0, true);
+      });
+    });
+    pdots.forEach(function(d){
+      d.addEventListener('click', function(){
+        showSlide(parseInt(d.getAttribute('data-slide'),10)||0, true);
+      });
+    });
+
+    var cBtn=document.getElementById('sc-curtain-btn');
+    var rStat=document.getElementById('sc-remote-status');
+    if(cBtn){
+      cBtn.addEventListener('click', function(){
+        userPaused=true;
+        deck.setAttribute('data-paused','true');
+        var isOn=deck.getAttribute('data-curtain')==='on';
+        var next=!isOn;
+        deck.setAttribute('data-curtain', next?'on':'off');
+        cBtn.textContent=next?'Privacy Curtain: ON':'Privacy Curtain: OFF';
+        cBtn.classList.toggle('is-on', next);
+        if(rStat){
+          rStat.textContent=next?'Screen blanked':'Visible in room';
+          rStat.className='sc-mon-tag '+(next?'curtain':'warn');
+        }
+      });
+    }
+
+    var mpills=deck.querySelectorAll('.sc-mpill[data-mon]');
+    var addV=document.getElementById('sc-add-vmon');
+    var vTitle=document.getElementById('sc-vtitle');
+    var vBadge=document.getElementById('sc-vbadge');
+    var vw1t=document.getElementById('sc-vw1-t');
+    var vw1p=document.getElementById('sc-vw1-p');
+    function selectMon(m){
+      userPaused=true;
+      deck.setAttribute('data-paused','true');
+      mpills.forEach(function(p){ p.classList.toggle('active', p.getAttribute('data-mon')===m); });
+      if(m==='1'){
+        if(vTitle) vTitle.textContent='Monitor 1 · Physical Front Desk Display (1920×1080)';
+        if(vBadge) vBadge.textContent='Physical Screen';
+        if(vw1t) vw1t.textContent='Primary Desktop View';
+        if(vw1p) vw1p.textContent='Viewing the main plugged-in monitor with adaptive scaling.';
+      } else {
+        if(vTitle) vTitle.textContent='Display '+m+' · Isolated Virtual Workspace (1920×1080)';
+        if(vBadge) vBadge.textContent='Virtual Display';
+        if(vw1t) vw1t.textContent='Back-office Accounting & Reports';
+        if(vw1p) vw1p.textContent='Runs on a private virtual monitor, even if the office PC has no physical screen plugged in.';
+      }
+    }
+    mpills.forEach(function(p){
+      p.addEventListener('click', function(){ selectMon(p.getAttribute('data-mon')); });
+    });
+    if(addV){
+      var vCount=2;
+      addV.addEventListener('click', function(){
+        vCount = vCount>=3 ? 2 : 3;
+        addV.textContent = vCount===3 ? '✓ Display 3 · Virtual Active' : '+ New Virtual Screen';
+        selectMon(String(vCount));
+      });
+    }
+
+    deck.querySelectorAll('.sc-ptoggle').forEach(function(tg){
+      tg.addEventListener('click', function(){
+        userPaused=true;
+        deck.setAttribute('data-paused','true');
+        var on=tg.getAttribute('aria-pressed')==='true';
+        tg.setAttribute('aria-pressed', on?'false':'true');
+      });
+    });
+
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      deckTimer=setInterval(function(){
+        if(!userPaused && !document.hidden){
+          showSlide(curSlide+1, false);
+        }
+      }, 5500);
+    }
+  }
+
   var f=document.getElementById('waitlist-form'),m=document.getElementById('wlmsg');
   f.addEventListener('submit',function(e){
     e.preventDefault();
     m.textContent='';m.className='wlmsg';
-    var btn=f.querySelector('button');btn.disabled=true;
+    var btn=f.querySelector('button');
+    var idle=btn.textContent;
+    btn.disabled=true;
+    btn.textContent='Adding you...';
     fetch('/api/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email:f.email.value,company:f.company.value,region:(window.SC_REGION||'intl')})})
     .then(function(r){return r.json()})
     .then(function(d){
-      if(d.ok){m.textContent="You're on the list. We'll be in touch.";m.classList.add('ok');f.reset();}
+      if(d.ok){
+        m.textContent="You're on the list. We'll be in touch.";
+        m.classList.add('ok');
+        f.reset();
+        m.setAttribute('tabindex','-1');
+        m.focus();
+      }
       else{m.textContent=(d.error==='invalid email')?'Please enter a valid email address.':'Something went wrong. Please try again in a moment.';m.classList.add('err');}
     })
     .catch(function(){m.textContent='Network error. Please try again.';m.classList.add('err');})
-    .finally(function(){btn.disabled=false;});
+    .finally(function(){btn.disabled=false;btn.textContent=idle;});
   });
 })();
 </script>
 
+<script src="/js/landing-video.js?v=20261002" defer></script>
+<script src="/js/landing-video-sequence.js" defer></script>
 </body>
 </html>

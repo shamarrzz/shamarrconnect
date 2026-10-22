@@ -1,5 +1,7 @@
-# Public pages must be fetchable (Paystack and other reviewers).
-# Search engines: landing still has <meta name="robots" content="noindex">
-# until LAUNCH.md. Do not Disallow: / — crawlers treat that as the site is down.
 User-agent: *
 Allow: /
+Disallow: /account/
+Disallow: /paid/
+Disallow: /preview/
+
+Sitemap: https://shamarrconnect.com/sitemap.xml
