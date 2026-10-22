@@ -249,3 +249,67 @@ jobs:
           xcrun altool --upload-app --type ios -f "$IPA" \
             --apiKey "$(cat "$RUNNER_TEMP/asc_key_id")" \
             --apiIssuer "$(cat "$RUNNER_TEMP/asc_issuer_id")"
+
+      - name: Attach build to Team internal TestFlight group
+        env:
+          NOTARIZE_B64: ${{ secrets.MACOS_NOTARIZE_JSON }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          set -euo pipefail
+          pip3 install --quiet PyJWT cryptography
+          python3 - << 'PY'
+          import base64, json, os, time, urllib.error, urllib.request
+          import jwt
+
+          data = json.loads(base64.b64decode(os.environ["NOTARIZE_B64"]))
+          key = data["private_key"]
+          if "BEGIN PRIVATE KEY" not in key:
+              key = "-----BEGIN PRIVATE KEY-----\n" + key.strip() + "\n-----END PRIVATE KEY-----\n"
+          app_id = "6824360752"
+          team_gid = "de8593db-0d7d-425b-8024-132e46818eb4"
+          build_num = str(os.environ["BUILD_NUMBER"])
+          base = "https://api.appstoreconnect.apple.com/v1"
+
+          def get_token():
+              now = int(time.time())
+              return jwt.encode(
+                  {"iss": data["issuer_id"], "iat": now, "exp": now + 1200, "aud": "appstoreconnect-v1"},
+                  key,
+                  algorithm="ES256",
+                  headers={"kid": data["key_id"]},
+              )
+
+          def call(url, method="GET", body=None):
+              hdrs = {"Authorization": f"Bearer {get_token()}"}
+              if body is not None:
+                  hdrs["Content-Type"] = "application/json"
+              req = urllib.request.Request(url, data=body, headers=hdrs, method=method)
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  raw = r.read().decode()
+                  return json.loads(raw) if raw else {}
+
+          build_id = None
+          for attempt in range(36):
+              res = call(f"{base}/builds?filter[app]={app_id}&sort=-uploadedDate&limit=5")
+              for b in res.get("data", []):
+                  if b["attributes"].get("version") == build_num:
+                      state = b["attributes"].get("processingState")
+                      print(f"Attempt {attempt+1}: build {build_num} state={state}")
+                      if state == "VALID":
+                          build_id = b["id"]
+                          break
+              if build_id:
+                  break
+              time.sleep(15)
+
+          if not build_id:
+              print(f"Build {build_num} did not reach VALID within 9 minutes; skipping group attach.")
+              raise SystemExit(0)
+
+          call(
+              f"{base}/betaGroups/{team_gid}/relationships/builds",
+              "POST",
+              json.dumps({"data": [{"type": "builds", "id": build_id}]}).encode(),
+          )
+          print(f"Attached build {build_num} ({build_id}) to Team internal TestFlight group.")
+          PY
