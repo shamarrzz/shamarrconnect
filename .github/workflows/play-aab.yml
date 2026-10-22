@@ -206,6 +206,79 @@ jobs:
           path: signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
           if-no-files-found: error
 
+      - name: Publish AAB to Google Play Console (Closed & Internal testing)
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          AAB_PATH: signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
+          RELEASE_NAME: "${{ github.event.inputs.build_number }} (${{ env.VERSION }})"
+        run: |
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "PLAY_SERVICE_ACCOUNT_JSON not set; skipping Google Play API upload."
+            exit 0
+          fi
+          pip3 install --quiet PyJWT cryptography
+          python3 - << 'PY'
+          import json, os, time, urllib.parse, urllib.request
+          import jwt
+
+          sa = json.loads(os.environ["PLAY_SERVICE_ACCOUNT_JSON"])
+          now = int(time.time())
+          assertion = jwt.encode(
+              {
+                  "iss": sa["client_email"],
+                  "scope": "https://www.googleapis.com/auth/androidpublisher",
+                  "aud": sa["token_uri"],
+                  "iat": now,
+                  "exp": now + 3600,
+              },
+              sa["private_key"],
+              algorithm="RS256",
+          )
+          tok_req = urllib.request.Request(
+              sa["token_uri"],
+              data=urllib.parse.urlencode({
+                  "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                  "assertion": assertion,
+              }).encode(),
+              method="POST",
+          )
+          token = json.loads(urllib.request.urlopen(tok_req).read().decode())["access_token"]
+          pkg = "com.shamarrconnect.mobile"
+          base = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}"
+          up_base = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{pkg}"
+
+          def call(url, method="GET", body=None, ctype="application/json"):
+              hdrs = {"Authorization": f"Bearer {token}"}
+              if body is not None:
+                  hdrs["Content-Type"] = ctype
+              req = urllib.request.Request(url, data=body, headers=hdrs, method=method)
+              with urllib.request.urlopen(req, timeout=300) as r:
+                  raw = r.read().decode()
+                  return json.loads(raw) if raw else {}
+
+          edit_id = call(f"{base}/edits", "POST", b"{}")["id"]
+          with open(os.environ["AAB_PATH"], "rb") as f:
+              bundle = call(f"{up_base}/edits/{edit_id}/bundles?uploadType=media", "POST", f.read(), "application/octet-stream")
+          vc = str(bundle["versionCode"])
+          print(f"Uploaded bundle versionCode={vc}")
+          for track in ("alpha", "internal"):
+              call(
+                  f"{base}/edits/{edit_id}/tracks/{track}",
+                  "PUT",
+                  json.dumps({
+                      "track": track,
+                      "releases": [{
+                          "name": os.environ["RELEASE_NAME"],
+                          "versionCodes": [vc],
+                          "status": "completed",
+                          "releaseNotes": [{"language": "en-US", "text": f"ShamarrConnect {os.environ['RELEASE_NAME']}"}],
+                      }],
+                  }).encode(),
+              )
+          call(f"{base}/edits/{edit_id}:commit", "POST")
+          print(f"Published versionCode={vc} to alpha + internal tracks.")
+          PY
+
       - name: Setup sign tool version variable
         shell: bash
         run: |
