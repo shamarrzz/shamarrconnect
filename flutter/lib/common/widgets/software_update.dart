@@ -18,13 +18,59 @@ const softwareUpdateFallbackNotes =
 
 bool _updateDialogOpen = false;
 
-/// True when the server offered a tag that is not the installed build.
+/// Rank ShamarrConnect tags (`1.4.9-sc32`) or Apple short versions (`1.4.32` -> `sc32`).
+int _scVersionRank(String raw) {
+  var v = raw.trim();
+  if (v.startsWith('v') || v.startsWith('V')) {
+    v = v.substring(1).trim();
+  }
+  if (v.contains('+')) {
+    v = v.split('+').first.trim();
+  }
+  final dashParts = v.split('-');
+  final semver = dashParts.first.trim();
+  final nums = semver
+      .split('.')
+      .map((s) => int.tryParse(s.trim()) ?? 0)
+      .toList(growable: false);
+  if (nums.isEmpty || nums.every((n) => n == 0)) return 0;
+
+  if (dashParts.length > 1) {
+    final suffix = dashParts[1].trim().replaceFirst(RegExp(r'^sc'), '');
+    final scNum = int.tryParse(suffix) ?? 0;
+    final major = nums.isNotEmpty ? nums[0] : 0;
+    final minor = nums.length > 1 ? nums[1] : 0;
+    final patch = nums.length > 2 ? nums[2] : 0;
+    return major * 10000000 + minor * 10000 + patch * 10 + scNum;
+  }
+
+  // iOS CFBundleShortVersionString encodes 1.4.9-sc32 as 1.4.32 (minor=4, patch=scNum).
+  if (nums.length >= 3 && nums[0] == 1 && nums[1] == 4 && nums[2] >= 20) {
+    return 1 * 10000000 + 4 * 10000 + 9 * 10 + nums[2];
+  }
+
+  final major = nums.isNotEmpty ? nums[0] : 0;
+  final minor = nums.length > 1 ? nums[1] : 0;
+  final patch = nums.length > 2 ? nums[2] : 0;
+  return major * 10000000 + minor * 10000 + patch * 10;
+}
+
+/// True when the server offered a tag strictly newer than the installed build.
 bool softwareUpdateVisible(String url) {
   if (url.trim().isEmpty) return false;
-  final newer = bind.mainGetNewVersion().trim();
+  var newer = bind.mainGetNewVersion().trim();
+  if (newer.isEmpty && url.contains('/')) {
+    newer = url.substring(url.lastIndexOf('/') + 1).trim();
+  }
   if (newer.isEmpty) return false;
   final installed = version.trim();
-  if (installed.isEmpty) return true;
+  if (installed.isEmpty) return false;
+  if (newer == installed) return false;
+  final newerRank = _scVersionRank(newer);
+  final installedRank = _scVersionRank(installed);
+  if (newerRank > 0 && installedRank > 0) {
+    return newerRank > installedRank;
+  }
   return newer != installed;
 }
 

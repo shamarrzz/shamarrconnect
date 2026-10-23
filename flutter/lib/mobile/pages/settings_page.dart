@@ -1680,26 +1680,27 @@ class __DisplayPageState extends State<_DisplayPage> {
             ),
           ],
         ),
-        SettingsSection(
-          title: const Text('Privacy Mode & Virtual Display'),
-          tiles: [
-            SettingsTile.switchTile(
-              initialValue: () {
-                final v =
-                    bind.mainGetLocalOption(key: 'prompt-privacy-on-connect');
-                return v.isEmpty || v == 'Y';
-              }(),
-              title: const Text(
-                  'Ask to blank or turn off remote screen when connecting'),
-              onToggle: (b) async {
-                await bind.mainSetLocalOption(
-                    key: 'prompt-privacy-on-connect', value: b ? 'Y' : 'N');
-                setState(() {});
-              },
-            ),
-            otherRow('Privacy mode', kOptionPrivacyMode),
-          ],
-        ),
+        if (!isAndroid)
+          SettingsSection(
+            title: const Text('Privacy Mode & Virtual Display'),
+            tiles: [
+              SettingsTile.switchTile(
+                initialValue: () {
+                  final v =
+                      bind.mainGetLocalOption(key: 'prompt-privacy-on-connect');
+                  return v.isEmpty || v == 'Y';
+                }(),
+                title: const Text(
+                    'Ask to blank or turn off remote screen when connecting'),
+                onToggle: (b) async {
+                  await bind.mainSetLocalOption(
+                      key: 'prompt-privacy-on-connect', value: b ? 'Y' : 'N');
+                  setState(() {});
+                },
+              ),
+              otherRow('Privacy mode', kOptionPrivacyMode),
+            ],
+          ),
         SettingsSection(
           title: Text(translate('Other Default Options')),
           tiles:

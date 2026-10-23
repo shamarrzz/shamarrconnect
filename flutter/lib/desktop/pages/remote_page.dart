@@ -88,6 +88,9 @@ class _RemotePageState extends State<RemotePage>
   late RxBool _keyboardEnabled;
   final _uniqueKey = UniqueKey();
 
+  // Recreate the block state only when transitioning into `imageReady` so active
+  // dialogs (like `privacy-on-connect`) stay attached to the live Overlay key.
+  bool _wasImageReady = false;
   var _blockableOverlayState = BlockableOverlayState();
 
   final FocusNode _rawKeyFocusNode = FocusNode(debugLabel: "rawkeyFocusNode");
@@ -503,17 +506,20 @@ class _RemotePageState extends State<RemotePage>
         final imageReady = _ffi.ffiModel.pi.isSet.isTrue &&
             _ffi.ffiModel.waitForFirstImage.isFalse;
         if (imageReady) {
-          // If the privacy mode(disable physical displays) is switched,
-          // we should not dismiss the dialog immediately.
-          if (!_ffi.dialogManager.hasDialog('privacy-on-connect') &&
-              DateTime.now().difference(togglePrivacyModeTime) >
-                  const Duration(milliseconds: 3000)) {
-            // `dismissAll()` is to ensure that the state is clean.
-            // It's ok to call dismissAll() here.
-            _ffi.dialogManager.dismissAll();
-            // Recreate the block state to refresh the state.
-            _blockableOverlayState = BlockableOverlayState();
-            _blockableOverlayState.applyFfi(_ffi);
+          if (!_wasImageReady) {
+            _wasImageReady = true;
+            // If the privacy mode(disable physical displays) is switched,
+            // we should not dismiss the dialog immediately.
+            if (!_ffi.dialogManager.hasDialog('privacy-on-connect') &&
+                DateTime.now().difference(togglePrivacyModeTime) >
+                    const Duration(milliseconds: 3000)) {
+              // `dismissAll()` is to ensure that the state is clean.
+              // It's ok to call dismissAll() here.
+              _ffi.dialogManager.dismissAll();
+              // Recreate the block state to refresh the state.
+              _blockableOverlayState = BlockableOverlayState();
+              _blockableOverlayState.applyFfi(_ffi);
+            }
           }
           // Block the whole `bodyWidget()` when dialog shows.
           return BlockableOverlay(
@@ -521,6 +527,7 @@ class _RemotePageState extends State<RemotePage>
             state: _blockableOverlayState,
           );
         } else {
+          _wasImageReady = false;
           // `_blockableOverlayState` is not recreated here.
           // The toolbar's block state won't work properly when reconnecting, but that's okay.
           return bodyWidget();

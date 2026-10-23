@@ -948,38 +948,36 @@ pub fn check_software_update() {
 }
 
 /// Rank ShamarrConnect tags: `1.4.9-sc10` > `1.4.9-sc5` > `1.4.9`.
+/// Also handles iOS short versions like `1.4.32` -> `1.4.9-sc32`.
 /// Tails like `latest` (no semver) rank as 0 so they never look newer.
 pub fn sc_release_rank(v: &str) -> i64 {
-    let v = v.trim().trim_start_matches('v');
+    let v = v.trim().trim_start_matches('v').trim_start_matches('V');
+    let v = v.split('+').next().unwrap_or(v).trim();
     let mut parts = v.split('-');
     let semver = parts.next().unwrap_or("");
-    let mut n = 0i64;
-    let mut last = 0i64;
-    let mut saw_digit = false;
-    for x in semver.split('.') {
-        last = match x.parse::<i64>() {
-            Ok(n) => {
-                saw_digit = true;
-                n
-            }
-            Err(_) => 0,
-        };
-        n = n * 1000 + last;
-    }
-    if !saw_digit {
+    let nums: Vec<i64> = semver
+        .split('.')
+        .map(|x| x.trim().parse::<i64>().unwrap_or(0))
+        .collect();
+    if nums.is_empty() || nums.iter().all(|&x| x == 0) {
         return 0;
     }
-    n -= last;
-    n += last * 10;
+    let major = *nums.first().unwrap_or(&0);
+    let minor = *nums.get(1).unwrap_or(&0);
+    let patch = *nums.get(2).unwrap_or(&0);
     if let Some(suffix) = parts.next() {
-        let patch = suffix
+        let sc_patch = suffix
             .strip_prefix("sc")
             .unwrap_or(suffix)
             .parse::<i64>()
             .unwrap_or(0);
-        n += patch;
+        return (major * 1000 * 1000 + minor * 1000 + patch * 10) + sc_patch;
     }
-    n
+    // iOS CFBundleShortVersionString encodes 1.4.9-sc32 as 1.4.32
+    if major == 1 && minor == 4 && patch >= 20 {
+        return (1 * 1000 * 1000 + 4 * 1000 + 9 * 10) + patch;
+    }
+    major * 1000 * 1000 + minor * 1000 + patch * 10
 }
 
 // ShamarrConnect: version checks go to our own API, never api.rustdesk.com.

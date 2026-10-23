@@ -19,8 +19,15 @@ import sys
 
 def main() -> None:
     ver = os.environ.get("VERSION", "").strip()
-    if not ver or "-sc" not in ver:
-        sys.exit(f"VERSION must look like 1.4.9-scN, got {ver!r}")
+    if not ver:
+        sys.exit(f"VERSION must not be empty, got {ver!r}")
+    # Allow Apple short version like 1.4.32 -> 1.4.9-sc32 if -sc was omitted
+    if "-sc" not in ver:
+        parts = ver.lstrip("vV").split(".")
+        if len(parts) == 3 and parts[0] == "1" and parts[1] == "4" and parts[2].isdigit() and int(parts[2]) >= 20:
+            ver = f"1.4.9-sc{parts[2]}"
+        else:
+            sys.exit(f"VERSION must look like 1.4.9-scN, got {ver!r}")
 
     root = pathlib.Path(__file__).resolve().parents[1]
     stamp_version_rs(root / "src" / "version.rs", ver)
