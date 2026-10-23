@@ -218,7 +218,7 @@ jobs:
           fi
           pip3 install --quiet PyJWT cryptography
           python3 - << 'PY'
-          import json, os, time, urllib.parse, urllib.request
+          import json, os, sys, time, urllib.error, urllib.parse, urllib.request
           import jwt
 
           sa = json.loads(os.environ["PLAY_SERVICE_ACCOUNT_JSON"])
@@ -252,9 +252,13 @@ jobs:
               if body is not None:
                   hdrs["Content-Type"] = ctype
               req = urllib.request.Request(url, data=body, headers=hdrs, method=method)
-              with urllib.request.urlopen(req, timeout=300) as r:
-                  raw = r.read().decode()
-                  return json.loads(raw) if raw else {}
+              try:
+                  with urllib.request.urlopen(req, timeout=300) as r:
+                      raw = r.read().decode()
+                      return json.loads(raw) if raw else {}
+              except urllib.error.HTTPError as e:
+                  print(f"HTTP {e.code} on {method} {url}: {e.read().decode()}", file=sys.stderr)
+                  raise
 
           edit_id = call(f"{base}/edits", "POST", b"{}")["id"]
           with open(os.environ["AAB_PATH"], "rb") as f:

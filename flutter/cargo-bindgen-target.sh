@@ -7,15 +7,22 @@
 # treated as explicit, so bindgen leaves it alone.
 set -euo pipefail
 
-target_arg=--target=aarch64-linux-android24
-key=BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android
-val="${!key:-}"
-if [[ -n "$val" && "$val" != *"--target="* ]]; then
-  export "${key}=${target_arg} ${val}"
-  echo "cargo-bindgen-target: added ${target_arg}" >&2
-else
-  echo "cargo-bindgen-target: left ${key} unchanged" >&2
-fi
+add_target() {
+  local key="$1" target_arg="$2" val
+  val="${!key:-}"
+  if [[ -n "$val" && "$val" != *"--target="* ]]; then
+    export "${key}=${target_arg} ${val}"
+    echo "cargo-bindgen-target: added ${target_arg}" >&2
+  else
+    echo "cargo-bindgen-target: left ${key} unchanged" >&2
+  fi
+}
+
+# One entry per android rust triple the sc-release matrix builds. The API
+# level matches the --platform each ndk_*.sh passes to cargo-ndk.
+add_target BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android --target=aarch64-linux-android24
+add_target BINDGEN_EXTRA_CLANG_ARGS_armv7_linux_androideabi --target=armv7-linux-androideabi21
+add_target BINDGEN_EXTRA_CLANG_ARGS_x86_64_linux_android --target=x86_64-linux-android21
 
 real=$(command -v cargo)
 if [[ "$(readlink -f "$real")" == "$(readlink -f "$0")" ]]; then

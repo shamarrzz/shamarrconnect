@@ -256,8 +256,12 @@ jobs:
           BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
           set -euo pipefail
-          pip3 install --quiet PyJWT cryptography
-          python3 - << 'PY'
+          # The macos runners carry Homebrew python, which enforces PEP 668
+          # and refuses global pip installs. A venv keeps jwt/cryptography
+          # installable without touching the system python.
+          python3 -m venv /tmp/sc-asc-venv
+          /tmp/sc-asc-venv/bin/pip install --quiet PyJWT cryptography
+          /tmp/sc-asc-venv/bin/python3 - << 'PY'
           import base64, json, os, time, urllib.error, urllib.request
           import jwt
 
