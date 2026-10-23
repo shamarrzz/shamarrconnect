@@ -43,6 +43,7 @@ import 'package:vector_math/vector_math.dart' show Vector2;
 
 import '../common.dart';
 import '../common/widgets/desk/desk_memory.dart';
+import '../common/widgets/toolbar.dart';
 import '../utils/image.dart' as img;
 import '../common/widgets/dialog.dart';
 import 'input_model.dart';
@@ -1432,7 +1433,7 @@ class FfiModel with ChangeNotifier {
 
   Future<void> maybePromptPrivacyOnConnect(String peerId) async {
     if (_privacyPromptShown) return;
-    if (connType != ConnType.defaultConn) return;
+    if (parent.target?.connType != ConnType.defaultConn) return;
     if (!_pi.features.privacyMode || !keyboard || viewOnly) return;
     final hasPerm = permissions['privacy_mode'] != false;
     if (!hasPerm) return;
