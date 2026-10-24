@@ -20,7 +20,7 @@ on:
       build_number:
         description: 'CFBundleVersion. Must be higher than any build already uploaded.'
         required: true
-        default: '2089'
+        default: '2096'
       release_tag:
         description: 'Tag baked into About, e.g. 1.4.9-sc32. Apple build_name stays x.y.z.'
         required: false
@@ -307,8 +307,10 @@ jobs:
               time.sleep(15)
 
           if not build_id:
-              print(f"Build {build_num} did not reach VALID within 9 minutes; skipping group attach.")
-              raise SystemExit(0)
+              # Fail loudly: an INVALID or stuck build must not be masked as a
+              # green run. 2093/2094/2095 were silently skipped this way.
+              print(f"Build {build_num} did not reach VALID within 9 minutes; failing the job.")
+              raise SystemExit(1)
 
           call(
               f"{base}/betaGroups/{team_gid}/relationships/builds",
