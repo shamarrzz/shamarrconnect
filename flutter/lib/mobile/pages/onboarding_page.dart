@@ -228,8 +228,12 @@ class _OnboardingPageState extends State<OnboardingPage>
   static const _whys = [
     'So a supporter can see this screen during a session. '
         'Android will show a system prompt. Tap Allow.',
-    'So a supporter can tap and type when you ask for help. '
-        'In the list that opens, turn ShamarrConnect Input ON.',
+    'ShamarrConnect uses the Accessibility service only so that a person '
+        'you allow to connect can tap, swipe and type on this phone during a '
+        'help session. It reads what is on screen to do this. This data is '
+        'not collected, stored or shared, and you can turn the service off at '
+        'any time in Settings. In the list that opens, turn ShamarrConnect '
+        'Input ON.',
     'So this phone stays online for help. '
         'Allow ShamarrConnect to run in the background (Unrestricted).',
     'So you get a clear alert when a help session starts.',
