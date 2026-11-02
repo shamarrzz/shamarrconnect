@@ -284,5 +284,12 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("wayland-soft-keyboard-input-label", "Soft keyboard input"),
         ("wayland-keyboard-input-reset-choice-tip", "Reset keyboard input choice"),
         ("remember-wayland-keyboard-choice-tip", "Don't ask again for this remote computer"),
+        ("sc-trial-ends-days-tip", "Your free saved-computer trial ends in {} days. Upgrade to keep your saved computers."),
+        ("sc-trial-ends-one-day-tip", "Your free saved-computer trial ends in 1 day. Upgrade to keep your saved computers."),
+        ("sc-trial-ends-today-tip", "Your free saved-computer trial ends today. Upgrade to keep your saved computers."),
+        ("sc-trial-ended-tip", "Your 14-day saved-computer trial has ended. Saved computers were removed. Upgrade to restore them, or connect with a one-time code."),
+        ("sc-plan-ended-tip", "Your paid plan has ended. Saved computers were removed. Renew to restore them, or connect with a one-time code."),
+        ("sc-upgrade-label", "Upgrade"),
+        ("sc-renew-label", "Renew"),
     ].iter().cloned().collect();
 }

@@ -33,6 +33,13 @@ class UserPayload {
   String? verifier;
   UserStatus status;
   bool isAdmin = false;
+  /// Billing plan state from the server: free_trial / active / lapsed_free /
+  /// lapsed_paid. Null when the server does not send it (older API).
+  String? planState;
+  /// Days left in the free trial window (0 = closes today). Null for
+  /// non-free plans.
+  int? trialDaysLeft;
+  String? upgradeUrl;
 
   UserPayload.fromJson(Map<String, dynamic> json)
       : name = json['name'] ?? '',
@@ -46,7 +53,12 @@ class UserPayload {
             : json['status'] == -1
                 ? UserStatus.kUnverified
                 : UserStatus.kNormal,
-        isAdmin = json['is_admin'] == true;
+        isAdmin = json['is_admin'] == true,
+        planState = json['plan_state'],
+        trialDaysLeft = json['trial_days_left'] is num
+            ? (json['trial_days_left'] as num).toInt()
+            : null,
+        upgradeUrl = json['upgrade_url'];
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> map = {
@@ -59,6 +71,9 @@ class UserPayload {
               ? -1
               : 1,
     };
+    if (planState != null) map['plan_state'] = planState;
+    if (trialDaysLeft != null) map['trial_days_left'] = trialDaysLeft;
+    if (upgradeUrl != null) map['upgrade_url'] = upgradeUrl;
     return map;
   }
 

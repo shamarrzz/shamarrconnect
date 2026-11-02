@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
 import 'package:flutter_hbb/models/ab_model.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../common.dart';
 import '../utils/http_service.dart' as http;
@@ -72,6 +73,10 @@ class UserModel {
   }
 
   WeakReference<FFI> parent;
+
+  /// Signature of the plan toast already shown this app session, so a given
+  /// plan state nags at most once until it changes.
+  String? _lastPlanToastKey;
 
   UserModel(this.parent) {
     userName.listen((p0) {
@@ -184,6 +189,52 @@ class UserModel {
       // ugly here, tmp solution
       bind.mainSetLocalOption(key: 'verifier', value: user.verifier ?? '');
     }
+    _maybeShowPlanToast(user);
+  }
+
+  /// Once-per-session upgrade banner after login / account sync, driven by
+  /// the plan fields in the server login payload. Older servers do not send
+  /// `plan_state`; then nothing is shown.
+  void _maybeShowPlanToast(UserPayload user) {
+    final state = user.planState;
+    if (state == null || state == 'active') return;
+    final days = user.trialDaysLeft;
+    String message;
+    String actionLabel;
+    switch (state) {
+      case 'free_trial':
+        if (days == null || days < 0 || days > 3) return;
+        message = days == 0
+            ? translate('sc-trial-ends-today-tip')
+            : days == 1
+                ? translate('sc-trial-ends-one-day-tip')
+                : translate('sc-trial-ends-days-tip')
+                    .replaceFirst('{}', '$days');
+        actionLabel = translate('sc-upgrade-label');
+        break;
+      case 'lapsed_free':
+        message = translate('sc-trial-ended-tip');
+        actionLabel = translate('sc-upgrade-label');
+        break;
+      case 'lapsed_paid':
+        message = translate('sc-plan-ended-tip');
+        actionLabel = translate('sc-renew-label');
+        break;
+      default:
+        return;
+    }
+    final key = '$state:$days';
+    if (_lastPlanToastKey == key) return;
+    _lastPlanToastKey = key;
+    final url = (user.upgradeUrl ?? '').trim();
+    showUpgradeNotice(message, actionLabel: actionLabel, onAction: () {
+      if (url.isEmpty) return;
+      try {
+        launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      } catch (e) {
+        debugPrint('open upgrade url failed: $e');
+      }
+    });
   }
 
   // update ab and group status

@@ -17,6 +17,7 @@ import 'package:flutter_hbb/models/peer_tab_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:get/get_rx/src/rx_workers/utils/debouncer.dart';
@@ -1073,6 +1074,70 @@ void showToast(String text,
   });
 }
 
+/// Dismissible top banner with an optional action button (e.g. Upgrade).
+/// Uses the BotToast overlay so it works on mobile and desktop, follows the
+/// current theme via [MyTheme] toast colors, and never nags: it replaces any
+/// previous notice and can be closed via the close button or swipe.
+void showUpgradeNotice(String message,
+    {required String actionLabel, required VoidCallback onAction}) {
+  final ctx = globalKey.currentContext;
+  final theme = ctx != null ? MyTheme.color(ctx) : null;
+  final bg = theme?.toastBg ?? Colors.black87;
+  final fg = theme?.toastText ?? Colors.white;
+  BotToast.showCustomNotification(
+    duration: const Duration(seconds: 12),
+    enableSlideOff: true,
+    onlyOne: true,
+    align: const Alignment(0, -0.95),
+    toastBuilder: (cancel) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 12),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                  child: Text(
+                    message,
+                    style: TextStyle(color: fg, fontSize: 14, height: 1.35),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  cancel();
+                  onAction();
+                },
+                child: Text(
+                  actionLabel,
+                  style: TextStyle(
+                      color: fg, fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+              ),
+              IconButton(
+                tooltip: translate('Close'),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: cancel,
+                icon: Icon(Icons.close, size: 18, color: fg),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 // TODO
 // - Remove argument "contentPadding", no need for it, all should look the same.
 // - Remove "required" for argument "content". See simple confirm dialog "delete peer", only title and actions are used. No need to "content: SizedBox.shrink()".
@@ -1495,13 +1560,6 @@ class AndroidPermissionManager {
   static Completer<bool>? _completer;
   static Timer? _timer;
   static var _current = "";
-
-  static bool isWaitingFile() {
-    if (_completer != null) {
-      return !_completer!.isCompleted && _current == kManageExternalStorage;
-    }
-    return false;
-  }
 
   static Future<bool> check(String type) {
     if (isDesktop || isWeb) {
@@ -2611,13 +2669,6 @@ connect(BuildContext context, String id,
     }
   } else {
     if (isFileTransfer) {
-      if (isAndroid) {
-        if (!await AndroidPermissionManager.check(kManageExternalStorage)) {
-          if (!await AndroidPermissionManager.request(kManageExternalStorage)) {
-            return;
-          }
-        }
-      }
       if (isWeb) {
         Navigator.push(
           context,

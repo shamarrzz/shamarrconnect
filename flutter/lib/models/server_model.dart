@@ -211,14 +211,11 @@ class ServerModel with ChangeNotifier {
     }
 
     // file
-    if (!await AndroidPermissionManager.check(kManageExternalStorage)) {
-      _fileOk = false;
-      bind.mainSetOption(key: kOptionEnableFileTransfer, value: "N");
-    } else {
-      final fileOption =
-          await bind.mainGetOption(key: kOptionEnableFileTransfer);
-      _fileOk = fileOption != 'N';
-    }
+    // MANAGE_EXTERNAL_STORAGE was removed for Google Play policy compliance.
+    // File transfer is scoped to the app-specific directory, which needs no
+    // permission, so availability is driven by the option alone.
+    final fileOption = await bind.mainGetOption(key: kOptionEnableFileTransfer);
+    _fileOk = fileOption != 'N';
 
     // clipboard
     final clipOption = await bind.mainGetOption(key: kOptionEnableClipboard);
@@ -319,16 +316,6 @@ class ServerModel with ChangeNotifier {
     if (clients.any((c) => !c.disconnected)) {
       await showClientsMayNotBeChangedAlert(parent.target);
     }
-    if (!_fileOk &&
-        !await AndroidPermissionManager.check(kManageExternalStorage)) {
-      final res =
-          await AndroidPermissionManager.request(kManageExternalStorage);
-      if (!res) {
-        showToast(translate('Failed'));
-        return;
-      }
-    }
-
     _fileOk = !_fileOk;
     bind.mainSetOption(
         key: kOptionEnableFileTransfer,

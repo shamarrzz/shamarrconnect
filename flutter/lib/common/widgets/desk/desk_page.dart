@@ -551,6 +551,114 @@ class _DeskPageState extends State<DeskPage> {
         ),
       );
     }
+    final mobile = isMobile;
+    final pills = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _pill('All', allN + 1, _DeskFilter.all),
+        _pill('Starred', starN, _DeskFilter.starred),
+      ],
+    );
+    // On phones the trailing controls compete with the filter chips for
+    // width and the Starred chip got clipped out of sight. Keep Starred
+    // always visible: give the chips a guaranteed scroll zone, drop the
+    // list/grid view toggle, shrink the account to an icon, and let the
+    // trailing zone scroll as a fallback. Search and the privacy curtain
+    // (mask) come first so they are always reachable.
+    final searchW = _searchBox(muted);
+    final sortW = PopupMenuButton<String>(
+      tooltip: 'Sort',
+      onSelected: (v) {
+        switch (v) {
+          case 'online':
+            setState(() => _sort = _DeskSort.online);
+            break;
+          case 'name':
+            setState(() => _sort = _DeskSort.name);
+            break;
+          case 'seen':
+            setState(() => _sort = _DeskSort.lastSeen);
+            break;
+          case 'peek':
+            setState(() => _peekHidden = true);
+            break;
+          case 'unpeek':
+            setState(() => _peekHidden = false);
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+            value: 'online', child: Text('Online first')),
+        const PopupMenuItem(value: 'name', child: Text('Name')),
+        const PopupMenuItem(value: 'seen', child: Text('Last seen')),
+        if (_hidden.isNotEmpty) const PopupMenuDivider(),
+        if (_hidden.isNotEmpty)
+          PopupMenuItem(
+            value: _peekHidden ? 'unpeek' : 'peek',
+            child: Text(_peekHidden
+                ? 'Back to the desk'
+                : 'Show computers I hid'),
+          ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Icon(Icons.sort, size: 20, color: muted),
+      ),
+    );
+    final maskW = IconButton(
+      tooltip: _mask ? 'Show names and stills' : 'Mask names and stills',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      onPressed: _toggleMask,
+      icon: Icon(
+        _mask ? Icons.blur_off : Icons.blur_on,
+        size: 20,
+        color: muted,
+      ),
+    );
+    final onlineW = Padding(
+      padding: EdgeInsets.only(right: mobile ? 2 : 8),
+      child: Text(
+        onlineN == 1 ? '1 online' : '$onlineN online',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: muted,
+        ),
+      ),
+    );
+    final accountW = _account(loggedIn, muted, compact: mobile);
+    if (mobile) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
+        child: Row(
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: pills,
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    searchW,
+                    maskW,
+                    sortW,
+                    onlineW,
+                    accountW,
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 4),
       child: Row(
@@ -558,55 +666,11 @@ class _DeskPageState extends State<DeskPage> {
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _pill('All', allN + 1, _DeskFilter.all),
-                  _pill('Starred', starN, _DeskFilter.starred),
-                ],
-              ),
+              child: pills,
             ),
           ),
-          _searchBox(muted),
-          PopupMenuButton<String>(
-            tooltip: 'Sort',
-            onSelected: (v) {
-              switch (v) {
-                case 'online':
-                  setState(() => _sort = _DeskSort.online);
-                  break;
-                case 'name':
-                  setState(() => _sort = _DeskSort.name);
-                  break;
-                case 'seen':
-                  setState(() => _sort = _DeskSort.lastSeen);
-                  break;
-                case 'peek':
-                  setState(() => _peekHidden = true);
-                  break;
-                case 'unpeek':
-                  setState(() => _peekHidden = false);
-                  break;
-              }
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                  value: 'online', child: Text('Online first')),
-              const PopupMenuItem(value: 'name', child: Text('Name')),
-              const PopupMenuItem(value: 'seen', child: Text('Last seen')),
-              if (_hidden.isNotEmpty) const PopupMenuDivider(),
-              if (_hidden.isNotEmpty)
-                PopupMenuItem(
-                  value: _peekHidden ? 'unpeek' : 'peek',
-                  child: Text(_peekHidden
-                      ? 'Back to the desk'
-                      : 'Show computers I hid'),
-                ),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(Icons.sort, size: 20, color: muted),
-            ),
-          ),
+          searchW,
+          sortW,
           IconButton(
             tooltip: _listMode ? 'Cards' : 'List',
             onPressed: () => setState(() => _listMode = !_listMode),
@@ -616,27 +680,9 @@ class _DeskPageState extends State<DeskPage> {
               color: muted,
             ),
           ),
-          IconButton(
-            tooltip: _mask ? 'Show names and stills' : 'Mask names and stills',
-            onPressed: _toggleMask,
-            icon: Icon(
-              _mask ? Icons.blur_off : Icons.blur_on,
-              size: 20,
-              color: muted,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Text(
-              onlineN == 1 ? '1 online' : '$onlineN online',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: muted,
-              ),
-            ),
-          ),
-          _account(loggedIn, muted),
+          maskW,
+          onlineW,
+          accountW,
         ],
       ),
     );
@@ -689,7 +735,7 @@ class _DeskPageState extends State<DeskPage> {
     );
   }
 
-  Widget _account(bool loggedIn, Color? muted) {
+  Widget _account(bool loggedIn, Color? muted, {bool compact = false}) {
     if (!loggedIn) {
       return TextButton(
         onPressed: () => loginDialog(),
@@ -716,18 +762,23 @@ class _DeskPageState extends State<DeskPage> {
           child: Text(translate('Logout')),
         ),
       ],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Text(
-          gFFI.userModel.displayNameOrUserName,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: muted,
-          ),
-        ),
-      ),
+      child: compact
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              child: Icon(Icons.account_circle_outlined, size: 20, color: muted),
+            )
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Text(
+                gFFI.userModel.displayNameOrUserName,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: muted,
+                ),
+              ),
+            ),
     );
   }
 

@@ -10,8 +10,8 @@ import '../../models/state_model.dart';
 const _brand = Color(0xFF2B5CE6);
 const _kIosAppStoreUrl = 'https://apps.apple.com/app/id6824360752';
 const _kAndroidPlayStoreUrl =
-    'https://play.google.com/store/apps/details?id=com.shamarrconnect.mobile';
-const _kAndroidMarketUrl = 'market://details?id=com.shamarrconnect.mobile';
+    'https://play.google.com/store/apps/details?id=com.shamarrconnect.app';
+const _kAndroidMarketUrl = 'market://details?id=com.shamarrconnect.app';
 
 const softwareUpdateFallbackNotes =
     'Bug fixes, stability improvements, and security updates.';

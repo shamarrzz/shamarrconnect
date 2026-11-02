@@ -19,7 +19,11 @@ on:
       build_number:
         description: 'Android versionCode. Must be greater than any bundle already sent to Play.'
         required: true
-        default: '2090'
+        default: '2098'
+      publish_to_play:
+        description: 'Upload to Play tracks via API (needs SiSL service account). Leave false to only build artifacts.'
+        required: true
+        default: 'false'
 
 env:
   VERSION: ${{ github.event.inputs.version }}
@@ -207,6 +211,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish AAB to Google Play Console (Closed & Internal testing)
+        if: ${{ github.event.inputs.publish_to_play == 'true' }}
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           AAB_PATH: signed-aab/ShamarrConnect-${{ env.VERSION }}.aab
@@ -243,7 +248,7 @@ jobs:
               method="POST",
           )
           token = json.loads(urllib.request.urlopen(tok_req).read().decode())["access_token"]
-          pkg = "com.shamarrconnect.mobile"
+          pkg = "com.shamarrconnect.app"
           base = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}"
           up_base = f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{pkg}"
 
