@@ -194,8 +194,10 @@ class UserModel {
 
   /// Once-per-session upgrade banner after login / account sync, driven by
   /// the plan fields in the server login payload. Older servers do not send
-  /// `plan_state`; then nothing is shown.
+  /// `plan_state`; then nothing is shown. Skipped on Android: Play payments
+  /// policy forbids steering users to external purchase pages from the app.
   void _maybeShowPlanToast(UserPayload user) {
+    if (isAndroid) return;
     final state = user.planState;
     if (state == null || state == 'active') return;
     final days = user.trialDaysLeft;

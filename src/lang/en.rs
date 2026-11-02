@@ -81,7 +81,7 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Input Control", "Input control"),
         ("Audio Capture", "Audio capture"),
         ("Open System Setting", "Open system setting"),
-        ("android_input_permission_tip1", "In order for a remote device to control your Android device via mouse or touch, you need to allow ShamarrConnect to use the \"Accessibility\" service."),
+        ("android_input_permission_tip1", "ShamarrConnect uses the Accessibility service only so that a person you have allowed to connect can tap, swipe and type on this phone during a remote support session. It reads what is on screen and performs touch and text input for that session only. This data is not collected, stored or shared, and you can turn the service off at any time in system settings."),
         ("android_input_permission_tip2", "Please go to the next system settings page, find and enter [Installed Services], turn on [ShamarrConnect Input] service."),
         ("android_new_connection_tip", "New control request has been received, which wants to control your current device."),
         ("android_service_will_start_tip", "Turning on \"Screen Capture\" will automatically start the service, allowing other devices to request a connection to your device."),
