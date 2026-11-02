@@ -246,7 +246,7 @@
       openSheet(
         "<h3>Share this computer</h3>" +
           "<p>Only share these with someone you trust. A session starts after you accept it.</p>" +
-          '<div class="desk-secret"><div class="lbl">Your ID</div><div class="val">812 345 678</div></div>' +
+          '<div class="desk-secret"><div class="lbl">Your ID</div><div class="val">1 812 345 678</div></div>' +
           '<div class="desk-secret"><div class="lbl">One-time password</div><div class="val">k7p2n9</div></div>' +
           '<div class="actions"><button class="act ghost" type="button" data-desk="close">Close</button></div>'
       );
@@ -254,7 +254,7 @@
       openSheet(
         "<h3>Connect by ID</h3>" +
           "<p>For a computer that is not on your desk yet.</p>" +
-          '<div class="desk-idrow"><input type="text" inputmode="numeric" autocomplete="off" placeholder="Nine-digit ID" aria-label="Nine-digit ID"></div>' +
+          '<div class="desk-idrow"><input type="text" inputmode="numeric" autocomplete="off" placeholder="10-digit ID" aria-label="10-digit ID"></div>' +
           '<div class="actions"><button class="act" type="button" data-desk="id-go">Connect</button>' +
           '<button class="act ghost" type="button" data-desk="close">Close</button></div>'
       );

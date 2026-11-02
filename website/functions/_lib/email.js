@@ -6,7 +6,8 @@
 // callout, one button) in ShamarrConnect tokens. PNG S-mark only — no SVG.
 
 const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
-const SENDER = { name: "ShamarrConnect", email: "hello@shamarrconnect.com" };
+const SENDER = { name: "ShamarrConnect", email: "notify@shamarrconnect.com" };
+const REPLY_TO = "support@shamarrconnect.com";
 const MARK = "https://shamarrconnect.com/email-mark.png";
 const SITE = "https://shamarrconnect.com";
 const FONT =
@@ -166,7 +167,8 @@ function brevoMsg({ to, subject, html, text, replyTo }) {
     htmlContent: html,
     textContent: text,
   };
-  if (replyTo) msg.replyTo = typeof replyTo === "string" ? { email: replyTo } : replyTo;
+  const reply = replyTo || REPLY_TO;
+  msg.replyTo = typeof reply === "string" ? { email: reply } : reply;
   return msg;
 }
 
@@ -225,6 +227,27 @@ export function waitlistNotify(email, region, ts) {
   });
 }
 
+export function signupAdminEmail({ email, ts }) {
+  const html = shell({
+    preheader: `New ShamarrConnect signup: ${email}`,
+    headline: "New ShamarrConnect signup",
+    calloutHtml: callout(
+      fieldTable([
+        ["Email", email],
+        ["Time", ts],
+      ])
+    ),
+    extraHtml: faint(`Hit reply to write back. Replies go to ${escapeHtml(email)}.`),
+  });
+  return brevoMsg({
+    to: "hello@shamarrconnect.com",
+    replyTo: email,
+    subject: `New ShamarrConnect signup: ${email}`,
+    html,
+    text: `New ShamarrConnect signup\nEmail: ${email}\nTime: ${ts}\nReply to this email to reach them directly.`,
+  });
+}
+
 export async function sendWaitlistEmails(env, ctx, email, region) {
   const ts = new Date().toUTCString();
   const tasks = [
@@ -276,7 +299,49 @@ export async function sendTeamInvite(env, payload) {
   return sendBrevo(env, teamInviteEmail(payload));
 }
 
-// ── Unwired (copy ready; no API send yet) ────────────────────────────────
+export function trialReminderEmail({ toEmail, daysLeft, displayName }) {
+  const first = (displayName || "").trim().split(/\s+/)[0];
+  const n = Math.max(0, parseInt(daysLeft, 10) || 0);
+  const dayWord = n === 1 ? "day" : "days";
+  const html = shell({
+    preheader: "Your ShamarrConnect free days are ending.",
+    greeting: first ? `Hi ${first},` : "",
+    headline: "Your free days are ending",
+    bodyHtml:
+      p(`The free trial on your saved computer closes in <strong>${n} ${dayWord}</strong>. After that the account returns to Free.`) +
+      p("Pick a plan to keep paid access going. It takes a minute and there is no license key."),
+    ctaLabel: "See plans",
+    ctaUrl: `${SITE}/pricing/`,
+    extraHtml: faint("Questions? Write to support@shamarrconnect.com."),
+  });
+  return brevoMsg({
+    to: toEmail,
+    subject: "Your ShamarrConnect free days are ending",
+    html,
+    text: `Your ShamarrConnect free days are ending.\n\nThe free trial on your saved computer closes in ${n} ${dayWord}. After that the account returns to Free.\n\nSee plans: ${SITE}/pricing/\n\nQuestions? support@shamarrconnect.com`,
+  });
+}
+
+export function refundConfirmationEmail({ toEmail, displayName }) {
+  const first = (displayName || "").trim().split(/\s+/)[0];
+  const html = shell({
+    preheader: "Your ShamarrConnect refund is complete.",
+    greeting: first ? `Hi ${first},` : "",
+    headline: "Your refund is complete",
+    bodyHtml:
+      p("Your refund is done, per the 14-day money-back guarantee. The money goes back the same way it came.") +
+      p("Your plan has been returned to Free. Paid access ends now, and your account and saved computers stay."),
+    extraHtml: faint(`Questions about the refund? Write to <a href="mailto:support@shamarrconnect.com" style="color:${C.cta};text-decoration:none;">support@shamarrconnect.com</a>.`),
+  });
+  return brevoMsg({
+    to: toEmail,
+    subject: "Your ShamarrConnect refund is complete",
+    html,
+    text: `Your ShamarrConnect refund is complete.\n\nRefunded per the 14-day money-back guarantee. Your plan has been returned to Free. Your account and saved computers stay.\n\nQuestions: support@shamarrconnect.com`,
+  });
+}
+
+// ── Account and plan templates (wired via /api/internal/* or pending) ───
 
 export function welcomeEmail({ toEmail, displayName }) {
   const first = (displayName || "").trim().split(/\s+/)[0];
@@ -314,6 +379,41 @@ export function passwordResetEmail({ toEmail, resetUrl, displayName }) {
     subject: "Reset your ShamarrConnect password",
     html,
     text: `Reset your ShamarrConnect password.\n\n${resetUrl}\n\nThis link expires in 1 hour. If you did not ask for this, ignore the email.`,
+  });
+}
+
+// The digits stay in the body. Subject and preheader never include them.
+export function emailCodeEmail({ toEmail, code, displayName, kind }) {
+  const first = (displayName || "").trim().split(/\s+/)[0];
+  const signup = kind === "signup-code";
+  const headline = signup ? "Confirm your email" : "Set a new password";
+  const lead = signup
+    ? "Enter this code to confirm the address on your new ShamarrConnect account. It expires in 15 minutes."
+    : "Enter this code to set a new ShamarrConnect password. It expires in 15 minutes and does not sign you in.";
+  const html = shell({
+    preheader: signup
+      ? "Use this to confirm your email. It expires in 15 minutes."
+      : "Use this to set a new password. It expires in 15 minutes.",
+    greeting: first ? `Hi ${first},` : "",
+    headline,
+    bodyHtml: p(lead),
+    calloutHtml: callout(
+      `<p style="margin:0;font-size:28px;font-weight:700;letter-spacing:0.28em;color:${C.ink};">${escapeHtml(code)}</p>`
+    ),
+    extraHtml: faint(
+      signup
+        ? "If you did not create an account, ignore this email."
+        : "If you did not ask for this, ignore the email. Your password stays the same. Your authenticator, if you use one, stays on."
+    ),
+  });
+  const text = signup
+    ? `Confirm your ShamarrConnect email.\n\nCode: ${code}\n\nIt expires in 15 minutes. If you did not create an account, ignore this email.`
+    : `Set a new ShamarrConnect password.\n\nCode: ${code}\n\nIt expires in 15 minutes and does not sign you in. If you did not ask for this, ignore the email.`;
+  return brevoMsg({
+    to: toEmail,
+    subject: signup ? "Confirm your ShamarrConnect email" : "Your ShamarrConnect password code",
+    html,
+    text,
   });
 }
 
@@ -492,14 +592,17 @@ export function previewFixtures() {
         acceptUrl,
       }),
     },
-    { id: "welcome", live: false, title: "Welcome", msg: welcomeEmail({ toEmail: "ada@example.com", displayName: "Ada" }) },
+    { id: "welcome", live: true, title: "Welcome", msg: welcomeEmail({ toEmail: "ada@example.com", displayName: "Ada" }) },
+    { id: "signup-admin", live: true, title: "Signup → hello@", msg: signupAdminEmail({ email: "ada@example.com", ts }) },
     { id: "password-reset", live: false, title: "Password reset", msg: passwordResetEmail({ toEmail: "ada@example.com", resetUrl, displayName: "Ada" }) },
-    { id: "password-changed", live: false, title: "Password changed", msg: passwordChangedEmail({ toEmail: "ada@example.com", displayName: "Ada" }) },
+    { id: "reset-code", live: true, title: "Password code", msg: emailCodeEmail({ toEmail: "ada@example.com", code: "482913", displayName: "Ada", kind: "reset-code" }) },
+    { id: "signup-code", live: true, title: "Signup code", msg: emailCodeEmail({ toEmail: "ada@example.com", code: "482913", displayName: "Ada", kind: "signup-code" }) },
+    { id: "password-changed", live: true, title: "Password changed", msg: passwordChangedEmail({ toEmail: "ada@example.com", displayName: "Ada" }) },
     { id: "mfa-on", live: false, title: "MFA on", msg: mfaChangedEmail({ toEmail: "ada@example.com", enabled: true, displayName: "Ada" }) },
     { id: "mfa-off", live: false, title: "MFA off", msg: mfaChangedEmail({ toEmail: "ada@example.com", enabled: false, displayName: "Ada" }) },
     {
       id: "plan-activated",
-      live: false,
+      live: true,
       title: "Plan activated",
       msg: planActivatedEmail({
         toEmail: "ada@example.com",
@@ -512,7 +615,7 @@ export function previewFixtures() {
     },
     {
       id: "payment-failed",
-      live: false,
+      live: true,
       title: "Payment failed",
       msg: paymentFailedEmail({
         toEmail: "ada@example.com",
@@ -525,7 +628,7 @@ export function previewFixtures() {
     { id: "account-deleted", live: false, title: "Account deleted", msg: accountDeletedEmail({ toEmail: "ada@example.com" }) },
     {
       id: "unmatched-payment",
-      live: false,
+      live: true,
       title: "Unmatched payment (ops)",
       msg: unmatchedPaymentEmail({
         email: "ada@example.com",
@@ -535,6 +638,18 @@ export function previewFixtures() {
         plan: "team",
         ts,
       }),
+    },
+    {
+      id: "trial-reminder",
+      live: true,
+      title: "Trial reminder",
+      msg: trialReminderEmail({ toEmail: "ada@example.com", daysLeft: 3, displayName: "Ada" }),
+    },
+    {
+      id: "refund-confirmation",
+      live: true,
+      title: "Refund confirmation",
+      msg: refundConfirmationEmail({ toEmail: "ada@example.com", displayName: "Ada" }),
     },
   ];
 }

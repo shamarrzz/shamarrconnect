@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
 <title>Refund Policy · ShamarrConnect</title>
+<script src="/js/theme.js"></script>
 <meta name="description" content="ShamarrConnect refund policy: 14-day money-back guarantee on your first paid plan purchase.">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
 <link rel="stylesheet" href="/fonts.css">
@@ -33,13 +35,19 @@
   a:hover{text-decoration:underline}
   .back{display:inline-block;margin-top:34px;color:var(--muted);font-weight:600;font-size:14px}
 </style>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
   <header class="top">
     <a class="brand" href="/" aria-label="ShamarrConnect home">
-      <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="wordmark wm-light" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="wordmark wm-dark" src="/wordmark-ondark.svg" height="30" alt="">
       <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
     </a>
+    <button type="button" class="theme-switch" id="theme-switch" aria-pressed="true" title="Switch to light or dark">
+      <span class="track" aria-hidden="true"><span class="knob"></span></span>
+      <span class="theme-label">Dark</span>
+    </button>
   </header>
 
   <main class="wrap">

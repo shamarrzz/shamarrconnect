@@ -24,7 +24,7 @@ const SEC = {
   "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
   // connect-src: same-origin management API + the sc-cloud users panel.
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.shamarrconnect.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.shamarrconnect.com https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
 };
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
@@ -127,7 +127,7 @@ export async function onRequest({ request, env }) {
   // has already passed, so the gate holds; the upstream URL is never
   // published. Allowlist exact filenames so this can never become an open
   // proxy.
-  const RELEASE_TAG = "1.4.9-sc22";
+  const RELEASE_TAG = "1.4.9-sc32";
   const PROXIED = [
     `ShamarrConnect-${RELEASE_TAG}-aarch64.apk`,
     `ShamarrConnect-${RELEASE_TAG}-armv7.apk`,

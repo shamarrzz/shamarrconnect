@@ -5,12 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Team invite · ShamarrConnect</title>
 <meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
 <script>
+/* Theme: an explicit choice wins; otherwise follow the OS, live. */
 (function(){
-  try{
-    if(localStorage.getItem('sc-landing-theme')!=='light') document.documentElement.classList.add('dark');
-    if(sessionStorage.getItem('sc_token')) document.documentElement.classList.add('in');
-  }catch(e){ document.documentElement.classList.add('dark'); }
+  var root=document.documentElement;
+  var KEY='sc-theme';
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  root.classList.add('js');
+  try{ if(sessionStorage.getItem('sc_token')) root.classList.add('in'); }catch(e){}
+  try{ localStorage.removeItem('sc-landing-theme'); }catch(e){}
+  function stored(){
+    try{ var v=localStorage.getItem(KEY); return (v==='light'||v==='dark')?v:null; }catch(e){ return null; }
+  }
+  function apply(){
+    var s=stored();
+    var dark = s ? (s==='dark') : mq.matches;
+    root.classList.toggle('dark', dark);
+    root.setAttribute('data-theme-source', s ? 'user' : 'os');
+    try{ document.dispatchEvent(new CustomEvent('sc-themechange',{detail:{dark:dark,source:s?'user':'os'}})); }catch(e){}
+  }
+  window.scTheme={
+    apply:apply,
+    set:function(dark){ try{ localStorage.setItem(KEY, dark?'dark':'light'); }catch(e){} apply(); },
+    followOS:function(){ try{ localStorage.removeItem(KEY); }catch(e){} apply(); }
+  };
+  apply();
+  if(mq.addEventListener) mq.addEventListener('change', apply);
+  else if(mq.addListener) mq.addListener(apply);
+  window.addEventListener('storage', function(e){ if(e.key===KEY) apply(); });
 })();
 </script>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
@@ -61,20 +84,19 @@
   </div>
 </header>
 <main>
+  <div class="signin-brand"><img src="/logo-mark.svg" width="72" height="72" alt=""></div>
   <h1>Join a team</h1>
   <p class="sub" id="sub">Checking invite…</p>
   <div class="card narrow" id="card">
     <div class="oauth" id="oauth" hidden>
-      <a class="oauth-btn" id="btn-google" href="https://api.shamarrconnect.com/api/oauth/google/start" aria-label="Sign in with Google">
-        <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
+      <a class="google-btn" id="btn-google" href="https://api.shamarrconnect.com/api/oauth/google/start">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
           <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
           <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
           <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
           <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.7-6.6 7.1l6.3 5.3C37.4 38.4 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"/>
         </svg>
-      </a>
-      <a class="oauth-btn li" id="btn-linkedin" href="https://api.shamarrconnect.com/api/oauth/linkedin/start" aria-label="Sign in with LinkedIn">
-        <span class="in-mark" aria-hidden="true">in</span>
+        Sign in with Google
       </a>
     </div>
     <div id="body"><p class="empty">Loading…</p></div>
@@ -102,20 +124,19 @@
 
   (function theme(){
     var themeBtn = $("theme-switch");
-    function setTheme(dark){
-      document.documentElement.classList.toggle("dark", dark);
-      if (themeBtn){
-        themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
-        var lab = themeBtn.querySelector(".theme-label");
-        if (lab) lab.textContent = dark ? "Dark" : "Light";
-      }
-      try{ localStorage.setItem("sc-landing-theme", dark ? "dark" : "light"); }catch(e){}
+    function syncThemeBtn(){
+      if (!themeBtn) return;
+      var dark = document.documentElement.classList.contains("dark");
+      themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
+      var lab = themeBtn.querySelector(".theme-label");
+      if (lab) lab.textContent = dark ? "Dark" : "Light";
     }
     if (themeBtn){
-      setTheme(document.documentElement.classList.contains("dark"));
+      syncThemeBtn();
       themeBtn.addEventListener("click", function(){
-        setTheme(!document.documentElement.classList.contains("dark"));
+        window.scTheme.set(!document.documentElement.classList.contains("dark"));
       });
+      document.addEventListener("sc-themechange", syncThemeBtn);
     }
   })();
 
@@ -145,7 +166,6 @@
   var next = location.pathname + location.search;
   var oauthBase = "https://api.shamarrconnect.com/api/oauth/";
   $("btn-google").href = oauthBase + "google/start?next=" + encodeURIComponent(next);
-  $("btn-linkedin").href = oauthBase + "linkedin/start?next=" + encodeURIComponent(next);
 
   fetch(API + "/api/org/invites/peek?token=" + encodeURIComponent(tokenInvite))
     .then(function(r){ return r.json(); })

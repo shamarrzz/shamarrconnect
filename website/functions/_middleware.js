@@ -31,7 +31,7 @@ const SEC = {
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
   "Content-Security-Policy":
-    "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+    "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
 };
 
 const CLOSED_PAGE = `<!DOCTYPE html>
@@ -39,8 +39,11 @@ const CLOSED_PAGE = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
 <title>Downloads are invite-only - ShamarrConnect</title>
 <meta name="robots" content="noindex">
+<script src="/js/theme.js"></script>
+<link rel="stylesheet" href="/theme.css">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=3">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=3">
@@ -64,7 +67,11 @@ const CLOSED_PAGE = `<!DOCTYPE html>
   .alt a{color:var(--brand);font-weight:600}
 </style>
 </head>
-<body>
+<body class="gate">
+  <button type="button" class="theme-switch corner" id="theme-switch" aria-pressed="true" title="Switch to light or dark">
+    <span class="track" aria-hidden="true"><span class="knob"></span></span>
+    <span class="theme-label">Dark</span>
+  </button>
   <div class="box">
     <span class="eyebrow">Private beta</span>
     <h1>Downloads are invite-only<br>for now.</h1>

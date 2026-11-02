@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
 <title>Pricing · ShamarrConnect</title>
+<script src="/js/theme.js"></script>
 <meta name="description" content="Simple plans for personal and team remote desktop. Pay only for what you need.">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
 <link rel="stylesheet" href="/fonts.css">
@@ -111,15 +113,21 @@
   .note{max-width:1120px;margin:18px auto 0;padding:0 24px}
   .note .inner{font-size:12.5px;color:var(--muted);background:#fff;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;text-align:center}
 </style>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
   <header class="top">
     <div class="top-inner">
       <a class="brand" href="/" aria-label="ShamarrConnect home">
-        <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+        <img class="wordmark wm-light" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+        <img class="wordmark wm-dark" src="/wordmark-ondark.svg" height="30" alt="">
         <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
       </a>
       <nav class="nav">
+        <button type="button" class="theme-switch" id="theme-switch" aria-pressed="true" title="Switch to light or dark">
+          <span class="track" aria-hidden="true"><span class="knob"></span></span>
+          <span class="theme-label">Dark</span>
+        </button>
         <a href="/#features">Features</a>
         <a href="/pricing">Pricing</a>
         <a href="/download">Download</a>
@@ -147,14 +155,15 @@
         <div class="pname">Free</div>
         <div class="ptag">For personal, non-commercial use.</div>
         <div class="price"><span class="cur sym">$</span><span class="amt">0</span><span class="per">/mo</span></div>
-        <div class="billed">Free forever</div>
+        <div class="billed">No card. No renewal.</div>
         <a class="btn ghost" href="/download">Get started</a>
         <ul class="feats">
           <li class="head">Includes</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>1 user</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 3 saved devices</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited sessions</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>One-time code, always</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Up to 3 saved computers for 14 days</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Private by design</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Privacy curtain &amp; virtual display</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>File transfer &amp; chat</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Community support</li>
         </ul>
@@ -174,7 +183,7 @@
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Unlimited connections at once</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Two-step sign-in</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Synced address book</li>
-          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Activity history</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Activity &amp; screen audit history</li>
           <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
         </ul>
       </div>
@@ -231,10 +240,10 @@
     <h2>From sign-up to connected in minutes</h2>
     <p class="sub">No server to install. We run everything for you.</p>
     <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Download the app</h3><p>One small app for Windows, macOS, Linux and Android. Pre-configured for the ShamarrConnect network, no setup.</p></div>
-      <div class="step"><div class="n">2</div><h3>Create your account</h3><p>Sign up with your email. Devices you save stay with your account.</p></div>
-      <div class="step"><div class="n">3</div><h3>Share your ID</h3><p>Every device gets a 9-digit ID. Share it to receive help, or enter a partner's ID to connect.</p></div>
-      <div class="step"><div class="n">4</div><h3>Upgrade when ready</h3><p>Start free. Move to Pro or Team for more devices, users, and admin controls.</p></div>
+      <div class="step"><div class="n">1</div><h3>Download the app</h3><p>One small app for Windows, macOS, Linux, Android and iOS. Pre-configured for the ShamarrConnect network, no setup.</p></div>
+      <div class="step"><div class="n">2</div><h3>Create your account</h3><p>Sign up with your email. On Free, up to 3 computers stay saved for 14 days.</p></div>
+      <div class="step"><div class="n">3</div><h3>Share your ID</h3><p>Every device gets a 10-digit ID. Share it to receive help, or enter a partner's ID to connect.</p></div>
+      <div class="step"><div class="n">4</div><h3>Upgrade when ready</h3><p>Move to Pro or Team to keep saved computers, and for more computers and people. A one-time code always connects.</p></div>
     </div>
   </section>
 
@@ -244,7 +253,7 @@
 
     <details><summary>Do paid plans include support?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Yes. Pro includes email support and Team adds priority support. Enterprise customers get a dedicated account manager and an SLA. The Free plan is community-supported.</div></details>
 
-    <details><summary>Is there a free trial?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">The Free plan is the easiest trial: 3 devices, no card required. Paid plans include a 14-day money-back guarantee.</div></details>
+    <details><summary>Is there a free trial?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Yes. Free keeps a one-time code open, with no card and no charge. Up to 3 computers stay saved on the account for 14 days. After that, those saved computers stop until you choose Pro or Team. A fresh one-time code still connects. Paid plans are separate: they include a 14-day money-back guarantee.</div></details>
 
     <details><summary>Can I pay monthly, or only annually?<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></summary><div class="body">Both. Annual billing saves roughly 20% versus monthly. Use the toggle above to compare. We don't auto-renew without notice. You'll get a reminder before any renewal.</div></details>
 

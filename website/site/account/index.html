@@ -6,12 +6,35 @@
 <title>Your account · ShamarrConnect</title>
 <meta name="robots" content="noindex">
 <meta name="description" content="See online computers, your plan, and security on your ShamarrConnect account.">
+<meta name="color-scheme" content="light dark">
 <script>
+/* Theme: an explicit choice wins; otherwise follow the OS, live. */
 (function(){
-  try{
-    if(localStorage.getItem('sc-landing-theme')!=='light') document.documentElement.classList.add('dark');
-    if(sessionStorage.getItem('sc_token')) document.documentElement.classList.add('in');
-  }catch(e){ document.documentElement.classList.add('dark'); }
+  var root=document.documentElement;
+  var KEY='sc-theme';
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  root.classList.add('js');
+  try{ if(sessionStorage.getItem('sc_token')) root.classList.add('in'); }catch(e){}
+  try{ localStorage.removeItem('sc-landing-theme'); }catch(e){}
+  function stored(){
+    try{ var v=localStorage.getItem(KEY); return (v==='light'||v==='dark')?v:null; }catch(e){ return null; }
+  }
+  function apply(){
+    var s=stored();
+    var dark = s ? (s==='dark') : mq.matches;
+    root.classList.toggle('dark', dark);
+    root.setAttribute('data-theme-source', s ? 'user' : 'os');
+    try{ document.dispatchEvent(new CustomEvent('sc-themechange',{detail:{dark:dark,source:s?'user':'os'}})); }catch(e){}
+  }
+  window.scTheme={
+    apply:apply,
+    set:function(dark){ try{ localStorage.setItem(KEY, dark?'dark':'light'); }catch(e){} apply(); },
+    followOS:function(){ try{ localStorage.removeItem(KEY); }catch(e){} apply(); }
+  };
+  apply();
+  if(mq.addEventListener) mq.addEventListener('change', apply);
+  else if(mq.addListener) mq.addListener(apply);
+  window.addEventListener('storage', function(e){ if(e.key===KEY) apply(); });
 })();
 </script>
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
@@ -33,6 +56,10 @@
     <a class="side-link" href="/account#desk" data-sec="desk">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
       <span>Desk</span>
+    </a>
+    <a class="side-link" href="/account#download" data-sec="download">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 11.5 4.5 4.5 4.5-4.5"/><path d="M5 19h14"/></svg>
+      <span>Download</span>
     </a>
     <a class="side-link" href="/account#profile" data-sec="profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M5.2 19.5c1.3-2.8 3.6-4.2 6.8-4.2s5.5 1.4 6.8 4.2"/></svg>
@@ -71,23 +98,19 @@
 </header>
 <main>
   <section id="view-login">
+    <div class="signin-brand"><img src="/logo-mark.svg" width="72" height="72" alt=""></div>
     <h1>Sign in to your account</h1>
-    <p class="sub">See which computers are online, your plan, and who is on the team.</p>
+    <a class="google-btn" id="btn-google" href="https://api.shamarrconnect.com/api/oauth/google/start">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.7-6.6 7.1l6.3 5.3C37.4 38.4 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"/>
+      </svg>
+      Sign in with Google
+    </a>
+    <p class="or">or</p>
     <div class="card narrow">
-      <div class="oauth">
-        <a class="oauth-btn" id="btn-google" href="https://api.shamarrconnect.com/api/oauth/google/start" aria-label="Sign in with Google">
-          <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
-            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
-            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
-            <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 35.1 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
-            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.7-6.6 7.1l6.3 5.3C37.4 38.4 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"/>
-          </svg>
-        </a>
-        <a class="oauth-btn li" id="btn-linkedin" href="https://api.shamarrconnect.com/api/oauth/linkedin/start" aria-label="Sign in with LinkedIn">
-          <span class="in-mark" aria-hidden="true">in</span>
-        </a>
-      </div>
-      <p class="or">Google or LinkedIn opens an account with that email. Or use your password.</p>
       <form id="login-form" novalidate>
         <label for="email">Email</label>
         <input id="email" type="email" autocomplete="username" required>
@@ -98,7 +121,28 @@
           <input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from your app">
         </div>
         <button class="btn block" id="login-btn" type="submit">Sign in</button>
+        <p class="reset-link"><button type="button" class="text-link" id="forgot-open">Forgot password?</button></p>
         <div class="err" id="login-err"></div>
+      </form>
+    </div>
+    <div class="card narrow" id="reset-card" hidden>
+      <form id="reset-form" novalidate>
+        <p class="reset-help">We'll email a 6-digit code. It does not sign you in, and it does not turn off your authenticator.</p>
+        <label for="reset-email">Email</label>
+        <input id="reset-email" type="email" autocomplete="username" required>
+        <button class="btn block" id="reset-send" type="button">Email me a code</button>
+        <div id="reset-next" hidden>
+          <label for="reset-code">Code</label>
+          <input id="reset-code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code">
+          <label for="reset-password">New password</label>
+          <input id="reset-password" type="password" autocomplete="new-password" minlength="8">
+          <label for="reset-password2">Confirm password</label>
+          <input id="reset-password2" type="password" autocomplete="new-password" minlength="8">
+          <button class="btn block" id="reset-save" type="submit">Set new password</button>
+        </div>
+        <div class="okmsg" id="reset-ok"></div>
+        <div class="err" id="reset-err"></div>
+        <p class="reset-link"><button type="button" class="text-link" id="forgot-close">Back to sign in</button></p>
       </form>
     </div>
     <p class="note">No account yet? ShamarrConnect is in private beta. <a href="/#waitlist">Join the waitlist</a>.</p>
@@ -125,6 +169,21 @@
       <div class="card" id="activity"><div class="empty">Nothing yet. Sign-ins, device changes, payments, and security updates show up here.</div></div>
     </section>
 
+    <section id="sec-download" hidden>
+      <h1>Download</h1>
+      <p class="sub" id="dl-detected">Checking this browser.</p>
+      <div class="card" id="dl-hero"></div>
+      <details class="dl-more">
+        <summary>Other systems</summary>
+        <div id="dl-other"></div>
+      </details>
+      <h2>Signed-in devices</h2>
+      <p class="note">Each phone or computer signed in with this email, including the address it last used. This list refreshes with activity.</p>
+      <div class="card" id="dl-devices"><div class="empty">Loading…</div></div>
+      <h2>Activity</h2>
+      <div class="card" id="dl-activity"><div class="empty">Nothing yet.</div></div>
+    </section>
+
     <section id="sec-profile" hidden>
       <h1>Profile</h1>
       <p class="sub">This name is how we greet you. The team name is set separately once a team exists. Payments and invites use this email, so it stays fixed. Write to <a href="mailto:support@shamarrconnect.com">support@shamarrconnect.com</a> if it must change.</p>
@@ -148,7 +207,7 @@
       <div class="card">
         <div class="grid2">
           <div class="stat"><span class="lbl">Current plan</span><span class="val" id="bill-plan">—</span></div>
-          <div class="stat"><span class="lbl">Renews</span><span class="val" id="bill-exp">—</span></div>
+          <div class="stat"><span class="lbl" id="bill-exp-lbl">Renews</span><span class="val" id="bill-exp">—</span></div>
         </div>
         <p class="note" id="bill-note" hidden></p>
         <p class="note" id="bill-cap"></p>
@@ -224,9 +283,9 @@
   var API = "https://api.shamarrconnect.com";
   var $ = function(id){ return document.getElementById(id); };
   var mfaSecret = null, pollTimer = null, profileEmail = "";
-  var lastDevices = [], lastOrg = null, deviceLimit = null, accountPlan = "free", passwordSet = true;
+  var lastDevices = [], lastOrg = null, deviceLimit = null, accountPlan = "free", passwordSet = true, accountCreated = "";
   var lastPayments = [], planExpires = "", mfaOn = false;
-  var SECTIONS = { desk:1, profile:1, billing:1, security:1 };
+  var SECTIONS = { desk:1, download:1, profile:1, billing:1, security:1 };
   var PAYMENT_LINKS = {
     usd: { pro_m:"", pro_y:"", team_m:"", team_y:"" },
     ngn: {
@@ -247,7 +306,9 @@
     $("view-console").hidden = true; $("who").hidden = true;
     $("view-login").hidden = false;
     setSignedIn(false);
-    if (msg){ var e = $("login-err"); e.textContent = msg; e.style.display = "block"; }
+    if ($("login-form")) $("login-form").parentElement.hidden = false;
+    if ($("reset-card")) $("reset-card").hidden = true;
+    if (msg){ var e = $("login-err"); e.className = "err"; e.textContent = msg; e.style.display = "block"; }
     if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
   }
   function sectionFromHash(){
@@ -280,6 +341,7 @@
       history.replaceState(null, "", location.pathname + location.search + "#" + h);
     }
     showSection(h);
+    paintDownloads();
     refresh();
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(function(){ if (!document.hidden) refresh(); }, 15000);
@@ -433,6 +495,8 @@
     var text = "Checking your computers.";
     if (lastOrg){
       text = "The team shares " + lastOrg.devices_used + " of " + lastOrg.device_limit + " computers. These are the ones signed in with your email.";
+    } else if (deviceLimit === 0){
+      text = "Saved computers are off. A one-time code still connects.";
     } else if (deviceLimit != null){
       text = n + " of " + deviceLimit + " computers on this account.";
     }
@@ -470,16 +534,27 @@
     }
     applyPasswordMode();
   }
+  function setRenewLabel(text){
+    var el = $("bill-exp-lbl");
+    if (el) el.textContent = text;
+  }
   function renderRenew(){
     var paid = prettyPlan(accountPlan) !== "Free";
     var note = $("bill-note");
     if (!paid){
       $("bill-plan").textContent = "Free";
-      $("bill-exp").textContent = "No renewal";
-      note.hidden = true;
+      setRenewLabel("Saved computers");
+      var until = accountCreated ? addUtcDays(accountCreated, 14) : "";
+      var today = todayUtc();
+      if (until && until < today) $("bill-exp").textContent = "Ended " + calendarDate(until);
+      else if (until) $("bill-exp").textContent = "Through " + calendarDate(until);
+      else $("bill-exp").textContent = "14 days";
+      note.hidden = false;
+      note.textContent = "Up to 3 computers stay saved for 14 days from the day the account was created. After that they stop until the account is Pro or Team. A one-time code still connects. There is no charge and no card.";
       renderPlans();
       return;
     }
+    setRenewLabel("Renews");
     var latest = lastPayments[0];
     var renew = "";
     if (latest && latest.created_at && latest.period_days){
@@ -502,8 +577,8 @@
   }
   var PLAN_CARDS = [
     { id:"free", name:"Free", interval:"", days:0, pay:null,
-      ngn:{price:"₦0", per:"forever"}, usd:{price:"$0", per:"forever"},
-      points:["1 person","3 computers","Unlimited sessions"] },
+      ngn:{price:"₦0", per:"no card"}, usd:{price:"$0", per:"no card"},
+      points:["1 person","One-time code stays open","3 saved computers for 14 days"] },
     { id:"pro_m", name:"Pro", interval:"monthly", days:30, pay:["pro", false],
       ngn:{price:"₦5,000", per:"/ month"}, usd:{price:"$9", per:"/ month"},
       points:["25 computers","Unlimited sessions at once","Email support"] },
@@ -577,12 +652,16 @@
       var calc = "";
       var action = "";
       if (current){
-        calc = card.days
-          ? ("This is the plan on the account. Renews " + ($("bill-exp").textContent || "on the date above") + ".")
-          : "This is the plan on the account.";
+        if (card.id === "free"){
+          calc = "Saved computers stay for 14 days from the day this account was created. A one-time code still connects after that.";
+        } else {
+          calc = card.days
+            ? ("This is the plan on the account. Renews " + ($("bill-exp").textContent || "on the date above") + ".")
+            : "This is the plan on the account.";
+        }
         action = '<button class="btn current" type="button" disabled>Current plan</button>';
       } else if (card.id === "free"){
-        calc = "Free stays at 3 computers. It does not replace a paid plan from this page.";
+        calc = "This page does not switch a paid plan back to Free. When a paid plan ends, saved computers stop. A one-time code still connects.";
         action = "";
       } else if (card.id === "enterprise"){
         calc = "Priced for the organization. Email sales and we set it up with you.";
@@ -611,6 +690,78 @@
     }).join("");
   }
 
+  var DL_TAG = "1.4.9-sc32";
+  var DL_BASE = "https://github.com/shamarrzz/shamarrconnect-releases/releases/download/" + DL_TAG + "/";
+  function dlFile(name, href){ return href ? href : (DL_BASE + "ShamarrConnect-" + DL_TAG + "-" + name); }
+  function detectOs(){
+    var ua = navigator.userAgent || "";
+    if (/android/i.test(ua)) return "android";
+    if (/iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return "ios";
+    if (/macintosh|mac os x/i.test(ua)) return "mac";
+    if (/windows/i.test(ua)) return "windows";
+    if (/linux/i.test(ua)) return "linux";
+    return "windows";
+  }
+  var DL_APPS = [
+    { id:"windows", name:"Windows", file:"x86_64.exe", label:"Download for Windows", note:"Windows 10 and 11, 64-bit." },
+    { id:"mac", name:"macOS", file:"aarch64.dmg", label:"Download for Mac", note:"Apple silicon. Intel is in Other systems." },
+    { id:"linux", name:"Linux", file:"x86_64.deb", label:"Download for Linux", note:"Debian and Ubuntu, 64-bit." },
+    { id:"android", name:"Android", file:"aarch64.apk", label:"Download for Android", note:"64-bit phone." },
+    { id:"ios", name:"iOS (iPhone & iPad)", href:"mailto:support@shamarrconnect.com?subject=ShamarrConnect%20iOS%20TestFlight%20Invite", label:"Get on TestFlight", note:"iOS 15+ via Apple TestFlight." }
+  ];
+  var DL_EXTRA = [
+    { os:"mac", name:"macOS Intel", file:"x86_64.dmg" },
+    { os:"linux", name:"Linux AppImage", file:"x86_64.AppImage" },
+    { os:"android", name:"Android 32-bit", file:"armv7.apk" }
+  ];
+  function paintDownloads(){
+    var mine = detectOs();
+    var names = { windows:"Windows", mac:"Mac", linux:"Linux", android:"Android", ios:"iPhone / iPad" };
+    var detected = $("dl-detected");
+    var hero = $("dl-hero");
+    var other = $("dl-other");
+    if (!hero) return;
+    var app = null;
+    for (var i = 0; i < DL_APPS.length; i++) if (DL_APPS[i].id === mine) app = DL_APPS[i];
+    if (app) {
+      detected.textContent = "This browser looks like " + (names[mine] || mine) + ".";
+      hero.innerHTML = "<h2 style='margin:0 0 6px'>" + esc(app.name) + "</h2><p class='note' style='margin:0'>" +
+        esc(app.note) + "</p><a class='btn dl-hero-btn' href='" + esc(dlFile(app.file, app.href)) + "'>" + esc(app.label) + "</a>";
+    }
+    var rows = [];
+    DL_APPS.forEach(function(app){
+      if (app.id === mine) return;
+      rows.push("<div class='dl-row'><span>" + esc(app.name) + "</span><a href='" + esc(dlFile(app.file, app.href)) + "'>" + esc(app.label) + "</a></div>");
+    });
+    DL_EXTRA.forEach(function(extra){
+      if (extra.os === mine && mine !== "ios") return;
+      rows.push("<div class='dl-row'><span>" + esc(extra.name) + "</span><a href='" + esc(dlFile(extra.file)) + "'>Download</a></div>");
+    });
+    if (mine !== "ios"){
+      DL_EXTRA.forEach(function(extra){
+        if (extra.os !== mine) return;
+        rows.push("<div class='dl-row'><span>" + esc(extra.name) + "</span><a href='" + esc(dlFile(extra.file)) + "'>Download</a></div>");
+      });
+    }
+    other.innerHTML = rows.join("");
+  }
+  function renderDownloadDevices(v){
+    var el = $("dl-devices");
+    if (!el) return;
+    var list = (v && v.devices) || [];
+    if (!list.length){
+      el.innerHTML = '<div class="empty">No signed-in devices yet. Download the app and sign in on that computer.</div>';
+      return;
+    }
+    el.innerHTML = list.map(function(d){
+      var name = d.device_name || d.device_id || "Device";
+      var os = prettyOS(d.device_os);
+      return '<div class="sess"><div><div class="nm">' + esc(name) + '</div><div class="meta">' +
+        esc(os) + (os ? " · " : "") + "last seen " + relTime(d.last_seen) +
+        (d.ip ? " · " + esc(d.ip) : " · address not seen yet") +
+        '</div></div></div>';
+    }).join("");
+  }
   function refresh(){
     api("/api/currentUser", { method: "POST", body: { id: "", uuid: "" } })
       .then(function(u){
@@ -623,6 +774,7 @@
         if (document.activeElement !== $("display-name")) $("display-name").value = u.display_name || "";
         $("member-since").textContent = u.created_at ? ("Member since " + calendarDate(u.created_at)) : "";
         planExpires = u.plan_expires_at || "";
+        accountCreated = u.created_at || "";
         renderRenew();
       }).catch(function(){});
 
@@ -642,7 +794,10 @@
       renderFleet(v);
       updateCap();
     }).catch(function(){});
-    api("/api/user/devices").then(renderSessions).catch(function(){});
+    api("/api/user/devices").then(function(v){
+      renderSessions(v);
+      renderDownloadDevices(v);
+    }).catch(function(){});
     api("/api/user/activity?limit=50").then(renderActivity).catch(function(){});
     api("/api/user/payments").then(renderPayments).catch(function(){});
   }
@@ -686,7 +841,7 @@
     openSheet(
       "<h3>" + esc(name) + "</h3><p>" + esc(body) + "</p>" +
       '<div class="actions">' +
-        '<a class="act" href="/download">Get the app</a>' +
+        '<a class="act" href="/account#download">Get the app</a>' +
         '<button class="act ghost" type="button" data-close="1">Close</button>' +
       "</div>"
     );
@@ -737,6 +892,7 @@
         '<div><div class="nm">' + esc(name) + '</div>' +
         '<div class="meta">' + esc(os) + (os ? " · " : "") +
         "last seen " + relTime(d.last_seen) +
+        (d.ip ? " · " + esc(d.ip) : "") +
         (d.device_id ? " · ID " + esc(d.device_id) : "") +
         '</div></div>' +
         (id ? '<button class="btn sm danger" type="button" data-revoke="' + esc(id) + '">Sign out</button>' : '') +
@@ -756,11 +912,16 @@
     var el = $("activity"), evs = v.events || [];
     if (!evs.length){
       el.innerHTML = '<div class="empty">Nothing yet. Sign-ins, device changes, payments, and security updates show up here.</div>';
+      var liveEmpty = $("dl-activity");
+      if (liveEmpty) liveEmpty.innerHTML = el.innerHTML;
       return;
     }
-    el.innerHTML = evs.map(function(ev){
+    var html = evs.map(function(ev){
       return '<div class="feed-row"><span>' + esc(phrase(ev)) + '</span><span class="when">' + relTime(ev.at) + '</span></div>';
     }).join("");
+    el.innerHTML = html;
+    var live = $("dl-activity");
+    if (live) live.innerHTML = html;
   }
   function renderPayments(v){
     lastPayments = (v && v.payments) || [];
@@ -780,7 +941,7 @@
 
   function login(body){
     var btn = $("login-btn"); btn.disabled = true; btn.textContent = "Signing in…";
-    $("login-err").style.display = "none";
+    var err = $("login-err"); err.className = "err"; err.style.display = "none";
     return fetch(API + "/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -810,6 +971,86 @@
       })
       .finally(function(){ btn.disabled = false; btn.textContent = "Sign in"; });
   }
+
+  function showBox(id, text){
+    var el = $(id);
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "block" : "none";
+  }
+  $("forgot-open").addEventListener("click", function(){
+    $("reset-email").value = $("email").value.trim();
+    $("login-form").parentElement.hidden = true;
+    $("reset-card").hidden = false;
+    showBox("reset-ok", "");
+    showBox("reset-err", "");
+    $("reset-email").focus();
+  });
+  $("forgot-close").addEventListener("click", function(){
+    $("reset-card").hidden = true;
+    $("login-form").parentElement.hidden = false;
+  });
+  $("reset-send").addEventListener("click", function(){
+    var email = $("reset-email").value.trim();
+    var btn = $("reset-send");
+    showBox("reset-ok", "");
+    showBox("reset-err", "");
+    if (!email){ showBox("reset-err", "Enter the email on the account."); return; }
+    btn.disabled = true;
+    fetch(API + "/api/auth/email-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, purpose: "reset" })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res){
+        if (!res.ok) throw new Error((res.j && res.j.error) || "Could not send the code.");
+        $("reset-next").hidden = false;
+        showBox("reset-ok", (res.j && res.j.message) || "If that address can receive a code, we sent one.");
+        $("reset-code").focus();
+      })
+      .catch(function(e){
+        var msg = "Can't reach the server right now. Check your connection and try again.";
+        if (e && e.message && e.name !== "TypeError") msg = e.message;
+        showBox("reset-err", msg);
+      })
+      .finally(function(){ btn.disabled = false; });
+  });
+  $("reset-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var email = $("reset-email").value.trim();
+    var code = $("reset-code").value.trim();
+    var pw = $("reset-password").value;
+    var pw2 = $("reset-password2").value;
+    showBox("reset-ok", "");
+    showBox("reset-err", "");
+    if (pw.length < 8){ showBox("reset-err", "Use at least 8 characters."); return; }
+    if (pw !== pw2){ showBox("reset-err", "Those passwords don't match."); return; }
+    var btn = $("reset-save");
+    btn.disabled = true;
+    fetch(API + "/api/auth/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, code: code, password: pw })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(res){
+        if (!res.ok) throw new Error((res.j && res.j.error) || "That code is not valid or it has expired.");
+        $("password").value = "";
+        $("reset-card").hidden = true;
+        $("login-form").parentElement.hidden = false;
+        $("email").value = email;
+        showBox("login-err", "");
+        var ok = $("login-err");
+        ok.className = "okmsg";
+        ok.textContent = (res.j && res.j.message) || "Password updated. Sign in with the new password.";
+        ok.style.display = "block";
+      })
+      .catch(function(e){
+        var msg = "Can't reach the server right now. Check your connection and try again.";
+        if (e && e.message && e.name !== "TypeError") msg = e.message;
+        showBox("reset-err", msg);
+      })
+      .finally(function(){ btn.disabled = false; });
+  });
 
   $("login-form").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -936,20 +1177,19 @@
 
   (function theme(){
     var themeBtn = $("theme-switch");
-    function setTheme(dark){
-      document.documentElement.classList.toggle("dark", dark);
-      if (themeBtn){
-        themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
-        var lab = themeBtn.querySelector(".theme-label");
-        if (lab) lab.textContent = dark ? "Dark" : "Light";
-      }
-      try{ localStorage.setItem("sc-landing-theme", dark ? "dark" : "light"); }catch(e){}
+    function syncThemeBtn(){
+      if (!themeBtn) return;
+      var dark = document.documentElement.classList.contains("dark");
+      themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
+      var lab = themeBtn.querySelector(".theme-label");
+      if (lab) lab.textContent = dark ? "Dark" : "Light";
     }
     if (themeBtn){
-      setTheme(document.documentElement.classList.contains("dark"));
+      syncThemeBtn();
       themeBtn.addEventListener("click", function(){
-        setTheme(!document.documentElement.classList.contains("dark"));
+        window.scTheme.set(!document.documentElement.classList.contains("dark"));
       });
+      document.addEventListener("sc-themechange", syncThemeBtn);
     }
   })();
 

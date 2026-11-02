@@ -1,0 +1,225 @@
+/* Dark/Light for the light marketing pages. Landing and account keep their own copy. */
+html:not(.dark) { color-scheme: light; }
+html.dark {
+  color-scheme: dark;
+  --ink: #E8EEFA;
+  --muted: #9AABC8;
+  --line: rgba(255,255,255,.12);
+  --bg: #070E22;
+  --bg-soft: #0B1430;
+  --ok: #86EFAC;
+  --okbg: rgba(22,163,74,.16);
+  --okln: rgba(22,163,74,.35);
+}
+html.dark body {
+  background: #070E22;
+  color: #E8EEFA;
+}
+html.dark body.gate {
+  background:
+    radial-gradient(900px 420px at 50% -20%, rgba(43,92,230,.38), transparent 55%),
+    #070E22;
+}
+
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: .01em;
+  color: var(--ink, #0F1B33);
+  background: transparent;
+  border: 1px solid var(--line, #E6ECF5);
+  border-radius: 100px;
+  padding: 5px 10px 5px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.theme-switch:hover { border-color: #2B5CE6; }
+.theme-switch .track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 100px;
+  flex: none;
+  background: #E6ECF5;
+}
+.theme-switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .18s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+html.dark .theme-switch {
+  color: #E8EEFA;
+  border-color: rgba(255,255,255,.16);
+}
+html.dark .theme-switch:hover { border-color: #7DA2FF; }
+html.dark .theme-switch .track { background: rgba(255,255,255,.16); }
+html.dark .theme-switch .knob { transform: translateX(14px); background: #2B5CE6; }
+.theme-switch.corner { position: fixed; top: 16px; right: 16px; z-index: 30; background: #fff; }
+html.dark .theme-switch.corner { background: #101A36; }
+@media (max-width: 560px) {
+  .theme-switch .theme-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+  }
+  .theme-switch { padding: 5px 6px; }
+}
+
+/* One wordmark is visible. The dark file is light type for a navy header. */
+html.dark .wm-light { display: none !important; }
+html:not(.dark) .wm-dark { display: none !important; }
+
+header.top,
+body > div.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hwrap .theme-switch { margin-left: auto; }
+
+html.dark header.top,
+html.dark body > div.top,
+html.dark header,
+html.dark .bar {
+  background: rgba(7,14,34,.92);
+  border-bottom-color: rgba(255,255,255,.10);
+  color: #E8EEFA;
+  backdrop-filter: saturate(180%) blur(12px);
+}
+
+html.dark p,
+html.dark li { color: #D5DEEE; }
+html.dark .hero p,
+html.dark .upd,
+html.dark .lead,
+html.dark .sub,
+html.dark .ptag,
+html.dark .billed,
+html.dark .note,
+html.dark .note .inner,
+html.dark .legend,
+html.dark .fine,
+html.dark footer,
+html.dark .step p,
+html.dark .plat p,
+html.dark .step-body p,
+html.dark details .body,
+html.dark .contactbox p,
+html.dark .bar .sub,
+html.dark .lede,
+html.dark .alt,
+html.dark .price .cur,
+html.dark .price .per,
+html.dark .feats .head { color: #9AABC8; }
+
+html.dark .card,
+html.dark .how .step,
+html.dark details,
+html.dark .contactbox,
+html.dark .note .inner,
+html.dark .plat {
+  background: #101A36;
+  border-color: rgba(255,255,255,.12);
+}
+html.dark .card.pop { border-color: #2B5CE6; }
+html.dark .btn.ghost,
+html.dark .dl-btn.outline {
+  background: transparent;
+  color: #E8EEFA;
+  border-color: rgba(255,255,255,.2);
+}
+html.dark .btn.ghost:hover,
+html.dark .dl-btn.outline:hover {
+  border-color: #7DA2FF;
+  color: #fff;
+  background: rgba(255,255,255,.06);
+}
+html.dark .nav a:hover,
+html.dark nav a:hover {
+  color: #fff;
+  background: rgba(255,255,255,.06);
+}
+html.dark .nav .cta,
+html.dark .nav .cta:hover,
+html.dark .btn.primary,
+html.dark .dl-btn:not(.outline),
+html.dark .hero-btn,
+html.dark a.cta,
+html.dark a.btn {
+  color: #fff;
+}
+html.dark .step .n,
+html.dark .badge,
+html.dark .eyebrow,
+html.dark .chip.mine,
+html.dark code {
+  background: rgba(43,92,230,.22);
+  color: #C5D4FF;
+}
+html.dark .info-box {
+  background: rgba(43,92,230,.16);
+  color: #D9E4FF;
+}
+html.dark .ok { background: rgba(22,163,74,.16); color: #86EFAC; }
+html.dark .warn,
+html.dark .beta-note {
+  background: rgba(245,158,11,.14);
+  color: #FCD34D;
+  border-color: rgba(245,158,11,.28);
+}
+html.dark .chip.ready { background: rgba(22,163,74,.18); color: #86EFAC; }
+html.dark .feats li.soon span.s,
+html.dark .note .inner strong {
+  color: #FCD34D !important;
+  background: rgba(245,158,11,.16);
+  border-color: rgba(245,158,11,.3);
+}
+html.dark .note .inner strong { background: transparent; }
+html.dark .check { background: rgba(22,163,74,.16); }
+html.dark .check path { stroke: #4ADE80; }
+html.dark .card .steps { background: #0B1430; }
+html.dark footer a:hover { color: #9CB6FF; }
+html.dark :is(.wrap, .card, footer, .contactbox, .info-box, .beta-note, .alt, .fine, .how, .faq) a:not(.btn):not(.cta):not(.dl-btn):not(.hero-btn):not(.back) {
+  color: #9CB6FF;
+}
+html.dark .back { color: #9AABC8; }
+html.dark .back:hover { color: #9CB6FF; }
+
+/* Desk preview: page chrome follows the theme. The desk picture stays light. */
+html.dark .scenes button {
+  background: transparent;
+  color: #E8EEFA;
+  border-color: rgba(255,255,255,.16);
+}
+html.dark .scenes button.on,
+html.dark .scenes button[aria-pressed="true"] {
+  background: #2B5CE6;
+  color: #fff;
+  border-color: #2B5CE6;
+}
+html.dark .preview-desk .app {
+  --ink: #0F1B33;
+  --muted: #5A6B85;
+  --line: #E6ECF5;
+  --bg: #FFFFFF;
+  --bg-soft: #F8FAFF;
+  --ok: #16A34A;
+  background: #fff;
+  color: #0F1B33;
+}
+html.dark .preview-desk .app :is(p, li) { color: var(--muted); }
+html.dark .status { border: 1px solid rgba(255,255,255,.12); }

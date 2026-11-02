@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
 <title>Payment received · ShamarrConnect</title>
+<script src="/js/theme.js"></script>
 <meta name="description" content="Your payment was received. Your ShamarrConnect plan is being activated.">
 <meta name="robots" content="noindex">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3">
@@ -47,15 +49,21 @@
   .fine{margin-top:22px;font-size:13px;color:var(--muted)}
   .fine a{color:var(--brand);font-weight:600}
 </style>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 
 <header>
   <div class="hwrap">
     <a class="brand" href="/" aria-label="ShamarrConnect home">
-      <img class="wordmark" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="wordmark wm-light" src="/wordmark.svg" height="30" alt="ShamarrConnect">
+      <img class="wordmark wm-dark" src="/wordmark-ondark.svg" height="30" alt="">
       <img class="mark" src="/logo-mark.svg" width="36" height="36" alt="">
     </a>
+    <button type="button" class="theme-switch" id="theme-switch" aria-pressed="true" title="Switch to light or dark">
+      <span class="track" aria-hidden="true"><span class="knob"></span></span>
+      <span class="theme-label">Dark</span>
+    </button>
   </div>
 </header>
 
