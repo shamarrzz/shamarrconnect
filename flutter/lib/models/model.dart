@@ -1555,7 +1555,13 @@ class FfiModel with ChangeNotifier {
           );
         },
         tag: 'privacy-on-connect',
-      );
+        // The mobile session overlay is unmounted once the first frame
+        // arrives, which killed this dialog; use the app-level overlay.
+        forceGlobal: isMobile,
+      ).catchError((e) {
+        debugPrint('privacy-on-connect dialog failed: $e');
+        return null;
+      });
     });
   }
 
