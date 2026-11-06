@@ -40,6 +40,29 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
     end
   end
+
+  # Pods that lack a privacy manifest (ITMS-91061): add a minimal one so it
+  # is bundled into each framework.
+  manifest = <<~XML
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0"><dict>
+    <key>NSPrivacyTracking</key><false/>
+    <key>NSPrivacyTrackingDomains</key><array/>
+    <key>NSPrivacyCollectedDataTypes</key><array/>
+    <key>NSPrivacyAccessedAPITypes</key><array/>
+    </dict></plist>
+  XML
+  %w[DKImagePickerController DKPhotoGallery SwiftyGif device_info_plus file_picker package_info_plus sqflite].each do |name|
+    target = installer.pods_project.targets.find { |t| t.name == name }
+    next unless target
+    dir = File.join(installer.sandbox.root.to_s, 'PrivacyManifests', name)
+    FileUtils.mkdir_p(dir)
+    path = File.join(dir, 'PrivacyInfo.xcprivacy')
+    File.write(path, manifest)
+    ref = installer.pods_project.new_file(path)
+    target.resources_build_phase.add_file_reference(ref, true)
+  end
 end
 
 
