@@ -130,8 +130,8 @@
         </div>
         <p>Windows 10 and 11, 64-bit. Install from the Microsoft Store or download the standalone installer.</p>
         <a class="dl-btn" href="https://apps.microsoft.com/detail/9P0VJTLT97J1" target="_blank" rel="noopener">Get it from Microsoft Store</a>
-        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc32-x86_64.exe">Download Direct Installer (.exe)</a>
-        <p style="font-size:12px;color:var(--muted);text-align:center">Microsoft Store installs with zero warnings. If using the direct .exe during beta, click “More info” → “Run anyway”.</p>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc33-x86_64.exe">Download Direct Installer (.exe)</a>
+        <p style="font-size:12px;color:var(--muted);text-align:center">Microsoft Store installs with zero warnings and works with Windows Smart App Control. The direct .exe is a new publisher with no reputation yet, so Windows may warn (click “More info” → “Run anyway”) or, with Smart App Control on, block it. If blocked, use the Store version.</p>
       </div>
 
       <div class="plat" data-plat="mac">
@@ -143,8 +143,8 @@
           <span class="chip ready">Available</span>
         </div>
         <p>Pick your Mac's chip. Allow screen recording when macOS asks.</p>
-        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc32-aarch64.dmg">Apple Silicon (M-series)</a>
-        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc32-x86_64.dmg">Intel</a>
+        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc33-aarch64.dmg">Apple Silicon (M-series)</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc33-x86_64.dmg">Intel</a>
         <p style="font-size:12px;color:var(--muted);text-align:center">While we are in beta: right-click the app and choose “Open” the first time you run it.</p>
       </div>
 
@@ -157,8 +157,8 @@
           <span class="chip ready">Available</span>
         </div>
         <p>For Ubuntu, Debian and most other Linux systems. On very new desktops (Wayland), you can connect out to others but they cannot connect in yet.</p>
-        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc32-x86_64.deb">Download .deb</a>
-        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc32-x86_64.AppImage">Download AppImage</a>
+        <a class="dl-btn" href="/admin/get/ShamarrConnect-1.4.9-sc33-x86_64.deb">Download .deb</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc33-x86_64.AppImage">Download AppImage</a>
       </div>
 
       <div class="plat" data-plat="android">
@@ -171,8 +171,8 @@
         </div>
         <p>View and control from your phone. Install from Google Play or download the APK directly.</p>
         <a class="dl-btn" href="https://play.google.com/store/apps/details?id=com.shamarrconnect.mobile" target="_blank" rel="noopener">Get it on Google Play</a>
-        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc32-aarch64.apk">Download Direct APK (64-bit)</a>
-        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc32-armv7.apk">Older phone? 32-bit APK</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc33-aarch64.apk">Download Direct APK (64-bit)</a>
+        <a class="dl-btn outline" href="/admin/get/ShamarrConnect-1.4.9-sc33-armv7.apk">Older phone? 32-bit APK</a>
       </div>
 
       <div class="plat" data-plat="ios">
@@ -232,7 +232,7 @@
   (function () {
     // Detect the visitor's platform and put the right download one tap away.
     // All links route through /admin/get/ (invite-gated during beta).
-    var TAG = '1.4.9-sc32';
+    var TAG = '1.4.9-sc33';
     var ua = navigator.userAgent || '';
     var plat = 'windows';
     if (/android/i.test(ua)) plat = 'android';
