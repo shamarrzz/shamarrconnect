@@ -32,15 +32,26 @@ class BootReceiver : BroadcastReceiver() {
                 return
             }
 
+            // Android 15+ forbids starting a mediaProjection foreground service
+            // from BOOT_COMPLETED; it would throw and crash the app.
+            if (Build.VERSION.SDK_INT >= 35) {
+                Log.d(logTag, "skip boot start on Android 15+")
+                return
+            }
+
             val it = Intent(context, MainService::class.java).apply {
                 action = ACT_INIT_MEDIA_PROJECTION_AND_SERVICE
                 putExtra(EXT_INIT_FROM_BOOT, true)
             }
             Toast.makeText(context, "ShamarrConnect is Open", Toast.LENGTH_LONG).show()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(it)
-            } else {
-                context.startService(it)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(it)
+                } else {
+                    context.startService(it)
+                }
+            } catch (e: Exception) {
+                Log.e(logTag, "boot start failed: $e")
             }
         }
     }
